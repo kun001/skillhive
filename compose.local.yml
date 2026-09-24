@@ -1,0 +1,8 @@
+services:
+  skill-scanner:
+    image: skillhub-skill-scanner:latest
+    build: !reset null
+  minio:
+    ports: !override
+      - "19010:9000"
+      - "19011:9001"

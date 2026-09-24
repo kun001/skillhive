@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">SkillHive</title>
+  <rect x="7" y="8" width="17" height="48" rx="5" fill="#30251e"/>
+  <rect x="40" y="8" width="17" height="48" rx="5" fill="#30251e"/>
+  <rect x="22" y="27" width="20" height="10" rx="4" fill="#a56f49"/>
+</svg>

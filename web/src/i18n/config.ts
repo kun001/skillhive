@@ -1,0 +1,33 @@
+import i18n from 'i18next'
+import { initReactI18next } from 'react-i18next'
+import LanguageDetector from 'i18next-browser-languagedetector'
+import en from './locales/en.json'
+import ru from './locales/ru.json'
+import zh from './locales/zh.json'
+import { hiveLandingEn, hiveLandingZh } from './hive-landing'
+
+/**
+ * Initializes i18next for the browser app. Language preference is restored from
+ * localStorage first so the UI stays stable across reloads before falling back
+ * to the browser locale.
+ */
+i18n
+  .use(LanguageDetector)
+  .use(initReactI18next)
+  .init({
+    resources: {
+      en: { translation: { ...en, hiveLanding: hiveLandingEn } },
+      ru: { translation: ru },
+      zh: { translation: { ...zh, hiveLanding: hiveLandingZh } },
+    },
+    fallbackLng: 'en',
+    interpolation: {
+      escapeValue: false,
+    },
+    detection: {
+      order: ['localStorage', 'navigator'],
+      caches: ['localStorage'],
+    },
+  })
+
+export default i18n
