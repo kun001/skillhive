@@ -28,7 +28,5 @@ public record SkillDetailResponse(
         SkillLifecycleVersionResponse publishedVersion,
         SkillLifecycleVersionResponse ownerPreviewVersion,
         String ownerPreviewReviewComment,
-        String resolutionMode,
-        List<SkillSuiteReferenceResponse> entryForSuites,
-        PageResponse<SkillSuiteReferenceResponse> memberOfSuites
+        String resolutionMode
 ) {}

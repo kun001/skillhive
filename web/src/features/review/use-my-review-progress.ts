@@ -2,7 +2,6 @@ import { useQuery } from '@tanstack/react-query'
 import { reviewApi } from '@/api/client'
 
 interface MyReviewProgressParams {
-  subjectType?: string
   status?: string
   q?: string
   page: number

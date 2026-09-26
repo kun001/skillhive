@@ -1,6 +1,5 @@
 package com.iflytek.skillhub.controller;
 
-import com.iflytek.skillhub.auth.device.DeviceAuthService;
 import com.iflytek.skillhub.auth.rbac.PlatformPrincipal;
 import com.iflytek.skillhub.auth.rbac.RbacService;
 import com.iflytek.skillhub.domain.audit.AuditLogService;
@@ -74,9 +73,6 @@ class ReviewPortalControllerTest {
 
     @MockBean
     private NamespaceMemberRepository namespaceMemberRepository;
-
-    @MockBean
-    private DeviceAuthService deviceAuthService;
 
     @MockBean
     private com.iflytek.skillhub.domain.namespace.NamespaceRepository namespaceRepository;
@@ -200,9 +196,7 @@ class ReviewPortalControllerTest {
                                 new SkillLifecycleVersionResponse(99L, "1.1.0", "PUBLISHED"),
                                 new SkillLifecycleVersionResponse(100L, "1.2.0", "PENDING_REVIEW"),
                                 null,
-                                "REVIEW_TASK",
-                                List.of(),
-                                new com.iflytek.skillhub.dto.PageResponse<>(List.of(), 0, 0, 20)
+                                "REVIEW_TASK"
                         ),
                         List.of(new SkillVersionResponse(100L, "1.2.0", "PENDING_REVIEW", null, 1, 10L, null, true, null)),
                         List.of(new SkillFileResponse(1L, "README.md", 123L, "text/markdown", "sha")),

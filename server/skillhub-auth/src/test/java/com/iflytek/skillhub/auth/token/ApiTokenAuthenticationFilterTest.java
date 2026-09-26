@@ -68,7 +68,7 @@ class ApiTokenAuthenticationFilterTest {
         when(role.getCode()).thenReturn("SKILL_ADMIN");
 
         MockHttpServletRequest request = new MockHttpServletRequest();
-        request.setRequestURI("/api/v1/whoami");
+        request.setRequestURI("/api/v1/auth/me");
         request.addHeader("Authorization", "Bearer raw-token");
 
         filter.doFilter(request, new MockHttpServletResponse(), new MockFilterChain());
@@ -94,7 +94,7 @@ class ApiTokenAuthenticationFilterTest {
         when(userAccountRepository.findById("user-2")).thenReturn(Optional.of(user));
 
         MockHttpServletRequest request = new MockHttpServletRequest();
-        request.setRequestURI("/api/v1/publish");
+        request.setRequestURI("/api/v1/skills/global/publish");
         request.addHeader("Authorization", "Bearer raw-token");
 
         MockHttpServletResponse response = new MockHttpServletResponse();
@@ -109,10 +109,10 @@ class ApiTokenAuthenticationFilterTest {
     }
 
     @Test
-    void shouldRejectUnknownBearerTokenOnCliReadRoutes() throws Exception {
+    void shouldRejectUnknownBearerTokenOnPublicReadRoutes() throws Exception {
         when(apiTokenService.validateToken("unknown-token")).thenReturn(Optional.empty());
 
-        for (String route : cliReadRoutes()) {
+        for (String route : publicReadRoutes()) {
             SecurityContextHolder.clearContext();
             MockHttpServletRequest request = new MockHttpServletRequest("GET", route);
             request.addHeader("Authorization", "Bearer unknown-token");
@@ -134,7 +134,7 @@ class ApiTokenAuthenticationFilterTest {
         when(apiTokenService.validateToken("raw-token")).thenReturn(Optional.of(token));
         when(userAccountRepository.findById("missing-user")).thenReturn(Optional.empty());
 
-        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/cli/v1/skills/search");
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/web/skills");
         request.addHeader("Authorization", "Bearer raw-token");
         MockHttpServletResponse response = new MockHttpServletResponse();
         MockFilterChain chain = new MockFilterChain();
@@ -151,7 +151,7 @@ class ApiTokenAuthenticationFilterTest {
     void shouldRejectEmptyBearerTokenWithoutValidatingIt() throws Exception {
         when(apiTokenService.validateToken("")).thenReturn(Optional.empty());
 
-        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/cli/v1/skills/search");
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/web/skills");
         request.addHeader("Authorization", "Bearer ");
         MockHttpServletResponse response = new MockHttpServletResponse();
         MockFilterChain chain = new MockFilterChain();
@@ -166,7 +166,7 @@ class ApiTokenAuthenticationFilterTest {
 
     @Test
     void shouldRejectMalformedBearerHeaderWithoutValidatingIt() throws Exception {
-        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/cli/v1/skills/search");
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/web/skills");
         request.addHeader("Authorization", "Bearer");
         MockHttpServletResponse response = new MockHttpServletResponse();
         MockFilterChain chain = new MockFilterChain();
@@ -181,7 +181,7 @@ class ApiTokenAuthenticationFilterTest {
 
     @Test
     void shouldAllowAnonymousCliReadsWhenAuthorizationHeaderIsAbsent() throws Exception {
-        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/cli/v1/skills/search");
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/web/skills");
         MockHttpServletResponse response = new MockHttpServletResponse();
         MockFilterChain chain = new MockFilterChain();
 
@@ -195,7 +195,7 @@ class ApiTokenAuthenticationFilterTest {
 
     @Test
     void shouldIgnoreNonBearerAuthorizationHeader() throws Exception {
-        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/cli/v1/skills/search");
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/web/skills");
         request.addHeader("Authorization", "Basic abc123");
         MockHttpServletResponse response = new MockHttpServletResponse();
         MockFilterChain chain = new MockFilterChain();
@@ -236,9 +236,9 @@ class ApiTokenAuthenticationFilterTest {
         when(userAccountRepository.findById("user-4")).thenReturn(Optional.of(user));
         when(roleBindingRepository.findByUserId("user-4")).thenReturn(List.of());
 
-        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/skillhub/api/cli/v1/auth/whoami");
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/skillhub/api/v1/auth/me");
         request.setContextPath("/skillhub");
-        request.setServletPath("/api/cli/v1/auth/whoami");
+        request.setServletPath("/api/v1/auth/me");
         request.addHeader("Authorization", "Bearer raw-token");
 
         filter.doFilter(request, new MockHttpServletResponse(), new MockFilterChain());
@@ -247,12 +247,12 @@ class ApiTokenAuthenticationFilterTest {
         verify(apiTokenService).touchLastUsed(token);
     }
 
-    private static List<String> cliReadRoutes() {
+    private static List<String> publicReadRoutes() {
         return Stream.of(
-                "/api/cli/v1/skills/search",
-                "/api/cli/v1/skills/global/demo/resolve",
-                "/api/cli/v1/skills/global/demo/download",
-                "/api/cli/v1/skills/global/demo/versions/1.0.0/download"
+                "/api/web/skills",
+                "/api/v1/skills/global/demo/resolve",
+                "/api/v1/skills/global/demo/download",
+                "/api/v1/skills/global/demo/versions/1.0.0/download"
         ).toList();
     }
 }

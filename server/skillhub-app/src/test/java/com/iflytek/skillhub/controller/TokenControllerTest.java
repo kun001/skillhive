@@ -1,7 +1,6 @@
 package com.iflytek.skillhub.controller;
 
 import com.iflytek.skillhub.TestRedisConfig;
-import com.iflytek.skillhub.auth.device.DeviceAuthService;
 import com.iflytek.skillhub.auth.rbac.PlatformPrincipal;
 import com.iflytek.skillhub.auth.token.ApiTokenService;
 import com.iflytek.skillhub.domain.shared.exception.DomainBadRequestException;
@@ -47,9 +46,6 @@ class TokenControllerTest {
 
     @MockBean
     private NamespaceMemberRepository namespaceMemberRepository;
-
-    @MockBean
-    private DeviceAuthService deviceAuthService;
 
     @MockBean
     private ApiTokenService apiTokenService;

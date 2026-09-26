@@ -32,7 +32,7 @@ class ExpiredPublicSessionFilterTest {
 
     @Test
     void expiredSessionOnPublicRoute_shouldBeHiddenFromDownstreamSecurityFilters() throws Exception {
-        MockHttpServletRequest request = expiredSessionRequest("GET", "/api/v1/skills");
+        MockHttpServletRequest request = expiredSessionRequest("GET", "/api/web/skills");
         request.setCookies(
                 new Cookie("SESSION", "expired"),
                 new Cookie("JSESSIONID", "expired-servlet"),
@@ -49,7 +49,7 @@ class ExpiredPublicSessionFilterTest {
 
     @Test
     void expiredSessionOnProtectedMethod_shouldRemainVisibleForUnauthorizedResponse() throws Exception {
-        MockHttpServletRequest request = expiredSessionRequest("POST", "/api/v1/skills");
+        MockHttpServletRequest request = expiredSessionRequest("POST", "/api/web/skills");
         FilterChain chain = mock(FilterChain.class);
 
         filter.doFilter(request, new MockHttpServletResponse(), chain);
@@ -60,7 +60,7 @@ class ExpiredPublicSessionFilterTest {
 
     @Test
     void validSessionOnPublicRoute_shouldRemainUnchanged() throws Exception {
-        MockHttpServletRequest request = expiredSessionRequest("GET", "/api/v1/search");
+        MockHttpServletRequest request = expiredSessionRequest("GET", "/api/web/skills");
         request.setRequestedSessionIdValid(true);
         FilterChain chain = mock(FilterChain.class);
 
@@ -71,9 +71,9 @@ class ExpiredPublicSessionFilterTest {
 
     @Test
     void forwardedPrefix_shouldUseServletPathForPublicRouteDecision() throws Exception {
-        MockHttpServletRequest request = expiredSessionRequest("GET", "/skillhub/api/v1/search");
+        MockHttpServletRequest request = expiredSessionRequest("GET", "/skillhub/api/web/skills");
         request.setContextPath("/skillhub");
-        request.setServletPath("/api/v1/search");
+        request.setServletPath("/api/web/skills");
         FilterChain chain = mock(FilterChain.class);
 
         filter.doFilter(request, new MockHttpServletResponse(), chain);

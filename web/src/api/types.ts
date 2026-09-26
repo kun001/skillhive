@@ -275,20 +275,6 @@ export interface ComplianceSnapshot {
   digest?: string
 }
 
-type GeneratedSkillSuiteSiblingMember = components['schemas']['SkillSuiteSiblingMemberResponse']
-export type SkillSuiteSiblingMember = Required<GeneratedSkillSuiteSiblingMember>
-
-type GeneratedSkillSuiteReference = components['schemas']['SkillSuiteReferenceResponse']
-export type SkillSuiteReference = Omit<
-  RequiredGenerated<
-    GeneratedSkillSuiteReference,
-    'currentSkillEntry' | 'visibleSiblingMembers' | 'restrictedMemberCount' | 'omittedVisibleMemberCount'
-  >,
-  'visibleSiblingMembers'
-> & {
-  visibleSiblingMembers?: SkillSuiteSiblingMember[]
-}
-
 type GeneratedSkillDetail = components['schemas']['SkillDetailResponse']
 export type SkillDetail = Omit<
   RequiredGenerated<
@@ -304,17 +290,13 @@ export type SkillDetail = Omit<
     | 'ownerPreviewVersion'
     | 'ownerPreviewReviewComment'
     | 'resolutionMode'
-    | 'entryForSuites'
-    | 'memberOfSuites'
   >,
-  'labels' | 'headlineVersion' | 'publishedVersion' | 'ownerPreviewVersion' | 'entryForSuites' | 'memberOfSuites'
+  'labels' | 'headlineVersion' | 'publishedVersion' | 'ownerPreviewVersion'
 > & {
   labels?: LabelItem[]
   headlineVersion?: SkillLifecycleVersion
   publishedVersion?: SkillLifecycleVersion
   ownerPreviewVersion?: SkillLifecycleVersion
-  entryForSuites?: SkillSuiteReference[]
-  memberOfSuites?: PagedResponse<SkillSuiteReference>
 }
 
 export interface SubmitPromotionRequest {
@@ -422,83 +404,8 @@ export interface PagedResponse<T> {
   size: number
 }
 
-export type ResourceType = 'SKILL' | 'SUITE'
-
 type RequiredGenerated<T, Optional extends keyof T = never> =
   Required<Omit<T, Optional>> & Pick<T, Optional>
-
-type GeneratedResourceSummary = components['schemas']['ResourceSummaryResponse']
-export type ResourceSummary = Omit<RequiredGenerated<GeneratedResourceSummary, 'summary' | 'labels'>, 'resourceType'> & {
-  resourceType: ResourceType
-}
-
-export interface ResourceSearchParams {
-  q?: string
-  namespace?: string
-  resourceType?: ResourceType
-  labels?: string[]
-  sort?: string
-  page?: number
-  size?: number
-}
-
-type GeneratedSuiteMember = components['schemas']['SkillSuiteMemberResponse']
-export type SkillSuiteMember = RequiredGenerated<
-  GeneratedSuiteMember,
-  'skillId' | 'skillVersionId' | 'displayName' | 'summary' | 'blockingReason'
->
-
-type GeneratedSuite = components['schemas']['SkillSuiteResponse']
-export type SkillSuite = Omit<
-  RequiredGenerated<
-    GeneratedSuite,
-    'summary' | 'overview' | 'changelog' | 'createdByName' | 'publishedAt' | 'yankedAt'
-  >,
-  'members'
-> & {
-  members: SkillSuiteMember[]
-}
-
-type GeneratedSuiteVersion = components['schemas']['SkillSuiteVersionSummaryResponse']
-export type SkillSuiteVersion = RequiredGenerated<
-  GeneratedSuiteVersion,
-  'changelog' | 'createdByName' | 'publishedAt' | 'yankedAt'
->
-
-export type SkillSuiteMemberCandidate = RequiredGenerated<
-  components['schemas']['SkillSuiteMemberCandidateResponse']
->
-
-export type SkillSuiteMemberInput = components['schemas']['SkillSuiteMemberRequest']
-export type SkillSuiteDraftInput = components['schemas']['SkillSuiteCreateRequest']
-
-export type MySkillSuiteSummary = RequiredGenerated<
-  components['schemas']['MySkillSuiteSummaryResponse'],
-  'summary'
->
-
-export type MySkillSuiteWorkspaceItem = RequiredGenerated<
-  components['schemas']['Item'],
-  'suiteId' | 'summary' | 'suiteVersion' | 'operationId' | 'operationStatus' | 'failureCode'
->
-export type MySkillSuiteWorkspace = Omit<
-  RequiredGenerated<components['schemas']['MySkillSuiteWorkspaceResponse']>, 'items'
-> & { items: MySkillSuiteWorkspaceItem[] }
-
-export type SkillSuiteBundlePreview = components['schemas']['SkillSuiteBundlePreviewResponse']
-export type SkillSuiteBundlePreviewMember = components['schemas']['PreviewMember']
-export type SkillSuiteBundleRemovedMember = components['schemas']['RemovedMember']
-export type SkillSuiteBundleOperation = components['schemas']['SkillSuiteBundleOperationDetailResponse']
-export type SkillSuiteBundleOperationResult = components['schemas']['SkillSuiteBundleOperationResponse']
-export type SkillSuiteBundleOperationSummary = RequiredGenerated<
-  components['schemas']['SkillSuiteBundleOperationSummaryResponse'],
-  'failureCode' | 'baseVersion'
->
-type GeneratedSkillSuiteBundleOperationPage = components['schemas']['SkillSuiteBundleOperationPageResponse']
-export type SkillSuiteBundleOperationPage = Omit<
-  RequiredGenerated<GeneratedSkillSuiteBundleOperationPage>,
-  'items'
-> & { items: SkillSuiteBundleOperationSummary[] }
 
 // Publish
 export interface PublishResult {
@@ -532,7 +439,7 @@ export interface ReviewTask {
   reviewComment?: string
   submittedAt: string
   reviewedAt?: string
-  subjectType?: 'SKILL_VERSION' | 'SUITE_VERSION'
+  subjectType?: 'SKILL_VERSION'
   subjectId?: number | null
   subjectVersionId?: number | null
   subjectSlug?: string | null

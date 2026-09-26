@@ -1,7 +1,6 @@
 package com.iflytek.skillhub.controller.portal;
 
 import com.iflytek.skillhub.TestRedisConfig;
-import com.iflytek.skillhub.auth.device.DeviceAuthService;
 import com.iflytek.skillhub.auth.rbac.PlatformPrincipal;
 import com.iflytek.skillhub.domain.namespace.Namespace;
 import com.iflytek.skillhub.domain.namespace.NamespaceMemberRepository;
@@ -68,9 +67,6 @@ class SkillDeleteFlowIntegrationTest {
 
     @MockBean
     private NamespaceMemberRepository namespaceMemberRepository;
-
-    @MockBean
-    private DeviceAuthService deviceAuthService;
 
     @Test
     void portalDeleteById_removesPersistedSkillGraphForOwner() throws Exception {

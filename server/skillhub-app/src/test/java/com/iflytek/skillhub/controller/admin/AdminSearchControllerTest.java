@@ -1,6 +1,5 @@
 package com.iflytek.skillhub.controller.admin;
 
-import com.iflytek.skillhub.auth.device.DeviceAuthService;
 import com.iflytek.skillhub.auth.rbac.PlatformPrincipal;
 import com.iflytek.skillhub.domain.audit.AuditLogService;
 import com.iflytek.skillhub.domain.namespace.NamespaceMemberRepository;
@@ -40,9 +39,6 @@ class AdminSearchControllerTest {
 
     @MockBean
     private NamespaceMemberRepository namespaceMemberRepository;
-
-    @MockBean
-    private DeviceAuthService deviceAuthService;
 
     @Test
     void rebuildAll_returnsOkForSuperAdmin() throws Exception {

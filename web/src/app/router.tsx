@@ -7,6 +7,7 @@ import { RouteError } from '@/shared/components/route-error'
 import { createRequireAuth } from '@/shared/lib/auth-route'
 import { clearDynamicImportReloadGuard, recoverFromDynamicImportError } from '@/shared/lib/dynamic-import-recovery'
 import { normalizeSearchQuery } from '@/shared/lib/search-query'
+import { validateKnowledgeBaseSearch } from '@/features/knowledge/search-params'
 
 /**
  * Central route registry for the SkillHive web app.
@@ -84,6 +85,8 @@ const ResetPasswordPage = createLazyRouteComponent(() => import('@/pages/reset-p
 const PrivacyPolicyPage = createLazyRouteComponent(() => import('@/pages/privacy'), 'PrivacyPolicyPage')
 const SearchPage = createLazyRouteComponent(() => import('@/pages/search'), 'SearchPage')
 const KnowledgePage = createLazyRouteComponent(() => import('@/pages/knowledge'), 'KnowledgePage')
+const KnowledgeBasePage = createLazyRouteComponent(() => import('@/pages/knowledge-base'), 'KnowledgeBasePage')
+const KnowledgeDocumentPage = createLazyRouteComponent(() => import('@/pages/knowledge-document'), 'KnowledgeDocumentPage')
 const TermsOfServicePage = createLazyRouteComponent(() => import('@/pages/terms'), 'TermsOfServicePage')
 const NamespacePage = createLazyRouteComponent(() => import('@/pages/namespace'), 'NamespacePage')
 const SkillDetailPage = createLazyRouteComponent(() => import('@/pages/skill-detail'), 'SkillDetailPage')
@@ -257,21 +260,19 @@ const knowledgeRoute = createRoute({
   component: KnowledgePage,
 })
 
-const suitesRoute = createRoute({
+const knowledgeBaseRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: 'suites',
-  beforeLoad: () => { throw redirect({ to: '/knowledge' }) },
-  component: KnowledgePage,
+  path: '/knowledge/$namespace/$base',
+  beforeLoad: requireAuth,
+  validateSearch: validateKnowledgeBaseSearch,
+  component: KnowledgeBasePage,
 })
 
-const suiteDetailRoute = createRoute({
+const knowledgeDocumentRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/suite/$namespace/$slug',
-  beforeLoad: () => { throw redirect({ to: '/knowledge' }) },
-  validateSearch: (search: Record<string, unknown>): { version?: string } => ({
-    version: typeof search.version === 'string' && search.version ? search.version : undefined,
-  }),
-  component: KnowledgePage,
+  path: '/knowledge/$namespace/$base/$documentId',
+  beforeLoad: requireAuth,
+  component: KnowledgeDocumentPage,
 })
 
 const termsRoute = createRoute({
@@ -349,79 +350,6 @@ const dashboardPublishRoute = createRoute({
   component: PublishPage,
 })
 
-const dashboardSuiteCreateRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: 'dashboard/suites/new',
-  beforeLoad: () => { throw redirect({ to: '/knowledge' }) },
-  component: KnowledgePage,
-})
-
-const dashboardSuitesRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: 'dashboard/suites',
-  beforeLoad: () => { throw redirect({ to: '/knowledge' }) },
-  validateSearch: (search: Record<string, unknown>): { tab?: 'suites' | 'publishing' } => ({
-    tab: search.tab === 'publishing' ? 'publishing' : undefined,
-  }),
-  component: KnowledgePage,
-})
-
-const dashboardSuiteManagementRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: 'dashboard/suites/$namespace/$slug',
-  beforeLoad: () => { throw redirect({ to: '/knowledge' }) },
-  validateSearch: (search: Record<string, unknown>): {
-    version?: string
-    tab?: 'members' | 'versions' | 'publishing'
-  } => ({
-    version: typeof search.version === 'string' && search.version ? search.version : undefined,
-    tab: search.tab === 'members' || search.tab === 'versions' || search.tab === 'publishing'
-      ? search.tab
-      : undefined,
-  }),
-  component: KnowledgePage,
-})
-
-const dashboardSuitePublishingTaskRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: 'dashboard/suites/publishing/$operationId',
-  beforeLoad: () => { throw redirect({ to: '/knowledge' }) },
-  validateSearch: (search: Record<string, unknown>): {
-    suiteNamespace?: string
-    suiteSlug?: string
-    suiteVersion?: string
-  } => ({
-    suiteNamespace: typeof search.suiteNamespace === 'string' && search.suiteNamespace
-      ? search.suiteNamespace
-      : undefined,
-    suiteSlug: typeof search.suiteSlug === 'string' && search.suiteSlug ? search.suiteSlug : undefined,
-    suiteVersion: typeof search.suiteVersion === 'string' && search.suiteVersion ? search.suiteVersion : undefined,
-  }),
-  component: KnowledgePage,
-})
-
-const dashboardSuiteEditRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: 'dashboard/suites/$namespace/$slug/edit',
-  beforeLoad: () => { throw redirect({ to: '/knowledge' }) },
-  validateSearch: (search: Record<string, unknown>): { version: string } => ({
-    version: typeof search.version === 'string' ? search.version : '',
-  }),
-  component: KnowledgePage,
-})
-
-const dashboardSuiteVersionCreateRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: 'dashboard/suites/$namespace/$slug/new-version',
-  beforeLoad: () => { throw redirect({ to: '/knowledge' }) },
-  validateSearch: (search: Record<string, unknown>): { sourceVersion?: string } => ({
-    sourceVersion: typeof search.sourceVersion === 'string' && search.sourceVersion
-      ? search.sourceVersion
-      : undefined,
-  }),
-  component: KnowledgePage,
-})
-
 const dashboardNamespacesRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: 'dashboard/namespaces',
@@ -466,15 +394,11 @@ const dashboardReviewProgressRoute = createRoute({
   beforeLoad: requireAuth,
   validateSearch: (search: Record<string, unknown>): {
     status?: 'PENDING' | 'APPROVED' | 'REJECTED'
-    type?: 'SKILL_VERSION' | 'SUITE_VERSION'
     q?: string
     page?: number
   } => ({
     status: search.status === 'PENDING' || search.status === 'APPROVED' || search.status === 'REJECTED'
       ? search.status
-      : undefined,
-    type: search.type === 'SKILL_VERSION' || search.type === 'SUITE_VERSION'
-      ? search.type
       : undefined,
     q: typeof search.q === 'string' && search.q.trim() ? search.q.trim() : undefined,
     page: typeof search.page === 'number' && search.page > 0 ? search.page : undefined,
@@ -544,20 +468,6 @@ const dashboardTokensRoute = createRoute({
   component: TokensPage,
 })
 
-const cliAuthRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: 'cli/auth',
-  beforeLoad: () => { throw redirect({ to: '/login' }) },
-  component: LoginPage,
-})
-
-const deviceAuthRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: 'device',
-  beforeLoad: () => { throw redirect({ to: '/login' }) },
-  component: LoginPage,
-})
-
 const settingsSecurityRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: 'settings/security',
@@ -625,8 +535,8 @@ const routeTree = rootRoute.addChildren([
   privacyRoute,
   searchRoute,
   knowledgeRoute,
-  suitesRoute,
-  suiteDetailRoute,
+  knowledgeBaseRoute,
+  knowledgeDocumentRoute,
   termsRoute,
   namespaceRoute,
   skillDetailRoute,
@@ -634,12 +544,6 @@ const routeTree = rootRoute.addChildren([
   dashboardRoute,
   dashboardSkillsRoute,
   dashboardPublishRoute,
-  dashboardSuitesRoute,
-  dashboardSuiteManagementRoute,
-  dashboardSuitePublishingTaskRoute,
-  dashboardSuiteCreateRoute,
-  dashboardSuiteEditRoute,
-  dashboardSuiteVersionCreateRoute,
   dashboardNamespacesRoute,
   dashboardNamespaceMembersRoute,
   dashboardNamespaceReviewsRoute,
@@ -654,8 +558,6 @@ const routeTree = rootRoute.addChildren([
   dashboardSubscriptionsRoute,
   dashboardNotificationsRoute,
   dashboardTokensRoute,
-  cliAuthRoute,
-  deviceAuthRoute,
   settingsSecurityRoute,
   settingsProfileRoute,
   settingsNotificationsRoute,

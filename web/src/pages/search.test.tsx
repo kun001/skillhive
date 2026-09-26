@@ -291,7 +291,6 @@ describe('SearchPage', () => {
     const html = renderToStaticMarkup(<SearchPage />)
 
     expect(html).toContain('skill-card')
-    expect(html).not.toContain('suite.resourceTypeSuite')
     expect(html).not.toContain('empty-state')
   })
 
@@ -334,6 +333,5 @@ describe('SearchPage', () => {
 
     expect(searchSkillParams[0]).not.toHaveProperty('resourceType')
     expect(html).toContain('skill-card')
-    expect(html).not.toContain('suite.resourceTypeSuite')
   })
 })

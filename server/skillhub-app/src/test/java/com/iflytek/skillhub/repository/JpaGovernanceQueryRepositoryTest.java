@@ -14,9 +14,6 @@ import com.iflytek.skillhub.domain.skill.SkillRepository;
 import com.iflytek.skillhub.domain.skill.SkillVersion;
 import com.iflytek.skillhub.domain.skill.SkillVersionRepository;
 import com.iflytek.skillhub.domain.skill.SkillVisibility;
-import com.iflytek.skillhub.domain.suite.SkillSuite;
-import com.iflytek.skillhub.domain.suite.SkillSuiteRepository;
-import com.iflytek.skillhub.domain.suite.SkillSuiteVersionRepository;
 import com.iflytek.skillhub.domain.user.UserAccount;
 import com.iflytek.skillhub.domain.user.UserAccountRepository;
 import java.time.Instant;
@@ -42,12 +39,6 @@ class JpaGovernanceQueryRepositoryTest {
     @Mock
     private UserAccountRepository userAccountRepository;
 
-    @Mock
-    private SkillSuiteRepository suiteRepository;
-
-    @Mock
-    private SkillSuiteVersionRepository suiteVersionRepository;
-
     private JpaGovernanceQueryRepository repository;
 
     @BeforeEach
@@ -56,9 +47,7 @@ class JpaGovernanceQueryRepositoryTest {
                 skillRepository,
                 skillVersionRepository,
                 namespaceRepository,
-                userAccountRepository,
-                suiteRepository,
-                suiteVersionRepository
+                userAccountRepository
         );
     }
 
@@ -124,28 +113,18 @@ class JpaGovernanceQueryRepositoryTest {
     }
 
     @Test
-    void getReviewTaskResponses_assemblesTypedSuiteReviewWithoutSkillColumns() {
-        ReviewTask task = ReviewTask.forSuiteVersion(301L, 201L, 11L, "1.0.0", "submitter");
-        setField(task, "id", 7L);
-        SkillSuite suite = new SkillSuite(11L, "starter-pack", "Starter Pack", "submitter");
-        setField(suite, "id", 201L);
-        Namespace namespace = new Namespace("team-a", "Team A", "submitter");
-        setField(namespace, "id", 11L);
-        UserAccount submitter = new UserAccount("submitter", "Submitter", "submitter@example.com", null);
+    void reviewReadModelsSkipRetiredSuiteReviews() throws ReflectiveOperationException {
+        var constructor = ReviewTask.class.getDeclaredConstructor();
+        constructor.setAccessible(true);
+        ReviewTask suiteTask = constructor.newInstance();
+        setField(suiteTask, "id", 7L);
+        setField(suiteTask, "subjectType", com.iflytek.skillhub.domain.review.ReviewSubjectType.SUITE_VERSION);
+        setField(suiteTask, "subjectId", 201L);
+        setField(suiteTask, "namespaceId", 11L);
+        setField(suiteTask, "submittedBy", "submitter");
 
-        given(suiteVersionRepository.findByIdIn(List.of(301L))).willReturn(List.of());
-        given(suiteRepository.findByIdIn(List.of(201L))).willReturn(List.of(suite));
-        given(namespaceRepository.findByIdIn(List.of(11L))).willReturn(List.of(namespace));
-        given(userAccountRepository.findByIdIn(List.of("submitter"))).willReturn(List.of(submitter));
-
-        var response = repository.getReviewTaskResponses(List.of(task)).get(0);
-
-        assertThat(response.subjectType()).isEqualTo("SUITE_VERSION");
-        assertThat(response.subjectId()).isEqualTo(201L);
-        assertThat(response.subjectVersionId()).isEqualTo(301L);
-        assertThat(response.subjectSlug()).isEqualTo("starter-pack");
-        assertThat(response.skillVersionId()).isNull();
-        assertThat(response.skillSlug()).isNull();
+        assertThat(repository.getReviewTaskResponses(List.of(suiteTask))).isEmpty();
+        assertThat(repository.getReviewInboxItems(List.of(suiteTask))).isEmpty();
     }
 
     @Test

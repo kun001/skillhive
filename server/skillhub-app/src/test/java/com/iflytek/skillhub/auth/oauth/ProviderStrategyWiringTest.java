@@ -3,7 +3,6 @@ package com.iflytek.skillhub.auth.oauth;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.iflytek.skillhub.TestRedisConfig;
-import com.iflytek.skillhub.auth.device.DeviceAuthService;
 import com.iflytek.skillhub.auth.oauth.DingTalkOAuth2Constants;
 import com.iflytek.skillhub.auth.oauth.DispatchingTokenResponseClient;
 import com.iflytek.skillhub.auth.oauth.OAuthClaimsExtractor;
@@ -34,9 +33,6 @@ class ProviderStrategyWiringTest {
 
     @MockBean
     private NamespaceMemberRepository namespaceMemberRepository;
-
-    @MockBean
-    private DeviceAuthService deviceAuthService;
 
     @Autowired
     private DispatchingTokenResponseClient dispatchingTokenResponseClient;

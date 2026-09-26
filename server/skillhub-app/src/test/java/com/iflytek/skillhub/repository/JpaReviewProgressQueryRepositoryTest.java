@@ -6,8 +6,6 @@ import com.iflytek.skillhub.domain.namespace.Namespace;
 import com.iflytek.skillhub.domain.review.ReviewTask;
 import com.iflytek.skillhub.domain.review.ReviewSubjectType;
 import com.iflytek.skillhub.domain.review.ReviewTaskStatus;
-import com.iflytek.skillhub.domain.suite.SkillSuite;
-import com.iflytek.skillhub.domain.suite.SkillSuiteVersion;
 import com.iflytek.skillhub.domain.skill.Skill;
 import com.iflytek.skillhub.domain.skill.SkillVersion;
 import com.iflytek.skillhub.domain.skill.SkillVisibility;
@@ -142,19 +140,13 @@ class JpaReviewProgressQueryRepositoryTest {
     }
 
     @Test
-    void includesSuiteAttemptsWithoutRequiringLegacySkillColumns() {
+    void omitsRetiredSuiteReviewAttempts() throws ReflectiveOperationException {
         persistUsers("owner", "author-1");
         Namespace namespace = entityManager.persistFlushFind(
                 new Namespace("team-suite-review", "Suite Review Team", "owner"));
         Skill skill = entityManager.persistFlushFind(
                 new Skill(namespace.getId(), "starter-skill", "author-1", SkillVisibility.PUBLIC));
-        SkillSuite suite = entityManager.persistFlushFind(
-                new SkillSuite(namespace.getId(), "starter-pack", "Starter Pack", "author-1"));
-        SkillSuiteVersion suiteVersion = entityManager.persistFlushFind(
-                new SkillSuiteVersion(suite.getId(), "1.0.0", SkillVisibility.PUBLIC, "author-1"));
-        ReviewTask task = ReviewTask.forSuiteVersion(
-                suiteVersion.getId(), suite.getId(), namespace.getId(), suiteVersion.getVersion(), "author-1");
-        entityManager.persist(task);
+        entityManager.persist(retiredSuiteReview(namespace.getId(), "author-1"));
         persistAttempt(
                 skill,
                 namespace,
@@ -165,35 +157,37 @@ class JpaReviewProgressQueryRepositoryTest {
         entityManager.flush();
         entityManager.clear();
 
-        var progress = repository.findMyProgress("author-1", null, null, "STARTER", 0, 20);
+        var progress = repository.findMyProgress("author-1", null, null, "", 0, 20);
 
-        assertThat(progress.items()).hasSize(2);
-        assertThat(progress.items()).anySatisfy(item -> {
-            assertThat(item.skillId()).isNull();
-            assertThat(item.skillSlug()).isNull();
-            assertThat(item.subjectType()).isEqualTo("SUITE_VERSION");
-            assertThat(item.subjectId()).isEqualTo(suite.getId());
-            assertThat(item.subjectVersionId()).isEqualTo(suiteVersion.getId());
-            assertThat(item.subjectSlug()).isEqualTo("starter-pack");
-        });
-        assertThat(progress.statusCounts().pending()).isEqualTo(1);
+        assertThat(progress.items()).singleElement()
+                .satisfies(item -> assertThat(item.subjectType()).isEqualTo("SKILL_VERSION"));
+        assertThat(progress.total()).isEqualTo(1);
+        assertThat(progress.statusCounts().pending()).isZero();
         assertThat(progress.statusCounts().approved()).isEqualTo(1);
 
         var suitesOnly = repository.findMyProgress(
-                "author-1", ReviewSubjectType.SUITE_VERSION, null, "STARTER", 0, 20);
-        assertThat(suitesOnly.items()).singleElement()
-                .satisfies(item -> assertThat(item.subjectType()).isEqualTo("SUITE_VERSION"));
-        assertThat(suitesOnly.total()).isEqualTo(1);
-        assertThat(suitesOnly.statusCounts().pending()).isEqualTo(1);
-        assertThat(suitesOnly.statusCounts().approved()).isZero();
+                "author-1", ReviewSubjectType.SUITE_VERSION, null, "", 0, 20);
+        assertThat(suitesOnly.items()).isEmpty();
+        assertThat(suitesOnly.total()).isZero();
+    }
 
-        var skillsOnly = repository.findMyProgress(
-                "author-1", ReviewSubjectType.SKILL_VERSION, null, "STARTER", 0, 20);
-        assertThat(skillsOnly.items()).singleElement()
-                .satisfies(item -> assertThat(item.subjectType()).isEqualTo("SKILL_VERSION"));
-        assertThat(skillsOnly.total()).isEqualTo(1);
-        assertThat(skillsOnly.statusCounts().pending()).isZero();
-        assertThat(skillsOnly.statusCounts().approved()).isEqualTo(1);
+    /** A Suite review written before Suites were removed; it can no longer be created by the app. */
+    private ReviewTask retiredSuiteReview(Long namespaceId, String submittedBy) throws ReflectiveOperationException {
+        var constructor = ReviewTask.class.getDeclaredConstructor();
+        constructor.setAccessible(true);
+        ReviewTask task = constructor.newInstance();
+        for (var entry : java.util.Map.<String, Object>of(
+                "subjectType", ReviewSubjectType.SUITE_VERSION,
+                "subjectId", 9001L,
+                "subjectVersionId", 9002L,
+                "subjectVersion", "1.0.0",
+                "namespaceId", namespaceId,
+                "submittedBy", submittedBy).entrySet()) {
+            var field = ReviewTask.class.getDeclaredField(entry.getKey());
+            field.setAccessible(true);
+            field.set(task, entry.getValue());
+        }
+        return task;
     }
 
     @Test

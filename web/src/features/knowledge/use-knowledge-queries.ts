@@ -1,0 +1,135 @@
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { knowledgeApi } from '@/api/client'
+import type {
+  CreateKnowledgeBaseRequest,
+  CreateKnowledgeFolderRequest,
+  KnowledgeDocumentQuery,
+  UpdateKnowledgeBaseRequest,
+  UpdateKnowledgeDocumentRequest,
+  UpdateKnowledgeFolderRequest,
+} from '@/api/knowledge-types'
+
+export const knowledgeKeys = {
+  all: ['knowledge'] as const,
+  bases: () => [...knowledgeKeys.all, 'bases'] as const,
+  base: (namespace: string, base: string) => [...knowledgeKeys.all, 'base', namespace, base] as const,
+  folders: (namespace: string, base: string) => [...knowledgeKeys.all, 'folders', namespace, base] as const,
+  documents: (namespace: string, base: string, query?: KnowledgeDocumentQuery) =>
+    query
+      ? ([...knowledgeKeys.all, 'documents', namespace, base, query] as const)
+      : ([...knowledgeKeys.all, 'documents', namespace, base] as const),
+  document: (documentId: number) => [...knowledgeKeys.all, 'document', documentId] as const,
+  versions: (documentId: number) => [...knowledgeKeys.all, 'versions', documentId] as const,
+}
+
+export function useKnowledgeBases() {
+  return useQuery({ queryKey: knowledgeKeys.bases(), queryFn: () => knowledgeApi.listBases() })
+}
+
+export function useKnowledgeBase(namespace: string, base: string) {
+  return useQuery({ queryKey: knowledgeKeys.base(namespace, base), queryFn: () => knowledgeApi.getBase(namespace, base) })
+}
+
+export function useKnowledgeFolders(namespace: string, base: string) {
+  return useQuery({
+    queryKey: knowledgeKeys.folders(namespace, base),
+    queryFn: () => knowledgeApi.listFolders(namespace, base),
+  })
+}
+
+export function useKnowledgeDocuments(namespace: string, base: string, query: KnowledgeDocumentQuery) {
+  return useQuery({
+    queryKey: knowledgeKeys.documents(namespace, base, query),
+    queryFn: () => knowledgeApi.listDocuments(namespace, base, query),
+    placeholderData: keepPreviousData,
+  })
+}
+
+export function useKnowledgeDocument(documentId: number) {
+  return useQuery({
+    queryKey: knowledgeKeys.document(documentId),
+    queryFn: () => knowledgeApi.getDocument(documentId),
+    enabled: Number.isFinite(documentId),
+  })
+}
+
+export function useKnowledgeVersions(documentId: number, enabled = true) {
+  return useQuery({
+    queryKey: knowledgeKeys.versions(documentId),
+    queryFn: () => knowledgeApi.listVersions(documentId),
+    enabled: enabled && Number.isFinite(documentId),
+  })
+}
+
+/** Refreshes everything that shows file lists, counts or details after a change. */
+export function useInvalidateKnowledge() {
+  const queryClient = useQueryClient()
+  return () => queryClient.invalidateQueries({ queryKey: knowledgeKeys.all })
+}
+
+export function useCreateKnowledgeBase() {
+  const invalidate = useInvalidateKnowledge()
+  return useMutation({
+    mutationFn: (request: CreateKnowledgeBaseRequest) => knowledgeApi.createBase(request),
+    onSuccess: invalidate,
+  })
+}
+
+export function useUpdateKnowledgeBase(namespace: string, base: string) {
+  const invalidate = useInvalidateKnowledge()
+  return useMutation({
+    mutationFn: (request: UpdateKnowledgeBaseRequest) => knowledgeApi.updateBase(namespace, base, request),
+    onSuccess: invalidate,
+  })
+}
+
+export function useCreateKnowledgeFolder(namespace: string, base: string) {
+  const invalidate = useInvalidateKnowledge()
+  return useMutation({
+    mutationFn: (request: CreateKnowledgeFolderRequest) => knowledgeApi.createFolder(namespace, base, request),
+    onSuccess: invalidate,
+  })
+}
+
+export function useUpdateKnowledgeFolder(namespace: string, base: string) {
+  const invalidate = useInvalidateKnowledge()
+  return useMutation({
+    mutationFn: ({ folderId, request }: { folderId: number; request: UpdateKnowledgeFolderRequest }) =>
+      knowledgeApi.updateFolder(namespace, base, folderId, request),
+    onSuccess: invalidate,
+  })
+}
+
+export function useDeleteKnowledgeFolder(namespace: string, base: string) {
+  const invalidate = useInvalidateKnowledge()
+  return useMutation({
+    mutationFn: (folderId: number) => knowledgeApi.deleteFolder(namespace, base, folderId),
+    onSuccess: invalidate,
+  })
+}
+
+export function useUpdateKnowledgeDocument() {
+  const invalidate = useInvalidateKnowledge()
+  return useMutation({
+    mutationFn: ({ documentId, request }: { documentId: number; request: UpdateKnowledgeDocumentRequest }) =>
+      knowledgeApi.updateDocument(documentId, request),
+    onSuccess: invalidate,
+  })
+}
+
+export function useDeleteKnowledgeDocument() {
+  const invalidate = useInvalidateKnowledge()
+  return useMutation({
+    mutationFn: (documentId: number) => knowledgeApi.deleteDocument(documentId),
+    onSuccess: invalidate,
+  })
+}
+
+export function useRestoreKnowledgeVersion(documentId: number) {
+  const invalidate = useInvalidateKnowledge()
+  return useMutation({
+    mutationFn: ({ versionNumber, changeNote }: { versionNumber: number; changeNote?: string }) =>
+      knowledgeApi.restoreVersion(documentId, versionNumber, changeNote),
+    onSuccess: invalidate,
+  })
+}

@@ -159,9 +159,6 @@ export function ReviewsPage() {
                 onClick={() => handleRowClick(review.id)}
               >
                 <TableCell className="font-medium">
-                  <span className="mr-2 rounded-full bg-secondary px-2 py-0.5 text-xs">
-                    {t(review.subjectType === 'SUITE_VERSION' ? 'suite.resourceTypeSuite' : 'suite.resourceTypeSkill')}
-                  </span>
                   {review.namespace}/{review.subjectSlug || review.skillSlug}
                 </TableCell>
                 <TableCell>{review.version}</TableCell>

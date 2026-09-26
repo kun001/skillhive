@@ -48,10 +48,22 @@ import type {
   LabelDefinition,
   LabelItem,
   BatchMemberResponse,
-  SkillSuite,
-  SkillSuiteDraftInput,
 } from './types'
 import { ApiError } from '@/shared/lib/api-error'
+import type {
+  CreateKnowledgeBaseRequest,
+  CreateKnowledgeFolderRequest,
+  KnowledgeBase,
+  KnowledgeDocument,
+  KnowledgeDocumentDetail,
+  KnowledgeDocumentPage,
+  KnowledgeDocumentQuery,
+  KnowledgeDocumentVersion,
+  KnowledgeFolder,
+  UpdateKnowledgeBaseRequest,
+  UpdateKnowledgeDocumentRequest,
+  UpdateKnowledgeFolderRequest,
+} from './knowledge-types'
 import i18n from '@/i18n/config'
 
 /**
@@ -149,19 +161,6 @@ async function ensureCsrfHeaders(headers?: HeadersInit): Promise<HeadersInit> {
 
 function isApiEnvelope<T>(value: unknown): value is ApiEnvelope<T> {
   return typeof value === 'object' && value !== null && 'code' in value && 'msg' in value && 'data' in value
-}
-
-function unwrapOpenApiResponse<T>(data: unknown, error: unknown, response: Response): T {
-  const envelope = isApiEnvelope<T>(data)
-    ? data
-    : isApiEnvelope<T>(error)
-      ? error
-      : null
-  if (!response.ok || error || !envelope || envelope.code !== 0) {
-    const message = envelope?.msg || `HTTP ${response.status}`
-    throw new ApiError(message, response.status, envelope?.msg, envelope?.msg)
-  }
-  return envelope.data
 }
 
 export function getCsrfHeaders(headers?: HeadersInit): HeadersInit {
@@ -596,27 +595,6 @@ export const labelApi = {
     })
   },
 
-  async listSuiteLabels(namespace: string, slug: string): Promise<LabelItem[]> {
-    const cleanNamespace = normalizeNamespaceSlug(namespace)
-    return fetchJson<LabelItem[]>(`${WEB_API_PREFIX}/suites/${cleanNamespace}/${encodeURIComponent(slug)}/labels`)
-  },
-
-  async attachSuiteLabel(namespace: string, slug: string, labelSlug: string): Promise<LabelItem> {
-    const cleanNamespace = normalizeNamespaceSlug(namespace)
-    return fetchJson<LabelItem>(`${WEB_API_PREFIX}/suites/${cleanNamespace}/${encodeURIComponent(slug)}/labels/${encodeURIComponent(labelSlug)}`, {
-      method: 'PUT',
-      headers: await ensureCsrfHeaders(),
-    })
-  },
-
-  async detachSuiteLabel(namespace: string, slug: string, labelSlug: string): Promise<void> {
-    const cleanNamespace = normalizeNamespaceSlug(namespace)
-    await fetchJson<void>(`${WEB_API_PREFIX}/suites/${cleanNamespace}/${encodeURIComponent(slug)}/labels/${encodeURIComponent(labelSlug)}`, {
-      method: 'DELETE',
-      headers: await ensureCsrfHeaders(),
-    })
-  },
-
   async listAdminDefinitions(): Promise<LabelDefinition[]> {
     return fetchJson<LabelDefinition[]>('/api/v1/admin/labels')
   },
@@ -907,68 +885,6 @@ export const tokenApi = {
   },
 }
 
-export const suiteApi = {
-  async createVersion(suiteId: number, input: SkillSuiteDraftInput): Promise<SkillSuite> {
-    const { data, error, response } = await client.POST('/api/web/suites/{suiteId}/versions', {
-      params: { path: { suiteId } },
-      body: input,
-      headers: await ensureCsrfHeaders(),
-    })
-    return unwrapOpenApiResponse<SkillSuite>(data, error, response)
-  },
-
-  async reopen(suiteId: number, versionId: number): Promise<void> {
-    const { data, error, response } = await client.POST('/api/web/suites/{suiteId}/versions/{versionId}/reopen', {
-      params: { path: { suiteId, versionId } },
-      headers: await ensureCsrfHeaders(),
-    })
-    unwrapOpenApiResponse(data, error, response)
-  },
-
-  async yank(suiteId: number, versionId: number, reason: string): Promise<void> {
-    const { data, error, response } = await client.POST('/api/web/suites/{suiteId}/versions/{versionId}/yank', {
-      params: { path: { suiteId, versionId } },
-      body: { reason },
-      headers: await ensureCsrfHeaders(),
-    })
-    unwrapOpenApiResponse(data, error, response)
-  },
-
-  async setHidden(suiteId: number, hidden: boolean): Promise<void> {
-    const result = hidden
-      ? await client.POST('/api/web/suites/{suiteId}/hide', {
-        params: { path: { suiteId } },
-        headers: await ensureCsrfHeaders(),
-      })
-      : await client.POST('/api/web/suites/{suiteId}/restore', {
-        params: { path: { suiteId } },
-        headers: await ensureCsrfHeaders(),
-      })
-    unwrapOpenApiResponse(result.data, result.error, result.response)
-  },
-
-  async setArchived(suiteId: number, archived: boolean): Promise<void> {
-    const result = archived
-      ? await client.POST('/api/web/suites/{suiteId}/archive', {
-        params: { path: { suiteId } },
-        headers: await ensureCsrfHeaders(),
-      })
-      : await client.POST('/api/web/suites/{suiteId}/unarchive', {
-        params: { path: { suiteId } },
-        headers: await ensureCsrfHeaders(),
-      })
-    unwrapOpenApiResponse(result.data, result.error, result.response)
-  },
-
-  async delete(suiteId: number): Promise<void> {
-    const { data, error, response } = await client.DELETE('/api/web/suites/{suiteId}', {
-      params: { path: { suiteId } },
-      headers: await ensureCsrfHeaders(),
-    })
-    unwrapOpenApiResponse(data, error, response)
-  },
-}
-
 export const reviewApi = {
   async list(params: { status: string; namespaceId?: number; page?: number; size?: number; sortDirection?: 'ASC' | 'DESC' }) {
     const searchParams = new URLSearchParams()
@@ -988,9 +904,8 @@ export const reviewApi = {
     return fetchJson<ReviewTask>(`${WEB_API_PREFIX}/reviews/${id}`)
   },
 
-  async listMyProgress(params: { subjectType?: string; status?: string; q?: string; page?: number; size?: number }) {
+  async listMyProgress(params: { status?: string; q?: string; page?: number; size?: number }) {
     const searchParams = new URLSearchParams()
-    if (params.subjectType) searchParams.set('subjectType', params.subjectType)
     if (params.status) searchParams.set('status', params.status)
     if (params.q) searchParams.set('q', params.q)
     searchParams.set('page', String(params.page ?? 0))
@@ -1619,5 +1534,195 @@ export const notificationApi = {
       }),
       body: JSON.stringify({ preferences }),
     })
+  },
+}
+
+const KNOWLEDGE_PREFIX = `${WEB_API_PREFIX}/knowledge`
+
+function knowledgeBasePath(namespace: string, base: string): string {
+  return `${KNOWLEDGE_PREFIX}/bases/${encodeURIComponent(normalizeNamespaceSlug(namespace))}/${encodeURIComponent(base)}`
+}
+
+export interface KnowledgeUploadOptions {
+  onProgress?: (fraction: number) => void
+  signal?: AbortSignal
+}
+
+/**
+ * Sends a multipart upload with XMLHttpRequest so callers get byte-level progress,
+ * which fetch cannot report for request bodies.
+ */
+async function uploadWithProgress<T>(path: string, formData: FormData, options?: KnowledgeUploadOptions): Promise<T> {
+  const headers = new Headers(await ensureCsrfHeaders())
+  return new Promise<T>((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open('POST', buildApiUrl(path))
+    xhr.withCredentials = true
+    headers.forEach((value, key) => xhr.setRequestHeader(key, value))
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+        options?.onProgress?.(event.loaded / event.total)
+      }
+    }
+    xhr.onload = () => {
+      let envelope: ApiEnvelope<T> | null = null
+      try {
+        envelope = JSON.parse(xhr.responseText) as ApiEnvelope<T>
+      } catch {
+        envelope = null
+      }
+      if (xhr.status >= 200 && xhr.status < 300 && envelope && envelope.code === 0) {
+        options?.onProgress?.(1)
+        resolve(envelope.data)
+        return
+      }
+      const message = envelope?.msg || `HTTP ${xhr.status}`
+      reject(new ApiError(message, xhr.status, envelope?.msg, envelope?.msg))
+    }
+    xhr.onerror = () => reject(new ApiError('apiError.networkError', 0))
+    xhr.onabort = () => reject(new ApiError('error.request.aborted', 0))
+    if (options?.signal) {
+      if (options.signal.aborted) {
+        xhr.abort()
+        return
+      }
+      options.signal.addEventListener('abort', () => xhr.abort(), { once: true })
+    }
+    xhr.send(formData)
+  })
+}
+
+/** Knowledge file hub: knowledge bases, folders, files and versions. */
+export const knowledgeApi = {
+  listBases(): Promise<KnowledgeBase[]> {
+    return fetchJson<KnowledgeBase[]>(`${KNOWLEDGE_PREFIX}/bases`)
+  },
+
+  async createBase(request: CreateKnowledgeBaseRequest): Promise<KnowledgeBase> {
+    return fetchJson<KnowledgeBase>(`${KNOWLEDGE_PREFIX}/bases`, {
+      method: 'POST',
+      headers: await ensureCsrfHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(request),
+    })
+  },
+
+  getBase(namespace: string, base: string): Promise<KnowledgeBase> {
+    return fetchJson<KnowledgeBase>(knowledgeBasePath(namespace, base))
+  },
+
+  async updateBase(namespace: string, base: string, request: UpdateKnowledgeBaseRequest): Promise<KnowledgeBase> {
+    return fetchJson<KnowledgeBase>(knowledgeBasePath(namespace, base), {
+      method: 'PUT',
+      headers: await ensureCsrfHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(request),
+    })
+  },
+
+  listFolders(namespace: string, base: string): Promise<KnowledgeFolder[]> {
+    return fetchJson<KnowledgeFolder[]>(`${knowledgeBasePath(namespace, base)}/folders`)
+  },
+
+  async createFolder(namespace: string, base: string, request: CreateKnowledgeFolderRequest): Promise<KnowledgeFolder> {
+    return fetchJson<KnowledgeFolder>(`${knowledgeBasePath(namespace, base)}/folders`, {
+      method: 'POST',
+      headers: await ensureCsrfHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(request),
+    })
+  },
+
+  async updateFolder(namespace: string, base: string, folderId: number, request: UpdateKnowledgeFolderRequest): Promise<KnowledgeFolder> {
+    return fetchJson<KnowledgeFolder>(`${knowledgeBasePath(namespace, base)}/folders/${folderId}`, {
+      method: 'PUT',
+      headers: await ensureCsrfHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(request),
+    })
+  },
+
+  async deleteFolder(namespace: string, base: string, folderId: number): Promise<void> {
+    await fetchJson<unknown>(`${knowledgeBasePath(namespace, base)}/folders/${folderId}`, {
+      method: 'DELETE',
+      headers: await ensureCsrfHeaders(),
+    })
+  },
+
+  listDocuments(namespace: string, base: string, query: KnowledgeDocumentQuery): Promise<KnowledgeDocumentPage> {
+    const params = new URLSearchParams()
+    if (query.folderId !== undefined) params.set('folderId', String(query.folderId))
+    if (query.q?.trim()) params.set('q', query.q.trim())
+    query.extensions?.forEach((extension) => params.append('extensions', extension))
+    if (query.ownerId) params.set('ownerId', query.ownerId)
+    if (query.updatedFrom) params.set('updatedFrom', query.updatedFrom)
+    if (query.updatedTo) params.set('updatedTo', query.updatedTo)
+    params.set('sort', query.sort ?? 'updated')
+    params.set('page', String(query.page ?? 0))
+    params.set('size', String(query.size ?? 20))
+    return fetchJson<KnowledgeDocumentPage>(`${knowledgeBasePath(namespace, base)}/documents?${params.toString()}`)
+  },
+
+  uploadDocument(
+    namespace: string,
+    base: string,
+    params: { file: File; folderId?: number; title?: string; description?: string },
+    options?: KnowledgeUploadOptions,
+  ): Promise<KnowledgeDocument> {
+    const formData = new FormData()
+    formData.append('file', params.file)
+    if (params.folderId !== undefined) formData.append('folderId', String(params.folderId))
+    if (params.title?.trim()) formData.append('title', params.title.trim())
+    if (params.description?.trim()) formData.append('description', params.description.trim())
+    return uploadWithProgress<KnowledgeDocument>(`${knowledgeBasePath(namespace, base)}/documents`, formData, options)
+  },
+
+  getDocument(documentId: number): Promise<KnowledgeDocumentDetail> {
+    return fetchJson<KnowledgeDocumentDetail>(`${KNOWLEDGE_PREFIX}/documents/${documentId}`)
+  },
+
+  async updateDocument(documentId: number, request: UpdateKnowledgeDocumentRequest): Promise<KnowledgeDocument> {
+    return fetchJson<KnowledgeDocument>(`${KNOWLEDGE_PREFIX}/documents/${documentId}`, {
+      method: 'PUT',
+      headers: await ensureCsrfHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(request),
+    })
+  },
+
+  async deleteDocument(documentId: number): Promise<void> {
+    await fetchJson<unknown>(`${KNOWLEDGE_PREFIX}/documents/${documentId}`, {
+      method: 'DELETE',
+      headers: await ensureCsrfHeaders(),
+    })
+  },
+
+  listVersions(documentId: number): Promise<KnowledgeDocumentVersion[]> {
+    return fetchJson<KnowledgeDocumentVersion[]>(`${KNOWLEDGE_PREFIX}/documents/${documentId}/versions`)
+  },
+
+  uploadVersion(
+    documentId: number,
+    params: { file: File; changeNote?: string },
+    options?: KnowledgeUploadOptions,
+  ): Promise<KnowledgeDocumentVersion> {
+    const formData = new FormData()
+    formData.append('file', params.file)
+    if (params.changeNote?.trim()) formData.append('changeNote', params.changeNote.trim())
+    return uploadWithProgress<KnowledgeDocumentVersion>(`${KNOWLEDGE_PREFIX}/documents/${documentId}/versions`, formData, options)
+  },
+
+  async restoreVersion(documentId: number, versionNumber: number, changeNote?: string): Promise<KnowledgeDocumentVersion> {
+    const params = new URLSearchParams()
+    if (changeNote?.trim()) params.set('changeNote', changeNote.trim())
+    const query = params.toString()
+    return fetchJson<KnowledgeDocumentVersion>(
+      `${KNOWLEDGE_PREFIX}/documents/${documentId}/versions/${versionNumber}/restore${query ? `?${query}` : ''}`,
+      { method: 'POST', headers: await ensureCsrfHeaders() },
+    )
+  },
+
+  /** URL that downloads (or, for previewable types, displays) a file version. */
+  contentUrl(documentId: number, options?: { version?: number; inline?: boolean }): string {
+    const params = new URLSearchParams()
+    if (options?.version !== undefined) params.set('version', String(options.version))
+    if (options?.inline) params.set('disposition', 'inline')
+    const query = params.toString()
+    return buildApiUrl(`${KNOWLEDGE_PREFIX}/documents/${documentId}/content${query ? `?${query}` : ''}`)
   },
 }

@@ -2,7 +2,6 @@ package com.iflytek.skillhub.controller.admin;
 
 import com.iflytek.skillhub.TestRedisConfig;
 import com.iflytek.skillhub.auth.rbac.PlatformPrincipal;
-import com.iflytek.skillhub.auth.device.DeviceAuthService;
 import com.iflytek.skillhub.domain.namespace.NamespaceMemberRepository;
 import com.iflytek.skillhub.dto.AuditLogItemResponse;
 import com.iflytek.skillhub.dto.PageResponse;
@@ -39,9 +38,6 @@ class AuditLogControllerTest {
 
     @MockBean
     private NamespaceMemberRepository namespaceMemberRepository;
-
-    @MockBean
-    private DeviceAuthService deviceAuthService;
 
     @MockBean
     private AdminAuditLogAppService adminAuditLogAppService;

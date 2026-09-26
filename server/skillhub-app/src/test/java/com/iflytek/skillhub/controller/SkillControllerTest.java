@@ -8,9 +8,7 @@ import com.iflytek.skillhub.domain.skill.SkillFile;
 import com.iflytek.skillhub.domain.skill.SkillVersion;
 import com.iflytek.skillhub.domain.skill.service.SkillDownloadService;
 import com.iflytek.skillhub.domain.skill.service.SkillQueryService;
-import com.iflytek.skillhub.dto.SkillSuiteReferenceResponse;
 import com.iflytek.skillhub.service.SkillLabelAppService;
-import com.iflytek.skillhub.service.SkillSuiteAppService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -25,7 +23,6 @@ import java.util.Map;
 import java.util.TimeZone;
 
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.Mockito.when;
 import static org.mockito.ArgumentMatchers.any;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -51,9 +48,6 @@ class SkillControllerTest {
 
     @MockBean
     private SkillLabelAppService skillLabelAppService;
-
-    @MockBean
-    private SkillSuiteAppService skillSuiteAppService;
 
     @Test
     void getVersionDetailShouldReturnMetadataFields() throws Exception {
@@ -188,13 +182,6 @@ class SkillControllerTest {
                         null,
                         "OWNER_PREVIEW"
                 ));
-        SkillSuiteReferenceResponse suiteReference = new SkillSuiteReferenceResponse(
-                9L, "team", "demo-suite", "Demo Suite", "2.0.0", 3,
-                true, List.of(), 0, 0);
-        when(skillSuiteAppService.findVisibleMemberships(
-                eq(1L), eq((String) null), eq(Map.of()), anySet(), eq(0), eq(20)))
-                .thenReturn(new com.iflytek.skillhub.dto.PageResponse<>(
-                        List.of(suiteReference), 1, 0, 20));
 
         mockMvc.perform(get("/api/web/skills/team/demo"))
                 .andExpect(status().isOk())
@@ -204,11 +191,8 @@ class SkillControllerTest {
                 .andExpect(jsonPath("$.data.headlineVersion.version").value("1.1.0"))
                 .andExpect(jsonPath("$.data.ownerPreviewVersion.id").value(11L))
                 .andExpect(jsonPath("$.data.resolutionMode").value("OWNER_PREVIEW"))
-                .andExpect(jsonPath("$.data.entryForSuites[0].slug").value("demo-suite"))
-                .andExpect(jsonPath("$.data.entryForSuites[0].version").value("2.0.0"))
-                .andExpect(jsonPath("$.data.entryForSuites[0].memberCount").value(3))
-                .andExpect(jsonPath("$.data.memberOfSuites.total").value(1))
-                .andExpect(jsonPath("$.data.memberOfSuites.items[0].currentSkillEntry").value(true))
+                .andExpect(jsonPath("$.data.entryForSuites").doesNotExist())
+                .andExpect(jsonPath("$.data.memberOfSuites").doesNotExist())
                 .andExpect(jsonPath("$.data.canInteract").value(false))
                 .andExpect(jsonPath("$.data.canReport").value(false));
     }

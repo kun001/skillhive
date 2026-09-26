@@ -80,15 +80,6 @@ public class ApiTokenService {
     }
 
     /**
-     * Revoke existing token with the same name (if any) and create a new one.
-     * Used by device auth flow to avoid duplicate-name errors on repeated logins.
-     */
-    @Transactional
-    public TokenCreateResult rotateToken(String userId, String name, String scopeJson) {
-        return rotateToken(userId, name, scopeJson, null);
-    }
-
-    /**
      * Rotates a token name by revoking the previous active token before issuing
      * a replacement.
      */

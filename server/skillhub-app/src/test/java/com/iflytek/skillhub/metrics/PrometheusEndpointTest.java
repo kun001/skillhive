@@ -3,7 +3,6 @@ package com.iflytek.skillhub.metrics;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.iflytek.skillhub.TestRedisConfig;
-import com.iflytek.skillhub.auth.device.DeviceAuthService;
 import com.iflytek.skillhub.domain.namespace.NamespaceMemberRepository;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.Test;
@@ -30,9 +29,6 @@ class PrometheusEndpointTest {
 
     @MockBean
     private NamespaceMemberRepository namespaceMemberRepository;
-
-    @MockBean
-    private DeviceAuthService deviceAuthService;
 
     @Test
     void metricsRegistry_stillRecordsCustomMetrics_whenPrometheusEndpointIsDisabled() {

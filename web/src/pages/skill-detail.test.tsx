@@ -177,11 +177,6 @@ vi.mock('@/features/skill/file-tree', () => ({
   FileTree: () => <div>files</div>,
 }))
 
-vi.mock('@/features/skill/install-command', () => ({
-  InstallCommand: () => <div>install</div>,
-  isPortableSkillVersion: () => true,
-}))
-
 vi.mock('@/features/social/rating-input', () => ({
   RatingInput: () => <div>__RATING_WIDGET__</div>,
 }))
@@ -412,7 +407,6 @@ describe('SkillDetailPage', () => {
     })
 
     const html = renderToStaticMarkup(<SkillDetailPage />)
-    expect(html).not.toContain('skillDetail.suiteMembershipTitle')
     expect(html).not.toContain('Research Workflow')
     expect(html).not.toContain('install')
   })

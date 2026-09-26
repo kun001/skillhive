@@ -68,7 +68,6 @@ describe('DashboardPage', () => {
     expect(html).toContain('sidebar.skillsAndData')
     expect(html).toContain('overview.mySkills')
     expect(html).toContain('hiveLanding.knowledgeLabel')
-    expect(html).not.toContain('sidebar.mySuites')
     expect(html).not.toContain('overview.publish')
   })
 })

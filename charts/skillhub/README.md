@@ -47,8 +47,7 @@ helm -n skillhub upgrade -i skillhub ./charts/skillhub \
   --set publicBaseUrl=https://skills.example.com
 ```
 
-未显式设置 `deviceAuthVerificationUri` 时，Chart 使用
-`<publicBaseUrl>/cli/auth`。所有 values 会先经过 `values.schema.json` 和跨字段校验，
+所有 values 会先经过 `values.schema.json` 和跨字段校验，
 无效的组件、Ingress、HPA 与存储组合会在安装前失败。
 
 > **Ingress values 迁移：** 当前版本只支持结构化的 `ingress.hosts[]` 和
@@ -299,20 +298,6 @@ standalone → replication、Redis standalone/replication → Sentinel 等切换
 外部 Redis Cluster 由云服务或运维系统提供，Chart 只负责注入连接配置，不创建
 Cluster，也不将其计入上述内置架构运行时验证范围。应用侧应另行验证 Spring
 Data、Spring Session 与 Redisson Stream 链路。
-
-### Skill Suite 审核滚动升级门禁
-
-Chart 默认将 `server.suiteReviewWritesEnabled` 设为 `false`，避免新旧 Server Pod 混跑时，
-旧实例读取到无法识别的 Suite 审核任务。全新安装可以直接启用：
-
-```yaml
-server:
-  suiteReviewWritesEnabled: true
-```
-
-从不支持 Suite 的版本滚动升级时，先保持 `false` 完成全部 Server Pod 升级；确认集群中不再有
-旧版实例后，再改为 `true` 并执行一次滚动更新。单实例 `compose.release.yml` 不存在混跑窗口，
-因此已默认启用。
 
 ### Redis Sentinel
 
