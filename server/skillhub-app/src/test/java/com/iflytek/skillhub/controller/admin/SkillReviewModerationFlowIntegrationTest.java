@@ -11,7 +11,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.iflytek.skillhub.SkillhubApplication;
 import com.iflytek.skillhub.TestRedisConfig;
-import com.iflytek.skillhub.auth.device.DeviceAuthService;
 import com.iflytek.skillhub.auth.rbac.PlatformPrincipal;
 import com.iflytek.skillhub.auth.rbac.RbacService;
 import com.iflytek.skillhub.domain.audit.AuditLog;
@@ -64,7 +63,6 @@ class SkillReviewModerationFlowIntegrationTest {
 
     @Autowired private AuditLogRepository auditLogRepository;
     @SpyBean private AuditLogJpaRepository auditLogJpaRepository;
-    @MockBean private DeviceAuthService deviceAuthService;
     @MockBean private RbacService rbacService;
     @MockBean private GovernanceNotificationService governanceNotificationService;
     @MockBean private NotificationService notificationService;

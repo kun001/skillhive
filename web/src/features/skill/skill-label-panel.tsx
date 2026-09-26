@@ -8,11 +8,8 @@ import { cn } from '@/shared/lib/utils'
 import {
   useAdminLabelDefinitions,
   useAttachSkillLabel,
-  useAttachSuiteLabel,
   useDetachSkillLabel,
-  useDetachSuiteLabel,
   useSkillLabels,
-  useSuiteLabels,
   useVisibleLabels,
 } from '@/shared/hooks/use-label-queries'
 
@@ -36,7 +33,7 @@ type ResourceLabelPanelProps = SkillLabelPanelProps & {
   detachLabel: (labelSlug: string, callbacks: MutationCallbacks) => void
   attachPending: boolean
   detachPending: boolean
-  translationPrefix: 'skillDetail' | 'suite'
+  translationPrefix: 'skillDetail'
 }
 
 function canManageLabelType(type: string, isSuperAdmin: boolean) {
@@ -248,27 +245,6 @@ export function SkillLabelPanel(props: SkillLabelPanelProps) {
       attachPending={attachMutation.isPending}
       detachPending={detachMutation.isPending}
       translationPrefix="skillDetail"
-    />
-  )
-}
-
-export function SuiteLabelPanel(props: SkillLabelPanelProps) {
-  const { data: labels } = useSuiteLabels(props.namespace, props.slug, props.canManage)
-  const attachMutation = useAttachSuiteLabel()
-  const detachMutation = useDetachSuiteLabel()
-  return (
-    <ResourceLabelPanel
-      {...props}
-      currentLabels={labels}
-      attachLabel={(labelSlug, callbacks) => attachMutation.mutate(
-        { namespace: props.namespace, slug: props.slug, labelSlug }, callbacks,
-      )}
-      detachLabel={(labelSlug, callbacks) => detachMutation.mutate(
-        { namespace: props.namespace, slug: props.slug, labelSlug }, callbacks,
-      )}
-      attachPending={attachMutation.isPending}
-      detachPending={detachMutation.isPending}
-      translationPrefix="suite"
     />
   )
 }

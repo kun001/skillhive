@@ -1,4 +1,4 @@
-import type { components } from './generated/knowledge'
+import type { components } from './generated/schema'
 
 type Schemas = components['schemas']
 

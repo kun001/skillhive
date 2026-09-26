@@ -48,8 +48,6 @@ import type {
   LabelDefinition,
   LabelItem,
   BatchMemberResponse,
-  SkillSuite,
-  SkillSuiteDraftInput,
 } from './types'
 import { ApiError } from '@/shared/lib/api-error'
 import type {
@@ -163,19 +161,6 @@ async function ensureCsrfHeaders(headers?: HeadersInit): Promise<HeadersInit> {
 
 function isApiEnvelope<T>(value: unknown): value is ApiEnvelope<T> {
   return typeof value === 'object' && value !== null && 'code' in value && 'msg' in value && 'data' in value
-}
-
-function unwrapOpenApiResponse<T>(data: unknown, error: unknown, response: Response): T {
-  const envelope = isApiEnvelope<T>(data)
-    ? data
-    : isApiEnvelope<T>(error)
-      ? error
-      : null
-  if (!response.ok || error || !envelope || envelope.code !== 0) {
-    const message = envelope?.msg || `HTTP ${response.status}`
-    throw new ApiError(message, response.status, envelope?.msg, envelope?.msg)
-  }
-  return envelope.data
 }
 
 export function getCsrfHeaders(headers?: HeadersInit): HeadersInit {
@@ -610,27 +595,6 @@ export const labelApi = {
     })
   },
 
-  async listSuiteLabels(namespace: string, slug: string): Promise<LabelItem[]> {
-    const cleanNamespace = normalizeNamespaceSlug(namespace)
-    return fetchJson<LabelItem[]>(`${WEB_API_PREFIX}/suites/${cleanNamespace}/${encodeURIComponent(slug)}/labels`)
-  },
-
-  async attachSuiteLabel(namespace: string, slug: string, labelSlug: string): Promise<LabelItem> {
-    const cleanNamespace = normalizeNamespaceSlug(namespace)
-    return fetchJson<LabelItem>(`${WEB_API_PREFIX}/suites/${cleanNamespace}/${encodeURIComponent(slug)}/labels/${encodeURIComponent(labelSlug)}`, {
-      method: 'PUT',
-      headers: await ensureCsrfHeaders(),
-    })
-  },
-
-  async detachSuiteLabel(namespace: string, slug: string, labelSlug: string): Promise<void> {
-    const cleanNamespace = normalizeNamespaceSlug(namespace)
-    await fetchJson<void>(`${WEB_API_PREFIX}/suites/${cleanNamespace}/${encodeURIComponent(slug)}/labels/${encodeURIComponent(labelSlug)}`, {
-      method: 'DELETE',
-      headers: await ensureCsrfHeaders(),
-    })
-  },
-
   async listAdminDefinitions(): Promise<LabelDefinition[]> {
     return fetchJson<LabelDefinition[]>('/api/v1/admin/labels')
   },
@@ -921,68 +885,6 @@ export const tokenApi = {
   },
 }
 
-export const suiteApi = {
-  async createVersion(suiteId: number, input: SkillSuiteDraftInput): Promise<SkillSuite> {
-    const { data, error, response } = await client.POST('/api/web/suites/{suiteId}/versions', {
-      params: { path: { suiteId } },
-      body: input,
-      headers: await ensureCsrfHeaders(),
-    })
-    return unwrapOpenApiResponse<SkillSuite>(data, error, response)
-  },
-
-  async reopen(suiteId: number, versionId: number): Promise<void> {
-    const { data, error, response } = await client.POST('/api/web/suites/{suiteId}/versions/{versionId}/reopen', {
-      params: { path: { suiteId, versionId } },
-      headers: await ensureCsrfHeaders(),
-    })
-    unwrapOpenApiResponse(data, error, response)
-  },
-
-  async yank(suiteId: number, versionId: number, reason: string): Promise<void> {
-    const { data, error, response } = await client.POST('/api/web/suites/{suiteId}/versions/{versionId}/yank', {
-      params: { path: { suiteId, versionId } },
-      body: { reason },
-      headers: await ensureCsrfHeaders(),
-    })
-    unwrapOpenApiResponse(data, error, response)
-  },
-
-  async setHidden(suiteId: number, hidden: boolean): Promise<void> {
-    const result = hidden
-      ? await client.POST('/api/web/suites/{suiteId}/hide', {
-        params: { path: { suiteId } },
-        headers: await ensureCsrfHeaders(),
-      })
-      : await client.POST('/api/web/suites/{suiteId}/restore', {
-        params: { path: { suiteId } },
-        headers: await ensureCsrfHeaders(),
-      })
-    unwrapOpenApiResponse(result.data, result.error, result.response)
-  },
-
-  async setArchived(suiteId: number, archived: boolean): Promise<void> {
-    const result = archived
-      ? await client.POST('/api/web/suites/{suiteId}/archive', {
-        params: { path: { suiteId } },
-        headers: await ensureCsrfHeaders(),
-      })
-      : await client.POST('/api/web/suites/{suiteId}/unarchive', {
-        params: { path: { suiteId } },
-        headers: await ensureCsrfHeaders(),
-      })
-    unwrapOpenApiResponse(result.data, result.error, result.response)
-  },
-
-  async delete(suiteId: number): Promise<void> {
-    const { data, error, response } = await client.DELETE('/api/web/suites/{suiteId}', {
-      params: { path: { suiteId } },
-      headers: await ensureCsrfHeaders(),
-    })
-    unwrapOpenApiResponse(data, error, response)
-  },
-}
-
 export const reviewApi = {
   async list(params: { status: string; namespaceId?: number; page?: number; size?: number; sortDirection?: 'ASC' | 'DESC' }) {
     const searchParams = new URLSearchParams()
@@ -1002,9 +904,8 @@ export const reviewApi = {
     return fetchJson<ReviewTask>(`${WEB_API_PREFIX}/reviews/${id}`)
   },
 
-  async listMyProgress(params: { subjectType?: string; status?: string; q?: string; page?: number; size?: number }) {
+  async listMyProgress(params: { status?: string; q?: string; page?: number; size?: number }) {
     const searchParams = new URLSearchParams()
-    if (params.subjectType) searchParams.set('subjectType', params.subjectType)
     if (params.status) searchParams.set('status', params.status)
     if (params.q) searchParams.set('q', params.q)
     searchParams.set('page', String(params.page ?? 0))

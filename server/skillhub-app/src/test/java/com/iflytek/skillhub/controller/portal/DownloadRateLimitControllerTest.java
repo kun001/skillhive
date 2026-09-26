@@ -15,7 +15,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.iflytek.skillhub.TestRedisConfig;
-import com.iflytek.skillhub.auth.device.DeviceAuthService;
 import com.iflytek.skillhub.domain.namespace.NamespaceMemberRepository;
 import com.iflytek.skillhub.domain.skill.service.SkillDownloadService;
 import com.iflytek.skillhub.domain.skill.service.SkillQueryService;
@@ -49,9 +48,6 @@ class DownloadRateLimitControllerTest {
 
     @MockBean
     private NamespaceMemberRepository namespaceMemberRepository;
-
-    @MockBean
-    private DeviceAuthService deviceAuthService;
 
     @MockBean
     private RateLimiter rateLimiter;

@@ -15,7 +15,6 @@ import com.iflytek.skillhub.dto.ResolveVersionResponse;
 import com.iflytek.skillhub.dto.SkillDetailResponse;
 import com.iflytek.skillhub.dto.SkillFileResponse;
 import com.iflytek.skillhub.dto.SkillLifecycleVersionResponse;
-import com.iflytek.skillhub.dto.SkillSuiteReferenceResponse;
 import com.iflytek.skillhub.dto.SkillVersionCompareFileResponse;
 import com.iflytek.skillhub.dto.SkillVersionCompareHunkResponse;
 import com.iflytek.skillhub.dto.SkillVersionCompareLineResponse;
@@ -26,7 +25,6 @@ import com.iflytek.skillhub.metrics.SkillHubMetrics;
 import com.iflytek.skillhub.ratelimit.RateLimit;
 import com.iflytek.skillhub.service.SkillLabelAppService;
 import com.iflytek.skillhub.service.ComplianceSnapshotProjectionService;
-import com.iflytek.skillhub.service.SkillSuiteAppService;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -57,7 +55,6 @@ public class SkillController extends BaseApiController {
     private final SkillDownloadService skillDownloadService;
     private final SkillLabelAppService skillLabelAppService;
     private final ComplianceSnapshotProjectionService complianceSnapshotProjectionService;
-    private final SkillSuiteAppService skillSuiteAppService;
     private final SkillHubMetrics metrics;
 
     public SkillController(
@@ -65,7 +62,6 @@ public class SkillController extends BaseApiController {
             SkillDownloadService skillDownloadService,
             SkillLabelAppService skillLabelAppService,
             ComplianceSnapshotProjectionService complianceSnapshotProjectionService,
-            SkillSuiteAppService skillSuiteAppService,
             SkillHubMetrics metrics,
             ApiResponseFactory responseFactory) {
         super(responseFactory);
@@ -73,7 +69,6 @@ public class SkillController extends BaseApiController {
         this.skillDownloadService = skillDownloadService;
         this.skillLabelAppService = skillLabelAppService;
         this.complianceSnapshotProjectionService = complianceSnapshotProjectionService;
-        this.skillSuiteAppService = skillSuiteAppService;
         this.metrics = metrics;
     }
 
@@ -94,9 +89,6 @@ public class SkillController extends BaseApiController {
                 ? Set.of() : principal.platformRoles();
         SkillQueryService.SkillDetailDTO detail = skillQueryService.getSkillDetail(
                 namespace, slug, userId, namespaceRoles);
-        PageResponse<SkillSuiteReferenceResponse> memberOfSuites =
-                skillSuiteAppService.findVisibleMemberships(
-                        detail.id(), userId, namespaceRoles, platformRoles, 0, 20);
 
         SkillDetailResponse response = new SkillDetailResponse(
                 detail.id(),
@@ -123,35 +115,10 @@ public class SkillController extends BaseApiController {
                 toLifecycleVersion(detail.publishedVersion()),
                 toLifecycleVersion(detail.ownerPreviewVersion()),
                 detail.ownerPreviewReviewComment(),
-                detail.resolutionMode(),
-                memberOfSuites.items().stream()
-                        .filter(SkillSuiteReferenceResponse::currentSkillEntry)
-                        .toList(),
-                memberOfSuites
+                detail.resolutionMode()
         );
 
         return ok("response.success.read", response);
-    }
-
-    /** Returns a bounded page of visible current Suite snapshots containing this Skill. */
-    @GetMapping("/{namespace}/{slug}/suite-memberships")
-    public ApiResponse<PageResponse<SkillSuiteReferenceResponse>>
-            listSuiteMemberships(
-                    @PathVariable String namespace,
-                    @PathVariable String slug,
-                    @RequestParam(defaultValue = "0") int page,
-                    @RequestParam(defaultValue = "20") int size,
-                    @RequestAttribute(value = "userId", required = false) String userId,
-                    @RequestAttribute(value = "userNsRoles", required = false)
-                            Map<Long, NamespaceRole> userNsRoles,
-                    @AuthenticationPrincipal PlatformPrincipal principal) {
-        Map<Long, NamespaceRole> namespaceRoles = userNsRoles != null ? userNsRoles : Map.of();
-        Set<String> platformRoles = principal == null || principal.platformRoles() == null
-                ? Set.of() : principal.platformRoles();
-        SkillQueryService.SkillDetailDTO detail = skillQueryService.getSkillDetail(
-                namespace, slug, userId, namespaceRoles);
-        return ok("response.success.read", skillSuiteAppService.findVisibleMemberships(
-                detail.id(), userId, namespaceRoles, platformRoles, page, size));
     }
 
     /**

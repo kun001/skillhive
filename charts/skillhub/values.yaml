@@ -13,9 +13,8 @@ images:
 nameOverride: ""
 fullnameOverride: ""
 
-# 浏览器、CLI 和 OAuth 回调访问的公开地址（不带末尾斜杠）
+# 浏览器和 OAuth 回调访问的公开地址（不带末尾斜杠）
 publicBaseUrl: ""
-deviceAuthVerificationUri: ""
 
 auth:
   direct:
@@ -298,10 +297,6 @@ externalRedis:
 server:
   enabled: true
   replicaCount: 1
-
-  # Keep false while old and new Server versions overlap. Set true after every active
-  # Server instance supports typed review subjects; fresh non-rolling installs may enable it directly.
-  suiteReviewWritesEnabled: false
 
   image:
     registry: ""

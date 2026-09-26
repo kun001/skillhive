@@ -85,14 +85,7 @@
 
 ## API 类型生成
 
-`web/src/api/generated/schema.d.ts` 仍包含后端已不再提供的上游套件/CLI 契约（即使启用 `skillhive-legacy` profile），整体重新生成会让存量套件页面编译失败。因此知识库接口的类型单独生成到 `web/src/api/generated/knowledge.d.ts`：
-
-```bash
-# 后端运行在 :8080 时
-cd web && pnpm run generate-api:knowledge
-```
-
-脚本 `web/scripts/generate-knowledge-api.mjs` 只保留 `/api/web/knowledge` 路径及其引用的 schema，再交给 openapi-typescript 生成。两份生成文件都不要手工修改。待存量套件前端清理后，可恢复为单一的 `make generate-api`。
+知识库接口的前端类型与其他接口一样，由 `make generate-api` 生成到 `web/src/api/generated/schema.d.ts`（需要后端运行在 :8080），`web/src/api/knowledge-types.ts` 在此基础上声明必填字段。最初因存量套件契约无法整体重新生成，曾临时单独生成 `knowledge.d.ts`；套件与 CLI 代码删除后已恢复为单一生成文件。
 
 ## 实现中的注意点
 

@@ -77,8 +77,6 @@ spec:
               {{- $profiles = printf "%s,redis-sentinel" $profiles }}
               {{- end }}
               value: {{ $profiles | quote }}
-            - name: SKILLHUB_SUITE_REVIEW_WRITES_ENABLED
-              value: {{ .Values.server.suiteReviewWritesEnabled | quote }}
 
             # Database
             - name: SPRING_DATASOURCE_URL
@@ -287,11 +285,6 @@ spec:
                 configMapKeyRef:
                   name: {{ include "skillhub.fullname" . }}-config
                   key: public-base-url
-            - name: DEVICE_AUTH_VERIFICATION_URI
-              valueFrom:
-                configMapKeyRef:
-                  name: {{ include "skillhub.fullname" . }}-config
-                  key: device-auth-verification-uri
             - name: SKILLHUB_AUTH_DIRECT_ENABLED
               valueFrom:
                 configMapKeyRef:

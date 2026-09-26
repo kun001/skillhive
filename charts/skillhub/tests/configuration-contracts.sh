@@ -37,8 +37,6 @@ fi
 grep -Fq 'fsGroup: 101' "$TMP_DIR/default.yaml"
 grep -Fq 'fsGroupChangePolicy: OnRootMismatch' "$TMP_DIR/default.yaml"
 grep -Fq 'type: Recreate' "$TMP_DIR/default.yaml"
-grep -A1 -F 'name: SKILLHUB_SUITE_REVIEW_WRITES_ENABLED' "$TMP_DIR/default.yaml" \
-  | grep -Fq 'value: "false"'
 if grep -Fq 'name: OAUTH2_FEISHU_REDIRECT_URI' "$TMP_DIR/default.yaml"; then
   fail "default Helm rendering must omit an empty Feishu redirect URI so Spring can derive baseUrl"
 fi
@@ -59,12 +57,6 @@ render dingtalk-redirect "$CHART_DIR" \
 grep -A1 -F 'name: OAUTH2_DINGTALK_REDIRECT_URI' "$TMP_DIR/dingtalk-redirect.yaml" \
   | grep -Fq 'value: "https://skills.example.com/login/oauth2/code/dingtalk"' \
   || fail "Helm must inject an explicitly configured DingTalk redirect URI"
-
-render suite-review-enabled "$CHART_DIR" \
-  --set server.suiteReviewWritesEnabled=true \
-  --show-only templates/server-deployment.yaml >"$TMP_DIR/suite-review-enabled.yaml"
-grep -A1 -F 'name: SKILLHUB_SUITE_REVIEW_WRITES_ENABLED' "$TMP_DIR/suite-review-enabled.yaml" \
-  | grep -Fq 'value: "true"'
 
 render custom-server-fsgroup "$CHART_DIR" \
   --set server.podSecurityContext.fsGroup=2000 \
@@ -226,10 +218,13 @@ render special "$CHART_DIR" \
   --show-only templates/configmap.yaml >"$TMP_DIR/special.yaml"
 grep -Fq 'bootstrap-admin-display-name: "Ops: Admin"' "$TMP_DIR/special.yaml"
 
-render device "$CHART_DIR" \
+render public-url "$CHART_DIR" \
   --set publicBaseUrl=https://skills.example.com \
-  --show-only templates/configmap.yaml >"$TMP_DIR/device.yaml"
-grep -Fq 'device-auth-verification-uri: "https://skills.example.com/cli/auth"' "$TMP_DIR/device.yaml"
+  --show-only templates/configmap.yaml >"$TMP_DIR/public-url.yaml"
+grep -Fq 'public-base-url: "https://skills.example.com"' "$TMP_DIR/public-url.yaml"
+if grep -Fq 'device-auth-verification-uri' "$TMP_DIR/public-url.yaml"; then
+  fail "device login was removed; the chart must not render its verification URI"
+fi
 
 render tls "$CHART_DIR" \
   --set ingress.enabled=true \
@@ -393,7 +388,7 @@ assert_rejected subpath-reserved-assets --set-string web.basePath=/assets/
 assert_rejected subpath-reserved-well-known --set-string web.basePath=/.well-known/
 assert_rejected subpath-reserved-nested --set-string web.basePath=/api/nested/
 
-# publicBaseUrl is concatenated with paths (/cli/auth, /.well-known/clawhub.json),
+# publicBaseUrl is concatenated with application paths (for example OAuth callbacks),
 # so a query or fragment corrupts the generated URLs. Reject it independently of
 # web.basePath (these cases use the default root deployment).
 assert_rejected public-base-url-query --set-string publicBaseUrl=https://skills.example.com/skillhub?ref=1

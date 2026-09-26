@@ -2,7 +2,6 @@ package com.iflytek.skillhub.controller.portal;
 
 import com.iflytek.skillhub.SkillhubApplication;
 import com.iflytek.skillhub.TestRedisConfig;
-import com.iflytek.skillhub.auth.device.DeviceAuthService;
 import com.iflytek.skillhub.auth.rbac.PlatformPrincipal;
 import com.iflytek.skillhub.auth.rbac.RbacService;
 import com.iflytek.skillhub.domain.audit.AuditLogRepository;
@@ -77,9 +76,6 @@ class SkillApprovalVisibilityFlowIntegrationTest {
 
     @MockBean
     private NamespaceMemberRepository namespaceMemberRepository;
-
-    @MockBean
-    private DeviceAuthService deviceAuthService;
 
     @MockBean
     private SearchEmbeddingService searchEmbeddingService;

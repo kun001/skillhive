@@ -101,7 +101,7 @@ class AuthContextFilterTest {
     void disabledSessionUser_shouldContinuePublicGetAsAnonymous() throws Exception {
         PlatformPrincipal principal = principal("user-public");
         UserAccount user = disabledUser("user-public");
-        MockHttpServletRequest request = authenticatedRequest("GET", "/api/v1/skills", principal);
+        MockHttpServletRequest request = authenticatedRequest("GET", "/api/web/skills", principal);
         MockHttpSession session = (MockHttpSession) request.getSession(false);
         MockHttpServletResponse response = new MockHttpServletResponse();
         FilterChain filterChain = mock(FilterChain.class);
@@ -119,7 +119,7 @@ class AuthContextFilterTest {
     @Test
     void disabledSessionUser_shouldBlockProtectedMethodOnOtherwisePublicPath() throws Exception {
         PlatformPrincipal principal = principal("user-protected");
-        MockHttpServletRequest request = authenticatedRequest("POST", "/api/v1/skills", principal);
+        MockHttpServletRequest request = authenticatedRequest("POST", "/api/web/skills", principal);
         MockHttpServletResponse response = new MockHttpServletResponse();
         FilterChain filterChain = mock(FilterChain.class);
         when(userAccountRepository.findById("user-protected"))
@@ -134,7 +134,7 @@ class AuthContextFilterTest {
     @Test
     void missingSessionUser_shouldBeClearedOnceAndNotResurrectedOnNextPublicRequest() throws Exception {
         PlatformPrincipal principal = principal("deleted-user");
-        MockHttpServletRequest firstRequest = authenticatedRequest("GET", "/api/v1/search", principal);
+        MockHttpServletRequest firstRequest = authenticatedRequest("GET", "/api/web/skills", principal);
         MockHttpSession session = (MockHttpSession) firstRequest.getSession(false);
         FilterChain firstChain = mock(FilterChain.class);
         when(userAccountRepository.findById("deleted-user")).thenReturn(java.util.Optional.empty());
@@ -144,7 +144,7 @@ class AuthContextFilterTest {
 
         MockHttpServletRequest secondRequest = new MockHttpServletRequest();
         secondRequest.setMethod("GET");
-        secondRequest.setRequestURI("/api/v1/search");
+        secondRequest.setRequestURI("/api/web/skills");
         secondRequest.setSession(session);
         FilterChain secondChain = mock(FilterChain.class);
         filter.doFilter(secondRequest, new MockHttpServletResponse(), secondChain);

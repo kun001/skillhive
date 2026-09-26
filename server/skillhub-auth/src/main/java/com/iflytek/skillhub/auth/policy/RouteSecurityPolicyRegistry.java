@@ -18,9 +18,6 @@ public class RouteSecurityPolicyRegistry {
 
     private static final List<RouteAuthorizationPolicy> AUTHORIZATION_POLICIES = List.of(
             RouteAuthorizationPolicy.permitAll(null, "/api/v1/health"),
-            RouteAuthorizationPolicy.permitAll(null, "/api/v1/search"),
-            RouteAuthorizationPolicy.permitAll(null, "/api/v1/resolve/**"),
-            RouteAuthorizationPolicy.permitAll(null, "/api/v1/download/**"),
             RouteAuthorizationPolicy.permitAll(null, "/api/v1/auth/providers"),
             RouteAuthorizationPolicy.permitAll(null, "/api/v1/auth/methods"),
             RouteAuthorizationPolicy.permitAll(null, "/api/v1/auth/me"),
@@ -29,12 +26,9 @@ public class RouteSecurityPolicyRegistry {
             RouteAuthorizationPolicy.permitAll(null, "/oauth2/authorization/**"),
             RouteAuthorizationPolicy.permitAll(null, "/login/oauth2/**"),
             RouteAuthorizationPolicy.permitAll(null, "/api/v1/auth/local/**"),
-            RouteAuthorizationPolicy.permitAll(null, "/api/v1/auth/device/**"),
-            RouteAuthorizationPolicy.permitAll(null, "/api/v1/check"),
             RouteAuthorizationPolicy.permitAll(null, "/actuator/health"),
             RouteAuthorizationPolicy.permitAll(null, "/v3/api-docs/**"),
             RouteAuthorizationPolicy.permitAll(null, "/swagger-ui/**"),
-            RouteAuthorizationPolicy.permitAll(null, "/.well-known/**"),
             RouteAuthorizationPolicy.roles(null, "/actuator/prometheus", "SUPER_ADMIN", "AUDITOR"),
             RouteAuthorizationPolicy.authenticated(HttpMethod.GET, "/api/v1/skills/*/star"),
             RouteAuthorizationPolicy.authenticated(HttpMethod.PUT, "/api/v1/skills/*/star"),
@@ -54,7 +48,6 @@ public class RouteSecurityPolicyRegistry {
             RouteAuthorizationPolicy.authenticated(HttpMethod.GET, "/api/web/skills/*/reviews/me"),
             RouteAuthorizationPolicy.authenticated(HttpMethod.PUT, "/api/web/skills/*/reviews/me"),
             RouteAuthorizationPolicy.authenticated(HttpMethod.DELETE, "/api/web/skills/*/reviews/me"),
-            RouteAuthorizationPolicy.permitAll(HttpMethod.GET, "/api/v1/skills"),
             RouteAuthorizationPolicy.permitAll(HttpMethod.GET, "/api/v1/skills/*/*"),
             RouteAuthorizationPolicy.permitAll(HttpMethod.GET, "/api/v1/skills/*/*/versions"),
             RouteAuthorizationPolicy.permitAll(HttpMethod.GET, "/api/v1/skills/*/*/versions/*"),
@@ -84,62 +77,6 @@ public class RouteSecurityPolicyRegistry {
             RouteAuthorizationPolicy.permitAll(HttpMethod.GET, "/api/web/skills/*/*/tags/*/files"),
             RouteAuthorizationPolicy.permitAll(HttpMethod.GET, "/api/web/skills/*/*/tags/*/file"),
             RouteAuthorizationPolicy.permitAll(HttpMethod.GET, "/api/web/labels"),
-            RouteAuthorizationPolicy.permitAll(HttpMethod.GET, "/api/v1/suites/*/*"),
-            RouteAuthorizationPolicy.permitAll(HttpMethod.GET, "/api/v1/suites/*/*/labels"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.PUT, "/api/v1/suites/*/*/labels/*"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.DELETE, "/api/v1/suites/*/*/labels/*"),
-            RouteAuthorizationPolicy.permitAll(HttpMethod.GET, "/api/v1/resources"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.GET, "/api/v1/me/suites"),
-            RouteAuthorizationPolicy.permitAll(HttpMethod.GET, "/api/v1/suites/*/*/versions"),
-            RouteAuthorizationPolicy.permitAll(HttpMethod.POST, "/api/v1/suites/*/*/install-plan"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.GET, "/api/v1/suites/member-candidates"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.POST, "/api/v1/suites"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.POST, "/api/v1/suites/*/versions"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.PUT, "/api/v1/suites/*/versions/*"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.POST, "/api/v1/suites/*/versions/*/submit"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.POST, "/api/v1/suites/*/versions/*/publish"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.POST, "/api/v1/suites/*/versions/*/reopen"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.POST, "/api/v1/suites/*/versions/*/yank"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.POST, "/api/v1/suites/*/hide"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.POST, "/api/v1/suites/*/restore"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.POST, "/api/v1/suites/*/archive"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.POST, "/api/v1/suites/*/unarchive"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.DELETE, "/api/v1/suites/*"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.POST, "/api/v1/suites/reviews/*/approve"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.POST, "/api/v1/suites/reviews/*/reject"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.POST, "/api/v1/suite-bundles/preview"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.POST, "/api/v1/suite-bundles/previews/*/confirm"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.GET, "/api/v1/suite-bundles/operations/*"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.POST, "/api/v1/suite-bundles/operations/*/cancel"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.POST, "/api/v1/suite-bundles/operations/*/retry"),
-            RouteAuthorizationPolicy.permitAll(HttpMethod.GET, "/api/web/suites/*/*"),
-            RouteAuthorizationPolicy.permitAll(HttpMethod.GET, "/api/web/suites/*/*/labels"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.PUT, "/api/web/suites/*/*/labels/*"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.DELETE, "/api/web/suites/*/*/labels/*"),
-            RouteAuthorizationPolicy.permitAll(HttpMethod.GET, "/api/web/resources"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.GET, "/api/web/me/suites"),
-            RouteAuthorizationPolicy.permitAll(HttpMethod.GET, "/api/web/suites/*/*/versions"),
-            RouteAuthorizationPolicy.permitAll(HttpMethod.POST, "/api/web/suites/*/*/install-plan"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.GET, "/api/web/suites/member-candidates"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.POST, "/api/web/suites"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.POST, "/api/web/suites/*/versions"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.PUT, "/api/web/suites/*/versions/*"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.POST, "/api/web/suites/*/versions/*/submit"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.POST, "/api/web/suites/*/versions/*/publish"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.POST, "/api/web/suites/*/versions/*/reopen"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.POST, "/api/web/suites/*/versions/*/yank"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.POST, "/api/web/suites/*/hide"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.POST, "/api/web/suites/*/restore"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.POST, "/api/web/suites/*/archive"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.POST, "/api/web/suites/*/unarchive"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.DELETE, "/api/web/suites/*"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.POST, "/api/web/suites/reviews/*/approve"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.POST, "/api/web/suites/reviews/*/reject"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.POST, "/api/web/suite-bundles/preview"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.POST, "/api/web/suite-bundles/previews/*/confirm"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.GET, "/api/web/suite-bundles/operations/*"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.POST, "/api/web/suite-bundles/operations/*/cancel"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.POST, "/api/web/suite-bundles/operations/*/retry"),
             RouteAuthorizationPolicy.roles(HttpMethod.DELETE, "/api/v1/skills/id/*", "SUPER_ADMIN"),
             RouteAuthorizationPolicy.roles(HttpMethod.DELETE, "/api/v1/skills/*/*", "SUPER_ADMIN"),
             RouteAuthorizationPolicy.authenticated(HttpMethod.DELETE, "/api/web/skills/id/*"),
@@ -148,16 +85,7 @@ public class RouteSecurityPolicyRegistry {
             RouteAuthorizationPolicy.authenticated(HttpMethod.GET, "/api/v1/namespaces/*"),
             RouteAuthorizationPolicy.authenticated(HttpMethod.GET, "/api/web/namespaces"),
             RouteAuthorizationPolicy.authenticated(HttpMethod.GET, "/api/web/namespaces/*"),
-            RouteAuthorizationPolicy.authenticated(null, "/api/v1/admin/**"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.GET, "/api/cli/v1/auth/whoami"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.GET, "/api/cli/v1/namespaces/*/skills"),
-            RouteAuthorizationPolicy.permitAll(HttpMethod.GET, "/api/cli/v1/skills/search"),
-            RouteAuthorizationPolicy.permitAll(HttpMethod.GET, "/api/cli/v1/skills/*/*/resolve"),
-            RouteAuthorizationPolicy.permitAll(HttpMethod.GET, "/api/cli/v1/skills/*/*/download"),
-            RouteAuthorizationPolicy.permitAll(HttpMethod.GET, "/api/cli/v1/skills/*/*/versions/*/download"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.DELETE, "/api/cli/v1/skills/*/*"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.POST, "/api/cli/v1/skills/*/publish"),
-            RouteAuthorizationPolicy.authenticated(HttpMethod.POST, "/api/cli/v1/skills/*/publish/validate")
+            RouteAuthorizationPolicy.authenticated(null, "/api/v1/admin/**")
     );
 
     private static final List<ApiTokenPolicy> API_TOKEN_POLICIES = List.of(
@@ -165,11 +93,6 @@ public class RouteSecurityPolicyRegistry {
             ApiTokenPolicy.allow(null, "/api/v1/auth/providers"),
             ApiTokenPolicy.allow(null, "/api/v1/auth/methods"),
             ApiTokenPolicy.allow(null, "/api/v1/auth/me"),
-            ApiTokenPolicy.allow(null, "/api/v1/auth/device/**"),
-            ApiTokenPolicy.allow(null, "/api/v1/check"),
-            ApiTokenPolicy.allow(HttpMethod.GET, "/api/v1/whoami"),
-            ApiTokenPolicy.allow(HttpMethod.GET, "/api/v1/search"),
-            ApiTokenPolicy.allow(HttpMethod.GET, "/api/v1/skills"),
             ApiTokenPolicy.allow(HttpMethod.GET, "/api/v1/skills/**"),
             ApiTokenPolicy.allow(HttpMethod.GET, "/api/web/skills"),
             ApiTokenPolicy.allow(HttpMethod.GET, "/api/web/skills/**"),
@@ -189,56 +112,6 @@ public class RouteSecurityPolicyRegistry {
             ApiTokenPolicy.allow(HttpMethod.GET, "/api/v1/namespaces/*"),
             ApiTokenPolicy.allow(HttpMethod.GET, "/api/web/namespaces"),
             ApiTokenPolicy.allow(HttpMethod.GET, "/api/web/namespaces/*"),
-            ApiTokenPolicy.allow(HttpMethod.GET, "/api/v1/suites/**"),
-            ApiTokenPolicy.require(HttpMethod.PUT, "/api/v1/suites/*/*/labels/*", "skill:publish"),
-            ApiTokenPolicy.require(HttpMethod.DELETE, "/api/v1/suites/*/*/labels/*", "skill:publish"),
-            ApiTokenPolicy.allow(HttpMethod.GET, "/api/v1/resources"),
-            ApiTokenPolicy.require(HttpMethod.GET, "/api/v1/me/suites", "skill:read"),
-            ApiTokenPolicy.allow(HttpMethod.POST, "/api/v1/suites/*/*/install-plan"),
-            ApiTokenPolicy.require(HttpMethod.POST, "/api/v1/suites", "skill:publish"),
-            ApiTokenPolicy.require(HttpMethod.POST, "/api/v1/suites/*/versions", "skill:publish"),
-            ApiTokenPolicy.require(HttpMethod.PUT, "/api/v1/suites/*/versions/*", "skill:publish"),
-            ApiTokenPolicy.require(HttpMethod.POST, "/api/v1/suites/*/versions/*/submit", "skill:publish"),
-            ApiTokenPolicy.require(HttpMethod.POST, "/api/v1/suites/*/versions/*/publish", "skill:publish"),
-            ApiTokenPolicy.require(HttpMethod.POST, "/api/v1/suites/*/versions/*/reopen", "skill:publish"),
-            ApiTokenPolicy.require(HttpMethod.POST, "/api/v1/suites/*/versions/*/yank", "skill:publish"),
-            ApiTokenPolicy.require(HttpMethod.POST, "/api/v1/suites/*/hide", "skill:publish"),
-            ApiTokenPolicy.require(HttpMethod.POST, "/api/v1/suites/*/restore", "skill:publish"),
-            ApiTokenPolicy.require(HttpMethod.POST, "/api/v1/suites/*/archive", "skill:publish"),
-            ApiTokenPolicy.require(HttpMethod.POST, "/api/v1/suites/*/unarchive", "skill:publish"),
-            ApiTokenPolicy.require(HttpMethod.DELETE, "/api/v1/suites/*", "skill:delete"),
-            ApiTokenPolicy.require(HttpMethod.POST, "/api/v1/suite-bundles/preview", "skill:publish"),
-            ApiTokenPolicy.require(HttpMethod.POST, "/api/v1/suite-bundles/previews/*/confirm", "skill:publish"),
-            ApiTokenPolicy.require(HttpMethod.GET, "/api/v1/suite-bundles/operations/*", "skill:publish"),
-            ApiTokenPolicy.require(HttpMethod.POST, "/api/v1/suite-bundles/operations/*/cancel", "skill:publish"),
-            ApiTokenPolicy.require(HttpMethod.POST, "/api/v1/suite-bundles/operations/*/retry", "skill:publish"),
-            ApiTokenPolicy.allow(HttpMethod.GET, "/api/web/suites/**"),
-            ApiTokenPolicy.require(HttpMethod.PUT, "/api/web/suites/*/*/labels/*", "skill:publish"),
-            ApiTokenPolicy.require(HttpMethod.DELETE, "/api/web/suites/*/*/labels/*", "skill:publish"),
-            ApiTokenPolicy.allow(HttpMethod.GET, "/api/web/resources"),
-            ApiTokenPolicy.require(HttpMethod.GET, "/api/web/me/suites", "skill:read"),
-            ApiTokenPolicy.allow(HttpMethod.POST, "/api/web/suites/*/*/install-plan"),
-            ApiTokenPolicy.require(HttpMethod.POST, "/api/web/suites", "skill:publish"),
-            ApiTokenPolicy.require(HttpMethod.POST, "/api/web/suites/*/versions", "skill:publish"),
-            ApiTokenPolicy.require(HttpMethod.PUT, "/api/web/suites/*/versions/*", "skill:publish"),
-            ApiTokenPolicy.require(HttpMethod.POST, "/api/web/suites/*/versions/*/submit", "skill:publish"),
-            ApiTokenPolicy.require(HttpMethod.POST, "/api/web/suites/*/versions/*/publish", "skill:publish"),
-            ApiTokenPolicy.require(HttpMethod.POST, "/api/web/suites/*/versions/*/reopen", "skill:publish"),
-            ApiTokenPolicy.require(HttpMethod.POST, "/api/web/suites/*/versions/*/yank", "skill:publish"),
-            ApiTokenPolicy.require(HttpMethod.POST, "/api/web/suites/*/hide", "skill:publish"),
-            ApiTokenPolicy.require(HttpMethod.POST, "/api/web/suites/*/restore", "skill:publish"),
-            ApiTokenPolicy.require(HttpMethod.POST, "/api/web/suites/*/archive", "skill:publish"),
-            ApiTokenPolicy.require(HttpMethod.POST, "/api/web/suites/*/unarchive", "skill:publish"),
-            ApiTokenPolicy.require(HttpMethod.DELETE, "/api/web/suites/*", "skill:delete"),
-            ApiTokenPolicy.require(HttpMethod.POST, "/api/web/suite-bundles/preview", "skill:publish"),
-            ApiTokenPolicy.require(HttpMethod.POST, "/api/web/suite-bundles/previews/*/confirm", "skill:publish"),
-            ApiTokenPolicy.require(HttpMethod.GET, "/api/web/suite-bundles/operations/*", "skill:publish"),
-            ApiTokenPolicy.require(HttpMethod.POST, "/api/web/suite-bundles/operations/*/cancel", "skill:publish"),
-            ApiTokenPolicy.require(HttpMethod.POST, "/api/web/suite-bundles/operations/*/retry", "skill:publish"),
-            ApiTokenPolicy.allow(HttpMethod.GET, "/api/v1/resolve/**"),
-            ApiTokenPolicy.allow(HttpMethod.GET, "/api/v1/download"),
-            ApiTokenPolicy.allow(HttpMethod.GET, "/api/v1/download/**"),
-            ApiTokenPolicy.allow(null, "/.well-known/**"),
             ApiTokenPolicy.allow(null, "/actuator/health"),
             ApiTokenPolicy.allow(null, "/v3/api-docs/**"),
             ApiTokenPolicy.allow(null, "/swagger-ui/**"),
@@ -262,20 +135,9 @@ public class RouteSecurityPolicyRegistry {
             ApiTokenPolicy.require(HttpMethod.POST, "/api/web/skills/*/*/confirm-publish", "skill:publish"),
             ApiTokenPolicy.require(HttpMethod.POST, "/api/v1/skills/*/*/versions/*/yank", "skill:publish"),
             ApiTokenPolicy.require(HttpMethod.POST, "/api/web/skills/*/*/versions/*/yank", "skill:publish"),
-            ApiTokenPolicy.require(HttpMethod.POST, "/api/v1/skills", "skill:publish"),
             ApiTokenPolicy.require(HttpMethod.POST, "/api/v1/skills/*/publish", "skill:publish"),
             ApiTokenPolicy.require(HttpMethod.POST, "/api/v1/skills/*/versions/*/security-audit/retry", "skill:publish"),
-            ApiTokenPolicy.require(HttpMethod.POST, "/api/web/skills/*/publish", "skill:publish"),
-            ApiTokenPolicy.require(HttpMethod.POST, "/api/v1/publish", "skill:publish"),
-            ApiTokenPolicy.allow(HttpMethod.GET, "/api/cli/v1/auth/whoami"),
-            ApiTokenPolicy.allow(HttpMethod.GET, "/api/cli/v1/namespaces/*/skills"),
-            ApiTokenPolicy.allow(HttpMethod.GET, "/api/cli/v1/skills/search"),
-            ApiTokenPolicy.allow(HttpMethod.GET, "/api/cli/v1/skills/*/*/resolve"),
-            ApiTokenPolicy.allow(HttpMethod.GET, "/api/cli/v1/skills/*/*/download"),
-            ApiTokenPolicy.allow(HttpMethod.GET, "/api/cli/v1/skills/*/*/versions/*/download"),
-            ApiTokenPolicy.require(HttpMethod.DELETE, "/api/cli/v1/skills/*/*", "skill:delete"),
-            ApiTokenPolicy.require(HttpMethod.POST, "/api/cli/v1/skills/*/publish", "skill:publish"),
-            ApiTokenPolicy.require(HttpMethod.POST, "/api/cli/v1/skills/*/publish/validate", "skill:publish")
+            ApiTokenPolicy.require(HttpMethod.POST, "/api/web/skills/*/publish", "skill:publish")
     );
 
     /**
@@ -283,8 +145,8 @@ public class RouteSecurityPolicyRegistry {
      * {@code "<METHOD|ANY> <pattern>"} to match {@link #routeKey(HttpMethod, String)}.
      *
      * <p>These are browser-session surfaces: the interactive login flows, the admin console,
-     * and skill deletion through the web surface, which goes through {@code /api/v1} or
-     * {@code /api/cli/v1} with the {@code skill:delete} scope instead. Bearer tokens are
+     * and skill deletion through the web surface, which goes through {@code /api/v1} with the
+     * {@code skill:delete} scope instead. Bearer tokens are
      * deliberately rejected on exactly these routes and nowhere else &mdash; anything else the
      * authorization list opens must also be reachable with a token holding the required scope.</p>
      */
@@ -293,10 +155,6 @@ public class RouteSecurityPolicyRegistry {
             "ANY /api/v1/auth/direct/login",
             "ANY /api/v1/auth/local/**",
             "ANY /api/v1/admin/**",
-            "POST /api/v1/suites/reviews/*/approve",
-            "POST /api/v1/suites/reviews/*/reject",
-            "POST /api/web/suites/reviews/*/approve",
-            "POST /api/web/suites/reviews/*/reject",
             "DELETE /api/web/skills/id/*",
             "DELETE /api/web/skills/*/*"
     );
@@ -376,17 +234,7 @@ public class RouteSecurityPolicyRegistry {
     }
 
     public boolean shouldIgnoreCsrf(String method, String path, String authorizationHeader, boolean hasSessionCookie) {
-        if (!hasSessionCookie && authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-            return true;
-        }
-        if (path == null) {
-            return false;
-        }
-        if (!"POST".equalsIgnoreCase(method)) {
-            return false;
-        }
-        return "/api/v1/auth/device/code".equals(path)
-                || "/api/v1/auth/device/token".equals(path);
+        return !hasSessionCookie && authorizationHeader != null && authorizationHeader.startsWith("Bearer ");
     }
 
     public boolean shouldProjectRequestContext(String path) {

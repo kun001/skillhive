@@ -1,7 +1,6 @@
 package com.iflytek.skillhub.metrics;
 
 import com.iflytek.skillhub.TestRedisConfig;
-import com.iflytek.skillhub.auth.device.DeviceAuthService;
 import com.iflytek.skillhub.domain.namespace.NamespaceMemberRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,9 +25,6 @@ class PrometheusSecurityTest {
 
     @MockBean
     private NamespaceMemberRepository namespaceMemberRepository;
-
-    @MockBean
-    private DeviceAuthService deviceAuthService;
 
     @Test
     void prometheusEndpointShouldNotBeAnonymous() throws Exception {

@@ -1,6 +1,5 @@
 package com.iflytek.skillhub.controller;
 
-import com.iflytek.skillhub.auth.device.DeviceAuthService;
 import com.iflytek.skillhub.auth.rbac.PlatformPrincipal;
 import com.iflytek.skillhub.domain.namespace.Namespace;
 import com.iflytek.skillhub.domain.namespace.NamespaceMember;
@@ -65,9 +64,6 @@ class NamespaceWorkflowContractTest {
 
     @MockBean
     private NamespaceMemberRepository namespaceMemberRepository;
-
-    @MockBean
-    private DeviceAuthService deviceAuthService;
 
     @Test
     void namespaceWorkflowEndpoints_shareExpectedEnvelopeShapes() throws Exception {

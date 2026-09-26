@@ -29,7 +29,7 @@
 {{- fail (printf "publicBaseUrl must be an absolute http(s) URL with a host (e.g. https://skills.example.com): %s" .Values.publicBaseUrl) -}}
 {{- end -}}
 {{- if regexMatch "[?#]" .Values.publicBaseUrl -}}
-{{- fail (printf "publicBaseUrl must not contain a query ('?') or fragment ('#'); it is concatenated with paths like /cli/auth and /.well-known/clawhub.json: %s" .Values.publicBaseUrl) -}}
+{{- fail (printf "publicBaseUrl must not contain a query ('?') or fragment ('#'); it is concatenated with application paths such as OAuth callbacks: %s" .Values.publicBaseUrl) -}}
 {{- end -}}
 {{- end -}}
 
@@ -46,7 +46,7 @@
 {{- if .Values.publicBaseUrl -}}
 {{- $publicPath := trimSuffix "/" (regexReplaceAll "^[a-zA-Z][a-zA-Z0-9+.-]*://[^/]+" .Values.publicBaseUrl "") -}}
 {{- if ne $publicPath $suffix -}}
-{{- fail (printf "publicBaseUrl path (%s) must equal web.basePath without its trailing slash (%s) so CLI, install, and Quick Start URLs keep the prefix" $publicPath $suffix) -}}
+{{- fail (printf "publicBaseUrl path (%s) must equal web.basePath without its trailing slash (%s) so generated links and OAuth callbacks keep the prefix" $publicPath $suffix) -}}
 {{- end -}}
 {{- end -}}
 {{- $apiBase := .Values.web.apiBaseUrl | default "" -}}

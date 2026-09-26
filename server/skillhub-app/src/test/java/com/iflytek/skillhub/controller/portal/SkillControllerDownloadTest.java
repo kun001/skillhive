@@ -8,7 +8,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.iflytek.skillhub.TestRedisConfig;
-import com.iflytek.skillhub.auth.device.DeviceAuthService;
 import com.iflytek.skillhub.domain.namespace.NamespaceMemberRepository;
 import com.iflytek.skillhub.domain.shared.exception.DomainForbiddenException;
 import com.iflytek.skillhub.domain.skill.service.SkillDownloadService;
@@ -46,9 +45,6 @@ class SkillControllerDownloadTest {
 
     @MockBean
     private NamespaceMemberRepository namespaceMemberRepository;
-
-    @MockBean
-    private DeviceAuthService deviceAuthService;
 
     @MockBean
     private SkillHubMetrics skillHubMetrics;

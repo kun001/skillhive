@@ -81,24 +81,6 @@ public class ReviewTask {
         this.subjectVersion = skillVersion;
     }
 
-    /** Creates a typed Suite review without populating legacy Skill-specific columns. */
-    public static ReviewTask forSuiteVersion(
-            Long suiteVersionId,
-            Long suiteId,
-            Long namespaceId,
-            String suiteVersion,
-            String submittedBy
-    ) {
-        ReviewTask task = new ReviewTask();
-        task.subjectType = ReviewSubjectType.SUITE_VERSION;
-        task.subjectId = suiteId;
-        task.subjectVersionId = suiteVersionId;
-        task.subjectVersion = suiteVersion;
-        task.namespaceId = namespaceId;
-        task.submittedBy = submittedBy;
-        return task;
-    }
-
     public Long getId() { return id; }
 
     public Long getSkillVersionId() { return skillVersionId; }

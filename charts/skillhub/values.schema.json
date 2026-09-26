@@ -17,7 +17,6 @@
     "nameOverride": { "$ref": "#/definitions/optionalDnsLabel" },
     "fullnameOverride": { "$ref": "#/definitions/optionalDnsLabel" },
     "publicBaseUrl": { "type": "string", "pattern": "^$|^https?://[^/?#]+([/][^?#]*)?$" },
-    "deviceAuthVerificationUri": { "type": "string" },
     "auth": {
       "type": "object",
       "additionalProperties": false,
@@ -404,11 +403,10 @@
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["enabled", "replicaCount", "suiteReviewWritesEnabled", "image", "dependencyWait", "service", "storage", "podSecurityContext", "resources", "javaOpts", "extraEnv", "podAnnotations", "imagePullSecrets", "nodeSelector", "tolerations", "affinity", "probes", "autoscaling", "podDisruptionBudget"],
+          "required": ["enabled", "replicaCount", "image", "dependencyWait", "service", "storage", "podSecurityContext", "resources", "javaOpts", "extraEnv", "podAnnotations", "imagePullSecrets", "nodeSelector", "tolerations", "affinity", "probes", "autoscaling", "podDisruptionBudget"],
           "properties": {
             "enabled": { "type": "boolean" },
             "replicaCount": { "type": "integer", "minimum": 1 },
-            "suiteReviewWritesEnabled": { "type": "boolean" },
             "image": { "$ref": "#/definitions/image" },
             "dependencyWait": {
               "type": "object",

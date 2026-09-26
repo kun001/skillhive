@@ -16,13 +16,13 @@
 
 `review_task` 已有 `subject_type`、`subject_id`、`subject_version_id`。下一阶段将补充知识审核主体和专用状态变更服务，复用队列及审计，不让既有 `ReviewService` 直接处理知识文档。审核权限要显式决定是否允许团队管理员自审；建议默认禁止，管理员例外单独审计。
 
-## 技能套件与 CLI 处理
+## 已删除的上游能力
 
-本轮已从 Web 主入口退出套件功能，旧 Web 路由转到知识库；对应后端控制器仅在显式启用 `skillhive-legacy` profile 时注册。CLI 客户端、发布工作流及套件烟测脚本已移入 `legacy-upstream/`，默认构建不再调用。ClawHub 兼容端点和 Device Flow 控制器同样默认不注册；API Token 暂保留为平台级机器接入能力。
+技能套件（含 Suite Bundle）、CLI 接口（`/api/cli/v1`）、ClawHub 兼容层（`/api/v1/search`、`/api/v1/resolve`、`/api/v1/download` 等）、设备码登录（`/api/v1/auth/device`）和 `/.well-known/clawhub.json` 发现端点的后端、前端代码与测试均已删除，`skillhive-legacy` profile 不再存在。API Token 保留为平台级机器接入能力，可访问 `/api/v1` 与 `/api/web` 下的 Skill 接口。
 
-历史 Flyway 迁移和数据表保留，**不通过迁移清除套件数据**。后续确认数据为空或完成导出后，可单独清理残余服务、DTO、前端组件和构建测试；清理需覆盖依赖引用并通过编译回归。内置上游技能默认关闭，避免自动引入 CLI 助手。
+历史 Flyway 迁移和数据表保留，**不通过迁移清除套件数据**。`review_task` 中可能残留 `SUITE_VERSION` 类型的旧审核记录：它们不会出现在审核列表、审核进度或详情中，按“不存在”处理。`ReviewSubjectType.SUITE_VERSION` 枚举值仅为读取这些旧行而保留。内置技能清单中已移除 CLI 助手 `skillhub-cli`。
 
-当前检入的 OpenAPI 类型仍包含上游套件与 CLI 端点，作为存量前端代码的过渡依赖。部署后的实际接口由控制器 profile 决定；在完成残余前端代码清理并从独立 SkillHive 后端重新生成类型后，才能将契约文件同步收窄。
+前端类型统一由 `make generate-api` 从当前后端生成到 `web/src/api/generated/schema.d.ts`。
 
 ## 运行隔离
 

@@ -5,7 +5,7 @@ function withoutTrailingSlash(value: string): string {
 }
 
 /**
- * Resolves the public registry URL used in copied CLI and agent commands.
+ * Resolves the public base URL used in shared links.
  * Runtime configuration wins outside local development; otherwise the current
  * browser origin must retain Vite's deployment base path.
  */
@@ -20,4 +20,15 @@ export function resolvePublicRegistryUrl(
   }
 
   return `${withoutTrailingSlash(origin)}${withoutTrailingSlash(basePath)}`
+}
+
+/** Public base URL for the current browser session, e.g. for share links. */
+export function getPublicBaseUrl(): string {
+  if (typeof window === 'undefined') {
+    return ''
+  }
+  return resolvePublicRegistryUrl(
+    window.__SKILLHUB_RUNTIME_CONFIG__?.appBaseUrl,
+    `${window.location.protocol}//${window.location.host}`,
+  )
 }

@@ -21,9 +21,9 @@ class RouteSecurityPolicyRegistryTest {
     @Test
     void accessLevel_respectsMethodSpecificPublicRoutesAndProtectedFallback() {
         assertEquals(RouteSecurityPolicyRegistry.AccessLevel.PERMIT_ALL,
-                registry.accessLevel("GET", "/api/v1/skills"));
+                registry.accessLevel("GET", "/api/web/skills"));
         assertEquals(RouteSecurityPolicyRegistry.AccessLevel.AUTHENTICATED,
-                registry.accessLevel("POST", "/api/v1/skills"));
+                registry.accessLevel("POST", "/api/web/skills"));
         assertEquals(RouteSecurityPolicyRegistry.AccessLevel.AUTHENTICATED,
                 registry.accessLevel("GET", "/api/v1/unlisted"));
     }
@@ -31,7 +31,7 @@ class RouteSecurityPolicyRegistryTest {
     @Test
     void accessLevel_matchesPublicSubpaths() {
         assertEquals(RouteSecurityPolicyRegistry.AccessLevel.PERMIT_ALL,
-                registry.accessLevel("GET", "/api/v1/resolve/team/demo"));
+                registry.accessLevel("GET", "/v3/api-docs/swagger-config"));
     }
 
     @Test
@@ -62,58 +62,6 @@ class RouteSecurityPolicyRegistryTest {
         assertFalse(denied.allowed());
         assertEquals("skill:publish", denied.requiredScope());
         assertTrue(allowed.allowed());
-    }
-
-    @Test
-    void suiteRoutes_keepDiscoveryPublicAndProtectMutations() {
-        assertEquals(RouteSecurityPolicyRegistry.AccessLevel.PERMIT_ALL,
-                registry.accessLevel("GET", "/api/v1/resources"));
-        assertEquals(RouteSecurityPolicyRegistry.AccessLevel.PERMIT_ALL,
-                registry.accessLevel("GET", "/api/web/resources"));
-        assertEquals(RouteSecurityPolicyRegistry.AccessLevel.AUTHENTICATED,
-                registry.accessLevel("GET", "/api/web/me/suites"));
-        assertEquals(RouteSecurityPolicyRegistry.AccessLevel.PERMIT_ALL,
-                registry.accessLevel("GET", "/api/v1/suites/global/starter"));
-        assertEquals(RouteSecurityPolicyRegistry.AccessLevel.PERMIT_ALL,
-                registry.accessLevel("GET", "/api/v1/suites/global/starter/labels"));
-        assertEquals(RouteSecurityPolicyRegistry.AccessLevel.AUTHENTICATED,
-                registry.accessLevel("PUT", "/api/v1/suites/global/starter/labels/official"));
-        assertEquals(RouteSecurityPolicyRegistry.AccessLevel.AUTHENTICATED,
-                registry.accessLevel("DELETE", "/api/web/suites/global/starter/labels/official"));
-        assertEquals(RouteSecurityPolicyRegistry.AccessLevel.PERMIT_ALL,
-                registry.accessLevel("POST", "/api/v1/suites/global/starter/install-plan"));
-        assertEquals(RouteSecurityPolicyRegistry.AccessLevel.AUTHENTICATED,
-                registry.accessLevel("GET", "/api/v1/suites/member-candidates"));
-        assertEquals(RouteSecurityPolicyRegistry.AccessLevel.AUTHENTICATED,
-                registry.accessLevel("POST", "/api/v1/suites"));
-    }
-
-    @Test
-    void suiteApiTokenPolicies_requirePublishScopeAndKeepReviewSessionOnly() {
-        assertTrue(registry.authorizeApiToken(
-                "GET", "/api/v1/suites/global/starter", Set.of()).allowed());
-        assertTrue(registry.authorizeApiToken(
-                "POST", "/api/v1/suites/global/starter/install-plan", Set.of()).allowed());
-        var deniedAttachLabel = registry.authorizeApiToken(
-                "PUT", "/api/v1/suites/global/starter/labels/official", Set.of("skill:read"));
-        var allowedAttachLabel = registry.authorizeApiToken(
-                "PUT", "/api/v1/suites/global/starter/labels/official", Set.of("skill:publish"));
-        assertFalse(deniedAttachLabel.allowed());
-        assertEquals("skill:publish", deniedAttachLabel.requiredScope());
-        assertTrue(allowedAttachLabel.allowed());
-
-        var deniedCreate = registry.authorizeApiToken("POST", "/api/v1/suites", Set.of("skill:read"));
-        var allowedCreate = registry.authorizeApiToken("POST", "/api/v1/suites", Set.of("skill:publish"));
-        var deniedSubmit = registry.authorizeApiToken(
-                "POST", "/api/v1/suites/8/versions/42/submit", Set.of("skill:read"));
-
-        assertFalse(deniedCreate.allowed());
-        assertEquals("skill:publish", deniedCreate.requiredScope());
-        assertTrue(allowedCreate.allowed());
-        assertFalse(deniedSubmit.allowed());
-        assertEquals("skill:publish", deniedSubmit.requiredScope());
-        assertFalse(registry.authorizeApiToken(
-                "POST", "/api/v1/suites/reviews/7/approve", ALL_SCOPES).allowed());
     }
 
     @Test
@@ -267,48 +215,11 @@ class RouteSecurityPolicyRegistryTest {
     }
 
     @Test
-    void apiTokenPolicySupportsNativeCliRoutes() {
-        assertTrue(registry.authorizeApiToken("GET", "/api/cli/v1/auth/whoami", Set.of()).allowed());
-        assertTrue(registry.authorizeApiToken("GET", "/api/cli/v1/namespaces/team-a/skills", Set.of()).allowed());
-        assertTrue(registry.authorizeApiToken("GET", "/api/cli/v1/skills/search", Set.of()).allowed());
-        assertTrue(registry.authorizeApiToken("GET", "/api/cli/v1/skills/global/demo/resolve", Set.of()).allowed());
-        assertFalse(registry.authorizeApiToken("POST", "/api/cli/v1/skills/global/publish", Set.of()).allowed());
-        assertTrue(registry.authorizeApiToken("POST", "/api/cli/v1/skills/global/publish", Set.of("skill:publish")).allowed());
-        assertFalse(registry.authorizeApiToken("POST", "/api/cli/v1/skills/global/publish/validate", Set.of()).allowed());
-        assertTrue(registry.authorizeApiToken("POST", "/api/cli/v1/skills/global/publish/validate", Set.of("skill:publish")).allowed());
-        assertTrue(registry.authorizeApiToken("DELETE", "/api/cli/v1/skills/global/demo", Set.of("skill:delete")).allowed());
-    }
-
-    @Test
-    void routeAuthorizationRequiresAuthenticationForNativeCliNamespaceSync() {
-        boolean matched = registry.authorizationPolicies().stream()
-                .anyMatch(policy -> policy.method() == HttpMethod.GET
-                        && "/api/cli/v1/namespaces/*/skills".equals(policy.pattern())
-                        && policy.accessLevel() == RouteSecurityPolicyRegistry.AccessLevel.AUTHENTICATED);
-
-        assertTrue(matched);
-    }
-
-    @Test
-    void routeAuthorizationProtectsNativeCliRemoteDeleteByAuthenticationNotSuperAdminRole() {
-        boolean matched = registry.authorizationPolicies().stream()
-                .anyMatch(policy -> policy.method() == HttpMethod.DELETE
-                        && "/api/cli/v1/skills/*/*".equals(policy.pattern())
-                        && policy.accessLevel() == RouteSecurityPolicyRegistry.AccessLevel.AUTHENTICATED);
-
-        assertTrue(matched);
-    }
-
-    @Test
-    void shouldIgnoreCsrf_onlyForBearerTokensAndDeviceTokenFlow() {
+    void shouldIgnoreCsrf_onlyForBearerTokensWithoutSession() {
         assertFalse(registry.shouldIgnoreCsrf("POST", "/api/v1/admin/users", null, false));
         assertFalse(registry.shouldIgnoreCsrf("POST", "/api/v1/auth/local/change-password", null, false));
         assertTrue(registry.shouldIgnoreCsrf("POST", "/not-api", "Bearer token", false));
         assertFalse(registry.shouldIgnoreCsrf("POST", "/not-api", "Bearer token", true));
-        assertTrue(registry.shouldIgnoreCsrf("POST", "/api/v1/auth/device/code", null, false));
-        assertTrue(registry.shouldIgnoreCsrf("POST", "/api/v1/auth/device/token", null, false));
-        assertFalse(registry.shouldIgnoreCsrf("GET", "/api/v1/auth/device/code", null, false));
-        assertFalse(registry.shouldIgnoreCsrf("POST", "/api/v1/auth/device/authorize", null, false));
         assertFalse(registry.shouldIgnoreCsrf("POST", "/ui/settings", null, false));
     }
 
@@ -322,12 +233,12 @@ class RouteSecurityPolicyRegistryTest {
     void requestPathUsesApplicationRouteBehindForwardedPrefix() {
         MockHttpServletRequest request = new MockHttpServletRequest(
                 "GET",
-                "/skillhub/api/cli/v1/auth/whoami"
+                "/skillhub/api/web/me/namespaces"
         );
         request.setContextPath("/skillhub");
-        request.setServletPath("/api/cli/v1/auth/whoami");
+        request.setServletPath("/api/web/me/namespaces");
 
-        assertEquals("/api/cli/v1/auth/whoami", RouteSecurityPolicyRegistry.requestPath(request));
+        assertEquals("/api/web/me/namespaces", RouteSecurityPolicyRegistry.requestPath(request));
     }
 
     @Test
@@ -351,11 +262,6 @@ class RouteSecurityPolicyRegistryTest {
         assertTrue(unstar >= 0, "un-star must have its own authorization policy");
         assertTrue(hardDelete >= 0);
         assertTrue(unstar < hardDelete, "un-star must be matched before the SUPER_ADMIN hard-delete rule");
-    }
-
-    @Test
-    void authorizeApiToken_allowsDownloadsBelowTheDownloadRoot() {
-        assertTrue(registry.authorizeApiToken("GET", "/api/v1/download/global/demo-skill", Set.of()).allowed());
     }
 
     @Test
@@ -383,32 +289,6 @@ class RouteSecurityPolicyRegistryTest {
 
         assertTrue(gaps.isEmpty(),
                 "Authorization routes with no API-token policy and no session-only declaration: " + gaps);
-    }
-
-    @Test
-    void suiteBundleWritesRequireAuthenticationAndPublishTokenScope() {
-        for (String path : List.of(
-                "/api/v1/suite-bundles/preview",
-                "/api/v1/suite-bundles/previews/token/confirm",
-                "/api/v1/suite-bundles/operations/operation/cancel",
-                "/api/v1/suite-bundles/operations/operation/retry",
-                "/api/web/suite-bundles/preview",
-                "/api/web/suite-bundles/previews/token/confirm",
-                "/api/web/suite-bundles/operations/operation/cancel",
-                "/api/web/suite-bundles/operations/operation/retry")) {
-            assertEquals(RouteSecurityPolicyRegistry.AccessLevel.AUTHENTICATED,
-                    registry.accessLevel("POST", path));
-            assertTrue(registry.authorizeApiToken("POST", path, Set.of("skill:publish")).allowed());
-            assertFalse(registry.authorizeApiToken("POST", path, Set.of("skill:read")).allowed());
-        }
-        for (String path : List.of(
-                "/api/v1/suite-bundles/operations/operation",
-                "/api/web/suite-bundles/operations/operation")) {
-            assertEquals(RouteSecurityPolicyRegistry.AccessLevel.AUTHENTICATED,
-                    registry.accessLevel("GET", path));
-            assertTrue(registry.authorizeApiToken("GET", path, Set.of("skill:publish")).allowed());
-            assertFalse(registry.authorizeApiToken("GET", path, Set.of("skill:read")).allowed());
-        }
     }
 
     @Test

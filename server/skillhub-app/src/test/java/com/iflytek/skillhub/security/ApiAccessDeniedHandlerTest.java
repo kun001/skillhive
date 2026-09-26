@@ -66,7 +66,7 @@ class ApiAccessDeniedHandlerTest {
 
     @Test
     void shouldExposeLocalizedApiTokenScopeReasonAndRequestId() throws Exception {
-        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/v1/publish");
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/v1/skills/global/publish");
         MockHttpServletResponse response = new MockHttpServletResponse();
         ApiTokenScopeService scopeService =
                 new ApiTokenScopeService(objectMapper, new RouteSecurityPolicyRegistry());
@@ -102,7 +102,7 @@ class ApiAccessDeniedHandlerTest {
     @Test
     void shouldTranslateSafeApiTokenReason() throws Exception {
         LocaleContextHolder.setLocale(Locale.SIMPLIFIED_CHINESE);
-        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/cli/v1/whoami");
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/web/knowledge/bases");
         MockHttpServletResponse response = new MockHttpServletResponse();
         ApiTokenScopeService scopeService =
                 new ApiTokenScopeService(objectMapper, new RouteSecurityPolicyRegistry());
@@ -125,7 +125,7 @@ class ApiAccessDeniedHandlerTest {
 
         JsonNode body = objectMapper.readTree(response.getContentAsByteArray());
         assertThat(body.path("msg").asText())
-                .isEqualTo("API 令牌无法访问接口：/api/cli/v1/whoami");
+                .isEqualTo("API 令牌无法访问接口：/api/web/knowledge/bases");
     }
 
     @Test

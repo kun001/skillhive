@@ -65,7 +65,7 @@ class ApiTokenScopeFilterTest {
         );
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/v1/publish");
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/v1/skills/global/publish");
         MockHttpServletResponse response = new MockHttpServletResponse();
         FilterChain chain = mock(FilterChain.class);
 
@@ -146,7 +146,7 @@ class ApiTokenScopeFilterTest {
     }
 
     @Test
-    void shouldDenyApiCliRequestsWithoutRequiredScope() throws Exception {
+    void shouldDenyPublishWithoutRequiredScope() throws Exception {
         AccessDeniedHandler handler = (request, response, accessDeniedException) -> {
             response.sendError(HttpServletResponse.SC_FORBIDDEN, accessDeniedException.getMessage());
         };
@@ -170,7 +170,7 @@ class ApiTokenScopeFilterTest {
         );
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/cli/v1/skills/global/publish/validate");
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/v1/skills/global/publish");
         MockHttpServletResponse response = new MockHttpServletResponse();
         FilterChain chain = mock(FilterChain.class);
 
@@ -206,10 +206,10 @@ class ApiTokenScopeFilterTest {
 
         MockHttpServletRequest request = new MockHttpServletRequest(
             "GET",
-            "/skillhub/api/cli/v1/namespaces/global/skills"
+            "/skillhub/api/v1/skills/global/demo"
         );
         request.setContextPath("/skillhub");
-        request.setServletPath("/api/cli/v1/namespaces/global/skills");
+        request.setServletPath("/api/v1/skills/global/demo");
         MockHttpServletResponse response = new MockHttpServletResponse();
         FilterChain chain = mock(FilterChain.class);
 

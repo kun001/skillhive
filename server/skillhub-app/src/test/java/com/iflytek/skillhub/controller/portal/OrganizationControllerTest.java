@@ -5,7 +5,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.iflytek.skillhub.auth.device.DeviceAuthService;
 import com.iflytek.skillhub.auth.rbac.PlatformPrincipal;
 import com.iflytek.skillhub.domain.organization.MembershipSourceType;
 import com.iflytek.skillhub.domain.organization.Organization;
@@ -41,9 +40,6 @@ class OrganizationControllerTest {
 
     @Autowired
     private EntityManager entityManager;
-
-    @MockBean
-    private DeviceAuthService deviceAuthService;
 
     @Test
     void listOrganizations_returnsOnlyActiveMembershipsForCurrentUser() throws Exception {

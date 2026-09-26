@@ -23,7 +23,6 @@ services:
       REDIS_PORT: 6379
       SESSION_COOKIE_SECURE: "false"
       SKILLHUB_PUBLIC_BASE_URL: "http://localhost"
-      DEVICE_AUTH_VERIFICATION_URI: "http://localhost/cli/auth"
       SKILLHUB_STORAGE_PROVIDER: s3
       STORAGE_BASE_PATH: /var/lib/skillhub/storage
       SKILLHUB_STORAGE_S3_ENDPOINT: http://minio:9000
@@ -46,7 +45,6 @@ services:
       SKILLHUB_SECURITY_SCANNER_ENABLED: "true"
       SKILLHUB_SECURITY_SCANNER_URL: http://skill-scanner:8000
       SKILLHUB_SECURITY_SCANNER_MODE: upload
-      # Local staging needs typed Suite review writes so public Suite market fixtures can be submitted and approved.
     depends_on:
       postgres:
         condition: service_healthy

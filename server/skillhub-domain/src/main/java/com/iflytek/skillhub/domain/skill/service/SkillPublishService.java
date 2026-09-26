@@ -304,38 +304,6 @@ public class SkillPublishService {
     }
 
     /**
-     * Publishes one package that was explicitly bound by a confirmed Suite Bundle plan.
-     *
-     * <p>Unlike the interactive single-Skill path, this entry point never withdraws a pending
-     * review and never replaces an existing unpublished version. The expected identity is checked
-     * again in the write transaction so a stale Bundle plan cannot target a different Skill or
-     * version after confirmation.
-     */
-    @Transactional
-    public PublishResult publishBundleMemberFromEntries(
-            String namespaceSlug,
-            Long expectedSkillId,
-            String expectedSkillSlug,
-            String expectedVersion,
-            List<PackageEntry> entries,
-            Map<String, String> stagedSha256,
-            String publisherId,
-            SkillVisibility visibility,
-            Map<Long, NamespaceRole> userNamespaceRoles,
-            Set<String> platformRoles,
-            boolean confirmWarnings
-    ) {
-        BundlePublicationTarget target = new BundlePublicationTarget(
-                expectedSkillId, expectedSkillSlug, expectedVersion,
-                userNamespaceRoles == null ? Map.of() : Map.copyOf(userNamespaceRoles),
-                stagedSha256 == null ? Map.of() : Map.copyOf(stagedSha256));
-        return publishFromEntriesInternal(
-                namespaceSlug, entries, publisherId, visibility,
-                platformRoles == null ? Set.of() : platformRoles,
-                confirmWarnings, false, false, target);
-    }
-
-    /**
      * Rebuilds a new version from an already published version by copying its
      * stored files and rewriting the embedded metadata version field.
      */
@@ -386,21 +354,6 @@ public class SkillPublishService {
             boolean confirmWarnings,
             boolean forceAutoPublish,
             boolean bypassMembershipCheck) {
-        return publishFromEntriesInternal(
-                namespaceSlug, entries, publisherId, visibility, platformRoles,
-                confirmWarnings, forceAutoPublish, bypassMembershipCheck, null);
-    }
-
-    private PublishResult publishFromEntriesInternal(
-            String namespaceSlug,
-            List<PackageEntry> entries,
-            String publisherId,
-            SkillVisibility visibility,
-            Set<String> platformRoles,
-            boolean confirmWarnings,
-            boolean forceAutoPublish,
-            boolean bypassMembershipCheck,
-            BundlePublicationTarget bundleTarget) {
 
         // 1. Find namespace by slug
         Namespace namespace = namespaceRepository.findBySlug(namespaceSlug)
@@ -436,15 +389,6 @@ public class SkillPublishService {
             metadata = new SkillMetadata(metadata.name(), metadata.description(), autoVersion, metadata.body(), metadata.frontmatter());
         }
         String skillSlug = SlugValidator.slugify(metadata.name());
-        if (bundleTarget != null
-                && (!bundleTarget.expectedSkillSlug().equals(skillSlug)
-                || !bundleTarget.expectedVersion().equals(metadata.version()))) {
-            throw bundleStateChanged();
-        }
-        if (bundleTarget != null && !bundleTarget.stagedSha256().keySet().equals(
-                entries.stream().map(PackageEntry::path).collect(Collectors.toSet()))) {
-            throw bundleStateChanged();
-        }
 
         // 5. Run PrePublishValidator
         PrePublishValidator.SkillPackageContext context = new PrePublishValidator.SkillPackageContext(
@@ -472,9 +416,7 @@ public class SkillPublishService {
         // Check if any other owner's skill has published versions
         // Only PUBLISHED status blocks same-name publishing (UPLOADED/PENDING_REVIEW allowed)
         for (Skill existing : existingSkills) {
-            boolean isBoundTarget = bundleTarget != null
-                    && Objects.equals(existing.getId(), bundleTarget.expectedSkillId());
-            if (!existing.getOwnerId().equals(publisherId) && !isBoundTarget) {
+            if (!existing.getOwnerId().equals(publisherId)) {
                 boolean hasPublished = !skillVersionRepository
                         .findBySkillIdAndStatus(existing.getId(), SkillVersionStatus.PUBLISHED)
                         .isEmpty();
@@ -489,10 +431,7 @@ public class SkillPublishService {
             }
         }
 
-        Skill skill = bundleTarget == null
-                ? findOrCreateOwnedSkill(namespace, skillSlug, publisherId, visibility)
-                : resolveBundleTargetSkill(namespace, existingSkills, publisherId, visibility,
-                        platformRoles, bundleTarget);
+        Skill skill = findOrCreateOwnedSkill(namespace, skillSlug, publisherId, visibility);
 
         if (skill.getStatus() == SkillStatus.ARCHIVED) {
             throw new DomainBadRequestException("error.skill.publish.archived", skillSlug);
@@ -502,24 +441,16 @@ public class SkillPublishService {
         // When publishing a new version, existing PENDING_REVIEW versions are withdrawn to UPLOADED status
         List<SkillVersion> pendingVersions = skillVersionRepository
                 .findBySkillIdAndStatus(skill.getId(), SkillVersionStatus.PENDING_REVIEW);
-        if (bundleTarget != null && !pendingVersions.isEmpty()) {
-            throw bundleStateChanged();
-        }
-        if (bundleTarget == null) {
-            for (SkillVersion pending : pendingVersions) {
-                reviewTaskRepository.findBySkillVersionIdAndStatus(pending.getId(), ReviewTaskStatus.PENDING)
-                        .ifPresent(reviewTaskRepository::delete);
-                pending.setStatus(SkillVersionStatus.UPLOADED);
-                skillVersionRepository.save(pending);
-            }
+        for (SkillVersion pending : pendingVersions) {
+            reviewTaskRepository.findBySkillVersionIdAndStatus(pending.getId(), ReviewTaskStatus.PENDING)
+                    .ifPresent(reviewTaskRepository::delete);
+            pending.setStatus(SkillVersionStatus.UPLOADED);
+            skillVersionRepository.save(pending);
         }
 
         // 7. Check version doesn't already exist
         java.util.Optional<SkillVersion> existingVersion = skillVersionRepository.findBySkillIdAndVersion(skill.getId(), metadata.version());
         if (existingVersion.isPresent()) {
-            if (bundleTarget != null) {
-                throw bundleStateChanged();
-            }
             SkillVersion matchedVersion = existingVersion.get();
             if (matchedVersion.getStatus() == SkillVersionStatus.PUBLISHED) {
                 throw new DomainBadRequestException("error.skill.version.exists", metadata.version());
@@ -599,16 +530,9 @@ public class SkillPublishService {
                     zipOutput.closeEntry();
                     if (actualSize != entry.size()) {
                         throw new DomainBadRequestException(
-                                "error.suite.bundle.member.stateChanged");
+                                "error.skill.publish.package.sizeMismatch", entry.path());
                     }
                     String sha256 = hexFormat.formatHex(digest.digest());
-                    String expectedSha256 = bundleTarget == null
-                            ? null
-                            : bundleTarget.stagedSha256().get(entry.path());
-                    if (expectedSha256 != null && !expectedSha256.equalsIgnoreCase(sha256)) {
-                        throw new DomainBadRequestException(
-                                "error.suite.bundle.member.stateChanged");
-                    }
                     stagedFiles.add(new StagedPackageFile(
                             stagedFile, entry.path(), storageKey, actualSize, entry.contentType(), sha256));
                 }
@@ -697,33 +621,6 @@ public class SkillPublishService {
                 .orElseGet(() -> createSkill(namespace, skillSlug, publisherId, visibility));
     }
 
-    private Skill resolveBundleTargetSkill(
-            Namespace namespace,
-            List<Skill> coordinateSkills,
-            String publisherId,
-            SkillVisibility visibility,
-            Set<String> platformRoles,
-            BundlePublicationTarget target
-    ) {
-        if (target.expectedSkillId() == null) {
-            if (!coordinateSkills.isEmpty()) {
-                throw bundleStateChanged();
-            }
-            return createSkill(namespace, target.expectedSkillSlug(), publisherId, visibility);
-        }
-        Skill skill = coordinateSkills.stream()
-                .filter(candidate -> Objects.equals(candidate.getId(), target.expectedSkillId()))
-                .findFirst()
-                .orElseThrow(this::bundleStateChanged);
-        if (!Objects.equals(skill.getNamespaceId(), namespace.getId())
-                || !skill.getSlug().equals(target.expectedSkillSlug())
-                || skill.getVisibility() != visibility) {
-            throw bundleStateChanged();
-        }
-        assertCanManageLifecycle(skill, publisherId, target.userNamespaceRoles(), platformRoles);
-        return skill;
-    }
-
     private Skill createSkill(
             Namespace namespace,
             String skillSlug,
@@ -740,10 +637,6 @@ public class SkillPublishService {
         } catch (DataIntegrityViolationException ex) {
             throw new DomainBadRequestException("error.skill.publish.concurrentConflict", skillSlug);
         }
-    }
-
-    private DomainBadRequestException bundleStateChanged() {
-        return new DomainBadRequestException("error.suite.bundle.member.stateChanged");
     }
 
     private void deleteReplaceableVersionArtifacts(Skill skill, SkillVersion version, String namespaceSlug) {
@@ -856,25 +749,6 @@ public class SkillPublishService {
                 || platformRoles.contains("SUPER_ADMIN");
         if (!canManage) {
             throw new DomainForbiddenException("error.skill.lifecycle.noPermission");
-        }
-    }
-
-    private record BundlePublicationTarget(
-            Long expectedSkillId,
-            String expectedSkillSlug,
-            String expectedVersion,
-            Map<Long, NamespaceRole> userNamespaceRoles,
-            Map<String, String> stagedSha256
-    ) {
-        private BundlePublicationTarget {
-            if (expectedSkillSlug == null || expectedSkillSlug.isBlank()
-                    || expectedVersion == null || expectedVersion.isBlank()) {
-                throw new IllegalArgumentException("Bundle publication target must include slug and version");
-            }
-            if (stagedSha256.values().stream().anyMatch(
-                    hash -> hash == null || !hash.matches("[0-9a-f]{64}"))) {
-                throw new IllegalArgumentException("Bundle staged hashes must be lowercase SHA-256 values");
-            }
         }
     }
 

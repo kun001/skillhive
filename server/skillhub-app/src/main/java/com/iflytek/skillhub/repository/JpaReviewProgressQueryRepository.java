@@ -46,6 +46,7 @@ public class JpaReviewProgressQueryRepository implements ReviewProgressQueryRepo
                        ) AS attempt_count
                 FROM review_task task
                 WHERE task.submitted_by = :userId
+                  AND task.subject_type = 'SKILL_VERSION'
             ), latest AS (
                 SELECT *
                 FROM ranked
@@ -67,16 +68,14 @@ public class JpaReviewProgressQueryRepository implements ReviewProgressQueryRepo
                    latest.subject_type,
                    latest.subject_id,
                    latest.subject_version_id,
-                   COALESCE(skill.slug, suite.slug) AS subject_slug
+                   skill.slug AS subject_slug
             FROM latest
             LEFT JOIN skill
               ON latest.subject_type = 'SKILL_VERSION' AND skill.id = latest.subject_id
-            LEFT JOIN skill_suite suite
-              ON latest.subject_type = 'SUITE_VERSION' AND suite.id = latest.subject_id
             JOIN namespace ON namespace.id = latest.namespace_id
             WHERE (
                     :query = ''
-                    OR LOWER(COALESCE(skill.slug, suite.slug)) LIKE :queryPattern
+                    OR LOWER(skill.slug) LIKE :queryPattern
                     OR LOWER(namespace.slug) LIKE :queryPattern
                   )
               AND (:status = '' OR latest.status = :status)
@@ -97,11 +96,9 @@ public class JpaReviewProgressQueryRepository implements ReviewProgressQueryRepo
             FROM latest
             LEFT JOIN skill
               ON latest.subject_type = 'SKILL_VERSION' AND skill.id = latest.subject_id
-            LEFT JOIN skill_suite suite
-              ON latest.subject_type = 'SUITE_VERSION' AND suite.id = latest.subject_id
             JOIN namespace ON namespace.id = latest.namespace_id
             WHERE :query = ''
-               OR LOWER(COALESCE(skill.slug, suite.slug)) LIKE :queryPattern
+               OR LOWER(skill.slug) LIKE :queryPattern
                OR LOWER(namespace.slug) LIKE :queryPattern
             """;
 
