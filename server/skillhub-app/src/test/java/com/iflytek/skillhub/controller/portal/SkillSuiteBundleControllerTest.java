@@ -50,7 +50,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@ActiveProfiles("test")
+@ActiveProfiles({"test", "skillhive-legacy"})
 @Import(TestRedisConfig.class)
 class SkillSuiteBundleControllerTest {
 

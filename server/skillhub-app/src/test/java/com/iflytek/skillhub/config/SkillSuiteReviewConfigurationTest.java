@@ -24,9 +24,19 @@ class SkillSuiteReviewConfigurationTest {
     }
 
     @Test
-    void localProfileEnablesSuiteReviewWrites() throws IOException {
+    void localProfileKeepsRetiredSuiteReviewWritesDisabledByDefault() throws IOException {
         ConfigurableEnvironment environment = loadApplicationEnvironment(
                 List.of("application-local.yml", "application.yml"), Map.of());
+
+        assertThat(environment.getProperty("skillhub.suite.review-writes-enabled", Boolean.class))
+                .isFalse();
+    }
+
+    @Test
+    void localProfileCanExplicitlyEnableSuiteReviewWrites() throws IOException {
+        ConfigurableEnvironment environment = loadApplicationEnvironment(
+                List.of("application-local.yml", "application.yml"),
+                Map.of("SKILLHUB_SUITE_REVIEW_WRITES_ENABLED", "true"));
 
         assertThat(environment.getProperty("skillhub.suite.review-writes-enabled", Boolean.class))
                 .isTrue();
