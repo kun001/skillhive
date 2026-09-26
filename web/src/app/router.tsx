@@ -7,6 +7,7 @@ import { RouteError } from '@/shared/components/route-error'
 import { createRequireAuth } from '@/shared/lib/auth-route'
 import { clearDynamicImportReloadGuard, recoverFromDynamicImportError } from '@/shared/lib/dynamic-import-recovery'
 import { normalizeSearchQuery } from '@/shared/lib/search-query'
+import { validateKnowledgeBaseSearch } from '@/features/knowledge/search-params'
 
 /**
  * Central route registry for the SkillHive web app.
@@ -84,6 +85,8 @@ const ResetPasswordPage = createLazyRouteComponent(() => import('@/pages/reset-p
 const PrivacyPolicyPage = createLazyRouteComponent(() => import('@/pages/privacy'), 'PrivacyPolicyPage')
 const SearchPage = createLazyRouteComponent(() => import('@/pages/search'), 'SearchPage')
 const KnowledgePage = createLazyRouteComponent(() => import('@/pages/knowledge'), 'KnowledgePage')
+const KnowledgeBasePage = createLazyRouteComponent(() => import('@/pages/knowledge-base'), 'KnowledgeBasePage')
+const KnowledgeDocumentPage = createLazyRouteComponent(() => import('@/pages/knowledge-document'), 'KnowledgeDocumentPage')
 const TermsOfServicePage = createLazyRouteComponent(() => import('@/pages/terms'), 'TermsOfServicePage')
 const NamespacePage = createLazyRouteComponent(() => import('@/pages/namespace'), 'NamespacePage')
 const SkillDetailPage = createLazyRouteComponent(() => import('@/pages/skill-detail'), 'SkillDetailPage')
@@ -255,6 +258,21 @@ const knowledgeRoute = createRoute({
   path: 'knowledge',
   beforeLoad: requireAuth,
   component: KnowledgePage,
+})
+
+const knowledgeBaseRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/knowledge/$namespace/$base',
+  beforeLoad: requireAuth,
+  validateSearch: validateKnowledgeBaseSearch,
+  component: KnowledgeBasePage,
+})
+
+const knowledgeDocumentRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/knowledge/$namespace/$base/$documentId',
+  beforeLoad: requireAuth,
+  component: KnowledgeDocumentPage,
 })
 
 const suitesRoute = createRoute({
@@ -625,6 +643,8 @@ const routeTree = rootRoute.addChildren([
   privacyRoute,
   searchRoute,
   knowledgeRoute,
+  knowledgeBaseRoute,
+  knowledgeDocumentRoute,
   suitesRoute,
   suiteDetailRoute,
   termsRoute,

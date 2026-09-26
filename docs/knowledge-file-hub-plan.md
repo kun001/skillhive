@@ -73,15 +73,32 @@
 
 ## 实施步骤
 
-1. [ ] 新增 V67 迁移，补齐领域实体和仓储（domain + infra）。
-2. [ ] 领域规则：`KnowledgeAccessPolicy`、`KnowledgeFilePolicy` 及单元测试。
-3. [ ] 应用服务 `KnowledgeAppService`：知识库、文件夹、文件、版本、下载，含审计。
-4. [ ] `KnowledgeController` 与 DTO，控制器测试。
-5. [ ] 启动后端验证迁移，运行 `make generate-api` 生成前端类型。
-6. [ ] 前端数据层：`features/knowledge` 查询/变更 hooks 与上传工具。
-7. [ ] 前端页面：知识库列表、知识库工作区、文件详情与版本抽屉、上传弹窗。
-8. [ ] i18n 文案、路由注册、单元测试。
-9. [ ] 验证：`make test-backend-app`、`make typecheck-web`、`make lint-web`、前端测试，以及在运行环境里端到端走一遍上传、预览、新版本、下载、删除。
+1. [x] 新增 V67 迁移，补齐领域实体和仓储（domain + infra）。
+2. [x] 领域规则：`KnowledgeAccessPolicy`、`KnowledgeFilePolicy`、`KnowledgeFolderTree` 及单元测试。
+3. [x] 应用服务 `KnowledgeAppService`：知识库、文件夹、文件、版本、下载，含审计和单元测试。
+4. [x] `KnowledgeController` 与 DTO。
+5. [x] 启动后端验证 V67 迁移与表结构校验，生成前端类型（见下方“API 类型生成”）。
+6. [x] 前端数据层：`api/knowledge-types.ts`、`knowledgeApi`（XHR 上传进度）、`features/knowledge` hooks。
+7. [x] 前端页面：知识库列表、知识库工作区、文件详情与版本抽屉、上传弹窗。
+8. [x] i18n 文案（中/英，俄语回退英文）、路由注册、单元测试。
+9. [x] 验证：后端测试、前端 typecheck / lint / 全量 Vitest，以及浏览器端到端流程（新建知识库、拖拽批量上传、文件夹筛选、类型筛选、卡片视图、PDF/图片/Markdown/TXT 预览、Office 下载兜底、上传新版本、版本历史与恢复、编辑、非成员 404、匿名 401）。
+
+## API 类型生成
+
+`web/src/api/generated/schema.d.ts` 仍包含后端已不再提供的上游套件/CLI 契约（即使启用 `skillhive-legacy` profile），整体重新生成会让存量套件页面编译失败。因此知识库接口的类型单独生成到 `web/src/api/generated/knowledge.d.ts`：
+
+```bash
+# 后端运行在 :8080 时
+cd web && pnpm run generate-api:knowledge
+```
+
+脚本 `web/scripts/generate-knowledge-api.mjs` 只保留 `/api/web/knowledge` 路径及其引用的 schema，再交给 openapi-typescript 生成。两份生成文件都不要手工修改。待存量套件前端清理后，可恢复为单一的 `make generate-api`。
+
+## 实现中的注意点
+
+- PDF 预览通过 `blob:` URL 放在 iframe 中（后端对所有响应设置了 `X-Frame-Options: DENY`），因此 `web/index.html` 的 CSP 增加了 `frame-src 'self' blob:`。
+- 打开对话框的下拉菜单使用 `modal={false}`，且对话框保持挂载、只切换 `open`，避免 Radix 在 `<body>` 上残留 `pointer-events: none`。
+- 上传时先单独读一遍文件计算 SHA-256，再写入对象存储，摘要不依赖存储实现是否读完整个流。
 
 ## 以后再做
 

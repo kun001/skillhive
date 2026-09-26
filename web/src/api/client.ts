@@ -52,6 +52,20 @@ import type {
   SkillSuiteDraftInput,
 } from './types'
 import { ApiError } from '@/shared/lib/api-error'
+import type {
+  CreateKnowledgeBaseRequest,
+  CreateKnowledgeFolderRequest,
+  KnowledgeBase,
+  KnowledgeDocument,
+  KnowledgeDocumentDetail,
+  KnowledgeDocumentPage,
+  KnowledgeDocumentQuery,
+  KnowledgeDocumentVersion,
+  KnowledgeFolder,
+  UpdateKnowledgeBaseRequest,
+  UpdateKnowledgeDocumentRequest,
+  UpdateKnowledgeFolderRequest,
+} from './knowledge-types'
 import i18n from '@/i18n/config'
 
 /**
@@ -1619,5 +1633,195 @@ export const notificationApi = {
       }),
       body: JSON.stringify({ preferences }),
     })
+  },
+}
+
+const KNOWLEDGE_PREFIX = `${WEB_API_PREFIX}/knowledge`
+
+function knowledgeBasePath(namespace: string, base: string): string {
+  return `${KNOWLEDGE_PREFIX}/bases/${encodeURIComponent(normalizeNamespaceSlug(namespace))}/${encodeURIComponent(base)}`
+}
+
+export interface KnowledgeUploadOptions {
+  onProgress?: (fraction: number) => void
+  signal?: AbortSignal
+}
+
+/**
+ * Sends a multipart upload with XMLHttpRequest so callers get byte-level progress,
+ * which fetch cannot report for request bodies.
+ */
+async function uploadWithProgress<T>(path: string, formData: FormData, options?: KnowledgeUploadOptions): Promise<T> {
+  const headers = new Headers(await ensureCsrfHeaders())
+  return new Promise<T>((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open('POST', buildApiUrl(path))
+    xhr.withCredentials = true
+    headers.forEach((value, key) => xhr.setRequestHeader(key, value))
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+        options?.onProgress?.(event.loaded / event.total)
+      }
+    }
+    xhr.onload = () => {
+      let envelope: ApiEnvelope<T> | null = null
+      try {
+        envelope = JSON.parse(xhr.responseText) as ApiEnvelope<T>
+      } catch {
+        envelope = null
+      }
+      if (xhr.status >= 200 && xhr.status < 300 && envelope && envelope.code === 0) {
+        options?.onProgress?.(1)
+        resolve(envelope.data)
+        return
+      }
+      const message = envelope?.msg || `HTTP ${xhr.status}`
+      reject(new ApiError(message, xhr.status, envelope?.msg, envelope?.msg))
+    }
+    xhr.onerror = () => reject(new ApiError('apiError.networkError', 0))
+    xhr.onabort = () => reject(new ApiError('error.request.aborted', 0))
+    if (options?.signal) {
+      if (options.signal.aborted) {
+        xhr.abort()
+        return
+      }
+      options.signal.addEventListener('abort', () => xhr.abort(), { once: true })
+    }
+    xhr.send(formData)
+  })
+}
+
+/** Knowledge file hub: knowledge bases, folders, files and versions. */
+export const knowledgeApi = {
+  listBases(): Promise<KnowledgeBase[]> {
+    return fetchJson<KnowledgeBase[]>(`${KNOWLEDGE_PREFIX}/bases`)
+  },
+
+  async createBase(request: CreateKnowledgeBaseRequest): Promise<KnowledgeBase> {
+    return fetchJson<KnowledgeBase>(`${KNOWLEDGE_PREFIX}/bases`, {
+      method: 'POST',
+      headers: await ensureCsrfHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(request),
+    })
+  },
+
+  getBase(namespace: string, base: string): Promise<KnowledgeBase> {
+    return fetchJson<KnowledgeBase>(knowledgeBasePath(namespace, base))
+  },
+
+  async updateBase(namespace: string, base: string, request: UpdateKnowledgeBaseRequest): Promise<KnowledgeBase> {
+    return fetchJson<KnowledgeBase>(knowledgeBasePath(namespace, base), {
+      method: 'PUT',
+      headers: await ensureCsrfHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(request),
+    })
+  },
+
+  listFolders(namespace: string, base: string): Promise<KnowledgeFolder[]> {
+    return fetchJson<KnowledgeFolder[]>(`${knowledgeBasePath(namespace, base)}/folders`)
+  },
+
+  async createFolder(namespace: string, base: string, request: CreateKnowledgeFolderRequest): Promise<KnowledgeFolder> {
+    return fetchJson<KnowledgeFolder>(`${knowledgeBasePath(namespace, base)}/folders`, {
+      method: 'POST',
+      headers: await ensureCsrfHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(request),
+    })
+  },
+
+  async updateFolder(namespace: string, base: string, folderId: number, request: UpdateKnowledgeFolderRequest): Promise<KnowledgeFolder> {
+    return fetchJson<KnowledgeFolder>(`${knowledgeBasePath(namespace, base)}/folders/${folderId}`, {
+      method: 'PUT',
+      headers: await ensureCsrfHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(request),
+    })
+  },
+
+  async deleteFolder(namespace: string, base: string, folderId: number): Promise<void> {
+    await fetchJson<unknown>(`${knowledgeBasePath(namespace, base)}/folders/${folderId}`, {
+      method: 'DELETE',
+      headers: await ensureCsrfHeaders(),
+    })
+  },
+
+  listDocuments(namespace: string, base: string, query: KnowledgeDocumentQuery): Promise<KnowledgeDocumentPage> {
+    const params = new URLSearchParams()
+    if (query.folderId !== undefined) params.set('folderId', String(query.folderId))
+    if (query.q?.trim()) params.set('q', query.q.trim())
+    query.extensions?.forEach((extension) => params.append('extensions', extension))
+    if (query.ownerId) params.set('ownerId', query.ownerId)
+    if (query.updatedFrom) params.set('updatedFrom', query.updatedFrom)
+    if (query.updatedTo) params.set('updatedTo', query.updatedTo)
+    params.set('sort', query.sort ?? 'updated')
+    params.set('page', String(query.page ?? 0))
+    params.set('size', String(query.size ?? 20))
+    return fetchJson<KnowledgeDocumentPage>(`${knowledgeBasePath(namespace, base)}/documents?${params.toString()}`)
+  },
+
+  uploadDocument(
+    namespace: string,
+    base: string,
+    params: { file: File; folderId?: number; title?: string; description?: string },
+    options?: KnowledgeUploadOptions,
+  ): Promise<KnowledgeDocument> {
+    const formData = new FormData()
+    formData.append('file', params.file)
+    if (params.folderId !== undefined) formData.append('folderId', String(params.folderId))
+    if (params.title?.trim()) formData.append('title', params.title.trim())
+    if (params.description?.trim()) formData.append('description', params.description.trim())
+    return uploadWithProgress<KnowledgeDocument>(`${knowledgeBasePath(namespace, base)}/documents`, formData, options)
+  },
+
+  getDocument(documentId: number): Promise<KnowledgeDocumentDetail> {
+    return fetchJson<KnowledgeDocumentDetail>(`${KNOWLEDGE_PREFIX}/documents/${documentId}`)
+  },
+
+  async updateDocument(documentId: number, request: UpdateKnowledgeDocumentRequest): Promise<KnowledgeDocument> {
+    return fetchJson<KnowledgeDocument>(`${KNOWLEDGE_PREFIX}/documents/${documentId}`, {
+      method: 'PUT',
+      headers: await ensureCsrfHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(request),
+    })
+  },
+
+  async deleteDocument(documentId: number): Promise<void> {
+    await fetchJson<unknown>(`${KNOWLEDGE_PREFIX}/documents/${documentId}`, {
+      method: 'DELETE',
+      headers: await ensureCsrfHeaders(),
+    })
+  },
+
+  listVersions(documentId: number): Promise<KnowledgeDocumentVersion[]> {
+    return fetchJson<KnowledgeDocumentVersion[]>(`${KNOWLEDGE_PREFIX}/documents/${documentId}/versions`)
+  },
+
+  uploadVersion(
+    documentId: number,
+    params: { file: File; changeNote?: string },
+    options?: KnowledgeUploadOptions,
+  ): Promise<KnowledgeDocumentVersion> {
+    const formData = new FormData()
+    formData.append('file', params.file)
+    if (params.changeNote?.trim()) formData.append('changeNote', params.changeNote.trim())
+    return uploadWithProgress<KnowledgeDocumentVersion>(`${KNOWLEDGE_PREFIX}/documents/${documentId}/versions`, formData, options)
+  },
+
+  async restoreVersion(documentId: number, versionNumber: number, changeNote?: string): Promise<KnowledgeDocumentVersion> {
+    const params = new URLSearchParams()
+    if (changeNote?.trim()) params.set('changeNote', changeNote.trim())
+    const query = params.toString()
+    return fetchJson<KnowledgeDocumentVersion>(
+      `${KNOWLEDGE_PREFIX}/documents/${documentId}/versions/${versionNumber}/restore${query ? `?${query}` : ''}`,
+      { method: 'POST', headers: await ensureCsrfHeaders() },
+    )
+  },
+
+  /** URL that downloads (or, for previewable types, displays) a file version. */
+  contentUrl(documentId: number, options?: { version?: number; inline?: boolean }): string {
+    const params = new URLSearchParams()
+    if (options?.version !== undefined) params.set('version', String(options.version))
+    if (options?.inline) params.set('disposition', 'inline')
+    const query = params.toString()
+    return buildApiUrl(`${KNOWLEDGE_PREFIX}/documents/${documentId}/content${query ? `?${query}` : ''}`)
   },
 }
