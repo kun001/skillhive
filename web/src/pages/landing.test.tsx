@@ -28,6 +28,10 @@ vi.mock('lucide-react', () => ({
   Users: () => null,
   GitBranch: () => null,
   FileText: () => null,
+  Download: () => null,
+  Eye: () => null,
+  FolderOpen: () => null,
+  History: () => null,
   Layers3: () => null,
   Lock: () => null,
   Monitor: () => null,
@@ -77,6 +81,9 @@ describe('LandingPage', () => {
 
     expect(html).toContain('hiveLanding.heroTitleFirst')
     expect(html).toContain('hiveLanding.knowledgeTitle')
+    expect(html).toContain('hiveLanding.knowledgeBenefits.organize.title')
+    expect(html).toContain('hiveLanding.knowledgePreview.title')
+    expect(html).toContain('hiveLanding.knowledgeCta')
     expect(html).toContain('hiveLanding.libraryTitle')
     expect(html).not.toContain('Skill 已收录 24 个')
   })

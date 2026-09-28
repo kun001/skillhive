@@ -41,4 +41,11 @@ describe('router', () => {
     const childPaths = children.map((route) => route.fullPath ?? route.path)
     expect(childPaths).toContain('/knowledge')
   })
+
+  it('serves a dedicated skill library at /skills', () => {
+    const children = (router.routeTree.children ?? []) as Array<{ fullPath?: string; path?: string; options?: { component?: unknown; beforeLoad?: unknown } }>
+    const skillsRoute = children.find((route) => (route.fullPath ?? route.path) === '/skills')
+    expect(skillsRoute?.options?.component).toBeDefined()
+    expect(skillsRoute?.options?.beforeLoad).toBeUndefined()
+  })
 })

@@ -77,7 +77,6 @@ export function Layout() {
 
   const landingLinks = [
     { label: t('nav.landing'), hash: 'hero' },
-    { label: t('hiveLanding.skillLibraryLabel'), hash: 'skill-library' },
   ]
 
   return (
@@ -91,6 +90,7 @@ export function Layout() {
         {/* Desktop nav — lg+ only */}
         <nav className="hidden lg:flex items-center gap-5 text-[15px] font-normal" style={{ color: 'hsl(var(--text-secondary))' }}>
           {landingLinks.map((item) => <a key={item.hash} href={withBasePath(`/#${item.hash}`)} className="px-2 py-2 text-sm hover:text-foreground transition-colors">{item.label}</a>)}
+          <Link to="/skills" search={{ q: '', sort: 'all', page: 0, view: 'list' }} className="px-2 py-2 text-sm hover:text-foreground transition-colors" aria-current={pathname === '/skills' ? 'page' : undefined}>{t('hiveLanding.skillLibraryLabel')}</Link>
           {user && <Link to="/knowledge" className="px-2 py-2 text-sm hover:text-foreground transition-colors">{t('hiveLanding.knowledgeLabel')}</Link>}
           {user && <Link to="/dashboard" className="px-2 py-2 text-sm hover:text-foreground transition-colors">{t('nav.dashboard')}</Link>}
         </nav>
@@ -127,6 +127,7 @@ export function Layout() {
         <div className="lg:hidden sticky top-[72px] z-40 border-b border-border bg-background/95 backdrop-blur-xl">
           <nav className="flex flex-col px-4 py-3 gap-1">
             {landingLinks.map((item) => <a key={item.hash} href={withBasePath(`/#${item.hash}`)} className="rounded-lg px-4 py-2.5 text-sm text-muted-foreground hover:bg-accent hover:text-foreground" onClick={() => setMobileMenuOpen(false)}>{item.label}</a>)}
+            <Link to="/skills" search={{ q: '', sort: 'all', page: 0, view: 'list' }} className="rounded-lg px-4 py-2.5 text-sm text-muted-foreground hover:bg-accent hover:text-foreground" onClick={() => setMobileMenuOpen(false)} aria-current={pathname === '/skills' ? 'page' : undefined}>{t('hiveLanding.skillLibraryLabel')}</Link>
             {user && <Link to="/knowledge" className="rounded-lg px-4 py-2.5 text-sm text-muted-foreground hover:bg-accent hover:text-foreground" onClick={() => setMobileMenuOpen(false)}>{t('hiveLanding.knowledgeLabel')}</Link>}
             {user && <Link to="/dashboard" className="rounded-lg px-4 py-2.5 text-sm text-muted-foreground hover:bg-accent hover:text-foreground" onClick={() => setMobileMenuOpen(false)}>{t('nav.dashboard')}</Link>}
             <div className="px-4 py-2 sm:hidden"><LanguageSwitcher /></div>
@@ -169,7 +170,7 @@ export function Layout() {
             <p className="text-sm text-muted-foreground">{t('hiveLanding.footerDescription')}</p>
           </div>
           <nav aria-label={t('footer.resources')} className="flex flex-wrap gap-x-5 gap-y-2 border-t border-border pt-4 text-xs text-muted-foreground">
-            <Link to="/search" search={{ q: '', sort: 'relevance', page: 0, starredOnly: false }} className="hover:text-foreground">{t('nav.marketplace')}</Link>
+            <Link to="/skills" search={{ q: '', sort: 'all', page: 0, view: 'list' }} className="hover:text-foreground">{t('hiveLanding.skillLibraryLabel')}</Link>
             {user && <Link to="/knowledge" className="hover:text-foreground">{t('hiveLanding.knowledgeLabel')}</Link>}
             <Link to="/dashboard/publish" className="hover:text-foreground">{t('nav.publish')}</Link>
             <a href="https://iflytek.github.io/skillhub/" target="_blank" rel="noreferrer" className="hover:text-foreground">{t('footer.docs')}</a>

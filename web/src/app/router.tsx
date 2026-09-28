@@ -84,6 +84,7 @@ const RegisterPage = createLazyRouteComponent(() => import('@/pages/register'), 
 const ResetPasswordPage = createLazyRouteComponent(() => import('@/pages/reset-password'), 'ResetPasswordPage')
 const PrivacyPolicyPage = createLazyRouteComponent(() => import('@/pages/privacy'), 'PrivacyPolicyPage')
 const SearchPage = createLazyRouteComponent(() => import('@/pages/search'), 'SearchPage')
+const SkillLibraryPage = createLazyRouteComponent(() => import('@/pages/skill-library'), 'SkillLibraryPage')
 const KnowledgePage = createLazyRouteComponent(() => import('@/pages/knowledge'), 'KnowledgePage')
 const KnowledgeBasePage = createLazyRouteComponent(() => import('@/pages/knowledge-base'), 'KnowledgeBasePage')
 const KnowledgeDocumentPage = createLazyRouteComponent(() => import('@/pages/knowledge-document'), 'KnowledgeDocumentPage')
@@ -201,8 +202,17 @@ const landingRoute = createRoute({
 const skillsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: 'skills',
-  beforeLoad: () => {
-    throw redirect({ to: '/search', search: { q: '', sort: 'relevance', page: 0, starredOnly: false } })
+  component: SkillLibraryPage,
+  validateSearch: (search: Record<string, unknown>): { q: string; label?: string; sort: 'all' | 'downloads' | 'newest'; page: number; view: 'list' | 'grid' } => {
+    const sort = search.sort === 'downloads' || search.sort === 'newest' ? search.sort : 'all'
+    const page = Number(search.page)
+    return {
+      q: normalizeSearchQuery(typeof search.q === 'string' ? search.q : ''),
+      label: typeof search.label === 'string' && search.label ? search.label : undefined,
+      sort,
+      page: Number.isInteger(page) && page > 0 ? page : 0,
+      view: search.view === 'grid' ? 'grid' : 'list',
+    }
   },
 })
 
