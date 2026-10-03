@@ -79,6 +79,9 @@ export function KnowledgeUploadDialog({ open, onOpenChange, namespace, base, tre
     }
     setRunning(false)
     if (succeeded > 0) {
+      if (succeeded === queue.length && items.every((item) => item.status === 'done' || queue.some((queued) => queued.id === item.id))) {
+        onOpenChange(false)
+      }
       await invalidate()
       toast.success(t('knowledge.upload.allDone'), t('knowledge.upload.summary', { done: succeeded, total: queue.length }))
     }
