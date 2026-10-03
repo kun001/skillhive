@@ -3236,6 +3236,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/web/knowledge/documents/{documentId}/images/{imageId}/content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Display an image from a published Markdown version */
+        get: operations["downloadKnowledgeMarkdownImage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/knowledge/documents/{documentId}/images/{imageId}/content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Display an image from a published Markdown version */
+        get: operations["downloadKnowledgeMarkdownImage_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/knowledge/documents/{documentId}/images": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the images bound to a Markdown version */
+        get: operations["listKnowledgeMarkdownImages"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/web/knowledge/documents/{documentId}/images": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the images bound to a Markdown version */
+        get: operations["listKnowledgeMarkdownImages_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/web/knowledge/documents/{documentId}/content": {
         parameters: {
             query?: never;
@@ -5265,6 +5333,24 @@ export interface components {
             /** Format: date-time */
             timestamp?: string;
             requestId?: string;
+        };
+        ApiResponseKnowledgeMarkdownImagesResponse: {
+            /** Format: int32 */
+            code?: number;
+            msg?: string;
+            data?: components["schemas"]["KnowledgeMarkdownImagesResponse"];
+            /** Format: date-time */
+            timestamp?: string;
+            requestId?: string;
+        };
+        Image: {
+            /** Format: int64 */
+            id?: number;
+            path?: string;
+        };
+        KnowledgeMarkdownImagesResponse: {
+            sourcePath?: string;
+            images?: components["schemas"]["Image"][];
         };
         ApiResponseKnowledgeDocumentDetailResponse: {
             /** Format: int32 */
@@ -8939,6 +9025,8 @@ export interface operations {
     uploadKnowledgeDocumentVersion: {
         parameters: {
             query?: {
+                sourcePath?: string;
+                imagePaths?: string[];
                 changeNote?: string;
             };
             header?: never;
@@ -8952,6 +9040,7 @@ export interface operations {
                 "multipart/form-data": {
                     /** Format: binary */
                     file: string;
+                    images?: string[];
                 };
             };
         };
@@ -8992,6 +9081,8 @@ export interface operations {
     uploadKnowledgeDocumentVersion_1: {
         parameters: {
             query?: {
+                sourcePath?: string;
+                imagePaths?: string[];
                 changeNote?: string;
             };
             header?: never;
@@ -9005,6 +9096,7 @@ export interface operations {
                 "multipart/form-data": {
                     /** Format: binary */
                     file: string;
+                    images?: string[];
                 };
             };
         };
@@ -9157,6 +9249,8 @@ export interface operations {
         parameters: {
             query?: {
                 folderId?: number;
+                sourcePath?: string;
+                imagePaths?: string[];
                 title?: string;
                 description?: string;
             };
@@ -9172,6 +9266,7 @@ export interface operations {
                 "multipart/form-data": {
                     /** Format: binary */
                     file: string;
+                    images?: string[];
                 };
             };
         };
@@ -9224,6 +9319,8 @@ export interface operations {
         parameters: {
             query?: {
                 folderId?: number;
+                sourcePath?: string;
+                imagePaths?: string[];
                 title?: string;
                 description?: string;
             };
@@ -9239,6 +9336,7 @@ export interface operations {
                 "multipart/form-data": {
                     /** Format: binary */
                     file: string;
+                    images?: string[];
                 };
             };
         };
@@ -12082,6 +12180,104 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseListSkillLabelDto"];
+                };
+            };
+        };
+    };
+    downloadKnowledgeMarkdownImage: {
+        parameters: {
+            query?: {
+                version?: number;
+            };
+            header?: never;
+            path: {
+                documentId: number;
+                imageId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
+    downloadKnowledgeMarkdownImage_1: {
+        parameters: {
+            query?: {
+                version?: number;
+            };
+            header?: never;
+            path: {
+                documentId: number;
+                imageId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
+    listKnowledgeMarkdownImages: {
+        parameters: {
+            query?: {
+                version?: number;
+            };
+            header?: never;
+            path: {
+                documentId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseKnowledgeMarkdownImagesResponse"];
+                };
+            };
+        };
+    };
+    listKnowledgeMarkdownImages_1: {
+        parameters: {
+            query?: {
+                version?: number;
+            };
+            header?: never;
+            path: {
+                documentId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseKnowledgeMarkdownImagesResponse"];
                 };
             };
         };

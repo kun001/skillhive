@@ -39,6 +39,13 @@ describe('MARKDOWN_IMAGE_CLASS_NAME', () => {
 })
 
 describe('MarkdownRenderer links', () => {
+  it('resolves local image URLs after sanitizing unsafe protocols', () => {
+    const resolver = vi.fn((src: string) => src === 'images/a.png' ? '/api/image/42?version=1' : src)
+    render(<MarkdownRenderer content={'![attached](images/a.png)\n![unsafe](javascript:alert)'} resolveImageUrl={resolver} />)
+    expect(screen.getByAltText('attached').getAttribute('src')).toBe('/api/image/42?version=1')
+    expect(screen.getByAltText('unsafe').getAttribute('src')).toBeNull()
+    expect(resolver).not.toHaveBeenCalledWith('javascript:alert')
+  })
   it('passes the raw markdown href to the optional link click handler', () => {
     const onLinkClick = vi.fn()
 

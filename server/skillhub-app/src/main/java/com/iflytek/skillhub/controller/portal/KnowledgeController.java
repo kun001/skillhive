@@ -15,6 +15,7 @@ import com.iflytek.skillhub.dto.knowledge.KnowledgeDocumentDetailResponse;
 import com.iflytek.skillhub.dto.knowledge.KnowledgeDocumentResponse;
 import com.iflytek.skillhub.dto.knowledge.KnowledgeDocumentVersionResponse;
 import com.iflytek.skillhub.dto.knowledge.KnowledgeFolderResponse;
+import com.iflytek.skillhub.dto.knowledge.KnowledgeMarkdownImagesResponse;
 import com.iflytek.skillhub.dto.knowledge.UpdateKnowledgeBaseRequest;
 import com.iflytek.skillhub.dto.knowledge.UpdateKnowledgeDocumentRequest;
 import com.iflytek.skillhub.dto.knowledge.UpdateKnowledgeFolderRequest;
@@ -210,6 +211,9 @@ public class KnowledgeController extends BaseApiController {
             @PathVariable String base,
             @RequestParam("file") MultipartFile file,
             @RequestParam(required = false) Long folderId,
+            @RequestParam(required = false) String sourcePath,
+            @RequestParam(required = false) List<MultipartFile> images,
+            @RequestParam(required = false) List<String> imagePaths,
             @RequestParam(required = false) String title,
             @RequestParam(required = false) String description,
             @RequestAttribute("userId") String userId,
@@ -217,7 +221,7 @@ public class KnowledgeController extends BaseApiController {
             @AuthenticationPrincipal PlatformPrincipal principal,
             HttpServletRequest httpRequest) {
         return ok("response.success.created", knowledgeAppService.uploadDocument(
-                namespace, base, toUpload(file), folderId, title, description,
+                namespace, base, toUpload(file), toMarkdownUpload(sourcePath, images, imagePaths), folderId, title, description,
                 caller(userId, userNsRoles, principal), AuditRequestContext.from(httpRequest)));
     }
 
@@ -277,13 +281,16 @@ public class KnowledgeController extends BaseApiController {
     public ApiResponse<KnowledgeDocumentVersionResponse> uploadVersion(
             @PathVariable Long documentId,
             @RequestParam("file") MultipartFile file,
+            @RequestParam(required = false) String sourcePath,
+            @RequestParam(required = false) List<MultipartFile> images,
+            @RequestParam(required = false) List<String> imagePaths,
             @RequestParam(required = false) String changeNote,
             @RequestAttribute("userId") String userId,
             @RequestAttribute(value = "userNsRoles", required = false) Map<Long, NamespaceRole> userNsRoles,
             @AuthenticationPrincipal PlatformPrincipal principal,
             HttpServletRequest httpRequest) {
         return ok("response.success.created", knowledgeAppService.uploadVersion(
-                documentId, toUpload(file), changeNote, caller(userId, userNsRoles, principal),
+                documentId, toUpload(file), toMarkdownUpload(sourcePath, images, imagePaths), changeNote, caller(userId, userNsRoles, principal),
                 AuditRequestContext.from(httpRequest)));
     }
 
@@ -318,6 +325,33 @@ public class KnowledgeController extends BaseApiController {
             @AuthenticationPrincipal PlatformPrincipal principal) throws IOException {
         KnowledgeAppService.FileContent content = knowledgeAppService.openContent(
                 documentId, version, caller(userId, userNsRoles, principal));
+        return streamContent(content, disposition);
+    }
+
+    @GetMapping("/documents/{documentId}/images")
+    @Operation(operationId = "listKnowledgeMarkdownImages", summary = "List the images bound to a Markdown version")
+    public ApiResponse<KnowledgeMarkdownImagesResponse> images(
+            @PathVariable Long documentId,
+            @RequestParam(required = false) Integer version,
+            @RequestAttribute("userId") String userId,
+            @RequestAttribute(value = "userNsRoles", required = false) Map<Long, NamespaceRole> userNsRoles,
+            @AuthenticationPrincipal PlatformPrincipal principal) {
+        return ok("response.success.read", knowledgeAppService.listImages(documentId, version, caller(userId, userNsRoles, principal)));
+    }
+
+    @GetMapping("/documents/{documentId}/images/{imageId}/content")
+    @Operation(operationId = "downloadKnowledgeMarkdownImage", summary = "Display an image from a published Markdown version")
+    @RateLimit(category = "download", authenticated = 120, anonymous = 0)
+    public ResponseEntity<InputStreamResource> imageContent(
+            @PathVariable Long documentId, @PathVariable Long imageId,
+            @RequestParam(required = false) Integer version,
+            @RequestAttribute("userId") String userId,
+            @RequestAttribute(value = "userNsRoles", required = false) Map<Long, NamespaceRole> userNsRoles,
+            @AuthenticationPrincipal PlatformPrincipal principal) throws IOException {
+        return streamContent(knowledgeAppService.openImage(documentId, imageId, version, caller(userId, userNsRoles, principal)), "inline");
+    }
+
+    private static ResponseEntity<InputStreamResource> streamContent(KnowledgeAppService.FileContent content, String disposition) throws IOException {
         boolean inline = "inline".equalsIgnoreCase(disposition) && content.previewKind() != KnowledgePreviewKind.NONE;
         MediaType mediaType = switch (content.previewKind()) {
             case MARKDOWN, TEXT -> new MediaType(MediaType.TEXT_PLAIN, StandardCharsets.UTF_8);
@@ -346,5 +380,10 @@ public class KnowledgeController extends BaseApiController {
 
     private static KnowledgeAppService.Upload toUpload(MultipartFile file) {
         return new KnowledgeAppService.Upload(file.getOriginalFilename(), file.getSize(), file::getInputStream);
+    }
+
+    private static KnowledgeAppService.MarkdownUpload toMarkdownUpload(String sourcePath, List<MultipartFile> images, List<String> paths) {
+        return new KnowledgeAppService.MarkdownUpload(sourcePath,
+                images == null ? List.of() : images.stream().map(KnowledgeController::toUpload).toList(), paths);
     }
 }

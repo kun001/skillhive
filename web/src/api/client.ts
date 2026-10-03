@@ -1662,14 +1662,16 @@ export const knowledgeApi = {
   uploadDocument(
     namespace: string,
     base: string,
-    params: { file: File; folderId?: number; title?: string; description?: string },
+    params: { file: File; folderId?: number; title?: string; description?: string; sourcePath?: string; images?: { file: File; path: string }[] },
     options?: KnowledgeUploadOptions,
   ): Promise<KnowledgeDocument> {
     const formData = new FormData()
-    formData.append('file', params.file)
+    formData.append('file', params.file, params.file.name.split(/[/\\]/).at(-1))
     if (params.folderId !== undefined) formData.append('folderId', String(params.folderId))
     if (params.title?.trim()) formData.append('title', params.title.trim())
     if (params.description?.trim()) formData.append('description', params.description.trim())
+    if (params.sourcePath) formData.append('sourcePath', params.sourcePath)
+    params.images?.forEach((image) => { formData.append('images', image.file, image.file.name.split(/[/\\]/).at(-1)); formData.append('imagePaths', image.path) })
     return uploadWithProgress<KnowledgeDocument>(`${knowledgeBasePath(namespace, base)}/documents`, formData, options)
   },
 
@@ -1698,12 +1700,14 @@ export const knowledgeApi = {
 
   uploadVersion(
     documentId: number,
-    params: { file: File; changeNote?: string },
+    params: { file: File; changeNote?: string; sourcePath?: string; images?: { file: File; path: string }[] },
     options?: KnowledgeUploadOptions,
   ): Promise<KnowledgeDocumentVersion> {
     const formData = new FormData()
-    formData.append('file', params.file)
+    formData.append('file', params.file, params.file.name.split(/[/\\]/).at(-1))
     if (params.changeNote?.trim()) formData.append('changeNote', params.changeNote.trim())
+    if (params.sourcePath) formData.append('sourcePath', params.sourcePath)
+    params.images?.forEach((image) => { formData.append('images', image.file, image.file.name.split(/[/\\]/).at(-1)); formData.append('imagePaths', image.path) })
     return uploadWithProgress<KnowledgeDocumentVersion>(`${KNOWLEDGE_PREFIX}/documents/${documentId}/versions`, formData, options)
   },
 
@@ -1718,6 +1722,14 @@ export const knowledgeApi = {
   },
 
   /** URL that downloads (or, for previewable types, displays) a file version. */
+  listImages(documentId: number, version?: number): Promise<import('./knowledge-types').KnowledgeMarkdownImages> {
+    return fetchJson(`${KNOWLEDGE_PREFIX}/documents/${documentId}/images${version === undefined ? '' : `?version=${version}`}`)
+  },
+
+  imageUrl(documentId: number, imageId: number, version: number): string {
+    return buildApiUrl(`${KNOWLEDGE_PREFIX}/documents/${documentId}/images/${imageId}/content?version=${version}`)
+  },
+
   contentUrl(documentId: number, options?: { version?: number; inline?: boolean }): string {
     const params = new URLSearchParams()
     if (options?.version !== undefined) params.set('version', String(options.version))

@@ -13,12 +13,14 @@ interface FolderSelectProps {
   disabledIds?: Set<number>
   id?: string
   ariaLabel?: string
+  disabled?: boolean
 }
 
-export function FolderSelect({ tree, value, onChange, disabledIds, id, ariaLabel }: FolderSelectProps) {
+export function FolderSelect({ tree, value, onChange, disabledIds, id, ariaLabel, disabled }: FolderSelectProps) {
   const { t } = useTranslation()
   return (
     <Select
+      disabled={disabled}
       value={value === undefined ? ROOT_VALUE : String(value)}
       onValueChange={(next) => onChange(next === ROOT_VALUE ? undefined : Number(next))}
     >

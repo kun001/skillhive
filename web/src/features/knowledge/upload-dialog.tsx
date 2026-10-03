@@ -14,6 +14,7 @@ import type { KnowledgeFolderNode } from './folder-tree'
 import { KNOWLEDGE_ACCEPTED_EXTENSIONS, fileExtension, formatFileSize } from './file-types'
 import { createUploadItems, isUploadable, summarizeUploads, type UploadItem } from './upload-queue'
 import { useInvalidateKnowledge } from './use-knowledge-queries'
+import { planUploads, uploadPath, type UploadPlanEntry } from './markdown-images'
 
 interface UploadDialogProps {
   open: boolean
@@ -30,6 +31,7 @@ export function KnowledgeUploadDialog({ open, onOpenChange, namespace, base, tre
   const { t } = useTranslation()
   const invalidate = useInvalidateKnowledge()
   const inputRef = useRef<HTMLInputElement>(null)
+  const directoryRef = useRef<HTMLInputElement>(null)
   const [items, setItems] = useState<UploadItem[]>([])
   const [targetFolder, setTargetFolder] = useState<number | undefined>(folderId)
   const [dragging, setDragging] = useState(false)
@@ -57,10 +59,14 @@ export function KnowledgeUploadDialog({ open, onOpenChange, namespace, base, tre
     }
   }
 
-  const uploadOne = async (item: UploadItem) => {
+  const uploadOne = async ({ item, bundle, error: planningError }: UploadPlanEntry) => {
+    if (planningError) {
+      update(item.id, { status: 'failed', error: t(planningError.key, { path: planningError.path }), errorIsKey: false })
+      return false
+    }
     update(item.id, { status: 'uploading', progress: 0, error: undefined, errorIsKey: false })
     try {
-      await knowledgeApi.uploadDocument(namespace, base, { file: item.file, folderId: targetFolder }, {
+      await knowledgeApi.uploadDocument(namespace, base, { file: item.file, folderId: targetFolder, ...bundle }, {
         onProgress: (progress) => update(item.id, { progress }),
       })
       update(item.id, { status: 'done', progress: 1 })
@@ -73,17 +79,33 @@ export function KnowledgeUploadDialog({ open, onOpenChange, namespace, base, tre
 
   const uploadAll = async (queue: UploadItem[]) => {
     setRunning(true)
+    const plan = await planUploads(items)
+    const queuedIds = new Set(queue.map((item) => item.id))
+    const pending = plan.filter((entry) => entry.item.status !== 'done' && (queuedIds.has(entry.item.id) || entry.bundle.images.some((image) => queuedIds.has(image.itemId))))
+    const completedIds = new Set(items.filter((item) => item.status === 'done').map((item) => item.id))
     let succeeded = 0
-    for (const item of queue) {
-      if (await uploadOne(item)) succeeded += 1
+    for (const entry of pending) {
+      if (await uploadOne(entry)) {
+        succeeded += 1
+        completedIds.add(entry.item.id)
+      } else completedIds.delete(entry.item.id)
+    }
+    for (const item of items) {
+      const parents = plan.filter((entry) => entry.bundle.images.some((image) => image.itemId === item.id))
+      if (parents.length) {
+        const done = parents.every((entry) => completedIds.has(entry.item.id))
+        if (!item.errorIsKey) update(item.id, { status: done ? 'done' : 'waiting', progress: done ? 1 : 0 })
+        if (done) completedIds.add(item.id)
+        else completedIds.delete(item.id)
+      }
     }
     setRunning(false)
     if (succeeded > 0) {
-      if (succeeded === queue.length && items.every((item) => item.status === 'done' || queue.some((queued) => queued.id === item.id))) {
+      if (items.every((item) => completedIds.has(item.id))) {
         onOpenChange(false)
       }
       await invalidate()
-      toast.success(t('knowledge.upload.allDone'), t('knowledge.upload.summary', { done: succeeded, total: queue.length }))
+      toast.success(t('knowledge.upload.allDone'), t('knowledge.upload.summary', { done: succeeded, total: pending.length }))
     }
   }
 
@@ -99,7 +121,7 @@ export function KnowledgeUploadDialog({ open, onOpenChange, namespace, base, tre
 
         <div className="space-y-2">
           <Label htmlFor="kb-upload-folder">{t('knowledge.upload.targetFolder')}</Label>
-          <FolderSelect id="kb-upload-folder" tree={tree} value={targetFolder} onChange={setTargetFolder} />
+          <FolderSelect id="kb-upload-folder" tree={tree} value={targetFolder} onChange={setTargetFolder} disabled={running} />
         </div>
 
         <input
@@ -113,6 +135,10 @@ export function KnowledgeUploadDialog({ open, onOpenChange, namespace, base, tre
             event.target.value = ''
           }}
         />
+        <input type="file" multiple className="hidden" ref={(node) => {
+          directoryRef.current = node
+          node?.setAttribute('webkitdirectory', '')
+        }} onChange={(event) => { addFiles(event.target.files); event.target.value = '' }} />
         <button
           type="button"
           disabled={running}
@@ -135,6 +161,12 @@ export function KnowledgeUploadDialog({ open, onOpenChange, namespace, base, tre
           <UploadCloud className="h-7 w-7 text-muted-foreground" aria-hidden />
           <span className="text-sm text-foreground/80">{t('knowledge.upload.dropzone')}</span>
         </button>
+        <div className="space-y-2">
+          <Button type="button" variant="outline" disabled={running} onClick={() => directoryRef.current?.click()}>
+            {t('knowledge.upload.chooseFolder')}
+          </Button>
+          <p className="text-xs leading-5 text-muted-foreground">{t('knowledge.upload.markdownHint')}</p>
+        </div>
 
         {items.length > 0 ? (
           <ul className="max-h-72 space-y-2 overflow-y-auto pr-1" aria-live="polite">
@@ -142,7 +174,7 @@ export function KnowledgeUploadDialog({ open, onOpenChange, namespace, base, tre
               <li key={item.id} className="flex items-center gap-3 rounded-lg border border-border/50 bg-background/60 px-3 py-2">
                 <KnowledgeFileIcon extension={fileExtension(item.file.name)} />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-foreground">{item.file.name}</p>
+                  <p className="truncate text-sm font-medium text-foreground" title={uploadPath(item.file)}>{uploadPath(item.file)}</p>
                   <p className={cn('truncate text-xs', item.status === 'failed' ? 'text-destructive' : 'text-muted-foreground')}>
                     {formatFileSize(item.file.size)}
                     {' · '}

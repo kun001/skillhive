@@ -31,6 +31,9 @@ public class KnowledgeDocumentVersion {
     @Column(name = "source_filename", length = 256)
     private String sourceFilename;
 
+    @Column(name = "source_path", length = 1024)
+    private String sourcePath;
+
     @Column(name = "size_bytes", nullable = false)
     private long sizeBytes;
 
@@ -97,6 +100,8 @@ public class KnowledgeDocumentVersion {
     public String getContentObjectKey() { return contentObjectKey; }
     public String getContentType() { return contentType; }
     public String getSourceFilename() { return sourceFilename; }
+    public String getSourcePath() { return sourcePath == null ? sourceFilename : sourcePath; }
+    public void setSourcePath(String sourcePath) { this.sourcePath = sourcePath; }
     public long getSizeBytes() { return sizeBytes; }
     public String getSha256() { return sha256; }
     public String getChangeNote() { return changeNote; }

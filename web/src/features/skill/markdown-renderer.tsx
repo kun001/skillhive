@@ -135,6 +135,7 @@ interface MarkdownRendererProps {
   content: string
   className?: string
   onLinkClick?: (href: string, event: MouseEvent<HTMLAnchorElement>) => void
+  resolveImageUrl?: (src: string) => string
 }
 
 /**
@@ -143,7 +144,7 @@ interface MarkdownRendererProps {
  * dedicated UI sections and should not appear twice in the document body.
  * Memoized to prevent re-parsing on every render.
  */
-function MarkdownRendererComponent({ content, className, onLinkClick }: MarkdownRendererProps) {
+function MarkdownRendererComponent({ content, className, onLinkClick, resolveImageUrl }: MarkdownRendererProps) {
   const containerClassName = [
     className,
     'max-w-none break-words text-sm text-foreground/90 [overflow-wrap:anywhere]',
@@ -324,8 +325,9 @@ function MarkdownRendererComponent({ content, className, onLinkClick }: Markdown
               {children}
             </td>
           ),
-          img: ({ className: imageClassName, alt, ...props }) => (
-            <img className={cn(MARKDOWN_IMAGE_CLASS_NAME, imageClassName)} alt={alt ?? ''} {...props} />
+          img: ({ className: imageClassName, alt, src, ...props }) => (
+            <img className={cn(MARKDOWN_IMAGE_CLASS_NAME, imageClassName)} alt={alt ?? ''} {...props}
+              src={typeof src === 'string' && src ? resolveImageUrl?.(src) ?? src : undefined} />
           ),
         }}
       >
