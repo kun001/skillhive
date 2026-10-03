@@ -31,7 +31,6 @@ export function KnowledgeUploadDialog({ open, onOpenChange, namespace, base, tre
   const { t } = useTranslation()
   const invalidate = useInvalidateKnowledge()
   const inputRef = useRef<HTMLInputElement>(null)
-  const directoryRef = useRef<HTMLInputElement>(null)
   const [items, setItems] = useState<UploadItem[]>([])
   const [targetFolder, setTargetFolder] = useState<number | undefined>(folderId)
   const [dragging, setDragging] = useState(false)
@@ -135,10 +134,6 @@ export function KnowledgeUploadDialog({ open, onOpenChange, namespace, base, tre
             event.target.value = ''
           }}
         />
-        <input type="file" multiple className="hidden" ref={(node) => {
-          directoryRef.current = node
-          node?.setAttribute('webkitdirectory', '')
-        }} onChange={(event) => { addFiles(event.target.files); event.target.value = '' }} />
         <button
           type="button"
           disabled={running}
@@ -161,12 +156,7 @@ export function KnowledgeUploadDialog({ open, onOpenChange, namespace, base, tre
           <UploadCloud className="h-7 w-7 text-muted-foreground" aria-hidden />
           <span className="text-sm text-foreground/80">{t('knowledge.upload.dropzone')}</span>
         </button>
-        <div className="space-y-2">
-          <Button type="button" variant="outline" disabled={running} onClick={() => directoryRef.current?.click()}>
-            {t('knowledge.upload.chooseFolder')}
-          </Button>
-          <p className="text-xs leading-5 text-muted-foreground">{t('knowledge.upload.markdownHint')}</p>
-        </div>
+        <p className="text-xs leading-5 text-muted-foreground">{t('knowledge.upload.markdownHint')}</p>
 
         {items.length > 0 ? (
           <ul className="max-h-72 space-y-2 overflow-y-auto pr-1" aria-live="polite">

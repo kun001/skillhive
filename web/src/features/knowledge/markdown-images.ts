@@ -45,6 +45,8 @@ export async function planUploads(items: UploadItem[], existing?: { sourcePath: 
   const consumed = new Set<string>()
   const entries: UploadPlanEntry[] = []
   const candidates = items.filter((item) => ['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(fileExtension(item.file.name)))
+  // Selecting Markdown makes the accompanying images document assets, including unused ones.
+  if (items.some((item) => isMarkdown(item.file))) candidates.forEach((image) => consumed.add(image.id))
   for (const item of items) {
     let sourcePath = uploadPath(item.file)
     if (existing && !item.file.webkitRelativePath && isMarkdown(item.file)) {
@@ -52,9 +54,11 @@ export async function planUploads(items: UploadItem[], existing?: { sourcePath: 
     }
     const entry: UploadPlanEntry = { item, bundle: { sourcePath, images: [] } }
     entries.push(entry)
-    if (!isMarkdown(item.file) || validateKnowledgeFile(item.file)) continue
+    if (!isMarkdown(item.file)) continue
+    const fileError = validateKnowledgeFile(item.file)
     try {
-      const urls = markdownImageUrls(await item.file.text())
+      if (fileError) entry.error = { key: fileError }
+      const urls = fileError ? [] : markdownImageUrls(await item.file.text())
       const attached = new Set<string>()
       for (const url of urls) {
         if (/^(?:[a-z][a-z\d+.-]*:|\/|#)/i.test(url)) continue
@@ -76,6 +80,15 @@ export async function planUploads(items: UploadItem[], existing?: { sourcePath: 
         entry.bundle.images.push({ file: image.file, path, itemId: image.id })
         const invalid = validateKnowledgeFile(image.file)
         if (invalid) entry.error ??= { key: invalid, path: url }
+      }
+      for (const image of candidates) {
+        if (entry.bundle.images.some((attachedImage) => attachedImage.itemId === image.id)) continue
+        const path = image.file.webkitRelativePath || sourcePath.slice(0, sourcePath.lastIndexOf('/') + 1) + image.file.name
+        if (attached.has(path)) entry.error ??= { key: 'knowledge.upload.imageAmbiguous', path }
+        attached.add(path)
+        entry.bundle.images.push({ file: image.file, path, itemId: image.id })
+        const invalid = validateKnowledgeFile(image.file)
+        if (invalid) entry.error ??= { key: invalid, path }
       }
       if (entry.bundle.images.length > 100) entry.error ??= { key: 'knowledge.upload.imagesTooMany' }
       if (item.file.size + entry.bundle.images.reduce((size, image) => size + image.file.size, 0) > KNOWLEDGE_MAX_FILE_SIZE_BYTES) {

@@ -108,7 +108,6 @@ export function NewKnowledgeVersionDialog({ open, onOpenChange, document }: NewV
   const { t } = useTranslation()
   const invalidate = useInvalidateKnowledge()
   const inputRef = useRef<HTMLInputElement>(null)
-  const directoryRef = useRef<HTMLInputElement>(null)
   const [files, setFiles] = useState<File[]>([])
   const [changeNote, setChangeNote] = useState('')
   const [progress, setProgress] = useState<number | null>(null)
@@ -160,10 +159,6 @@ export function NewKnowledgeVersionDialog({ open, onOpenChange, document }: NewV
             accept={KNOWLEDGE_ACCEPTED_EXTENSIONS.map((extension) => `.${extension}`).join(',')}
             onChange={(event) => { setFiles(Array.from(event.target.files ?? [])); event.target.value = '' }}
           />
-          <input type="file" multiple className="hidden" ref={(node) => {
-            directoryRef.current = node
-            node?.setAttribute('webkitdirectory', '')
-          }} onChange={(event) => { setFiles(Array.from(event.target.files ?? [])); event.target.value = '' }} />
           <button
             type="button"
             disabled={uploading}
@@ -184,7 +179,6 @@ export function NewKnowledgeVersionDialog({ open, onOpenChange, document }: NewV
               <span className="text-sm text-muted-foreground">{t('knowledge.versionDialog.file')}</span>
             )}
           </button>
-          <Button type="button" variant="outline" disabled={uploading} onClick={() => directoryRef.current?.click()}>{t('knowledge.upload.chooseFolder')}</Button>
           <p className="text-xs leading-5 text-muted-foreground">{t('knowledge.upload.markdownHint')}</p>
           {files.length > 1 ? <p className="text-xs text-muted-foreground">{t('knowledge.upload.selectedFiles', { count: files.length })}</p> : null}
           <div className="space-y-2">

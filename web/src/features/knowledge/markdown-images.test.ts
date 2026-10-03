@@ -20,6 +20,19 @@ describe('Markdown image uploads', () => {
     expect(plan[0].bundle.images[0].path).toBe('images/a.png')
     expect(plan[0].error).toBeUndefined()
   })
+  it('keeps every image selected with Markdown out of the document list, including unused images', async () => {
+    const plan = await planUploads(createUploadItems([
+      file('guide.md', '![流程](images/flow.png)'), file('flow.png'), file('unused.png'),
+    ]))
+    expect(plan.map((entry) => entry.item.file.name)).toEqual(['guide.md'])
+    expect(plan[0].bundle.images.map((image) => image.path)).toEqual(['images/flow.png', 'unused.png'])
+    expect(plan[0].error).toBeUndefined()
+  })
+  it('keeps independent image uploads available when no Markdown is selected', async () => {
+    const plan = await planUploads(createUploadItems([file('a.png'), file('b.png')]))
+    expect(plan.map((entry) => entry.item.file.name)).toEqual(['a.png', 'b.png'])
+    expect(plan.every((entry) => entry.bundle.images.length === 0)).toBe(true)
+  })
   it('preserves folder paths, parent references, Unicode and same names in different folders', async () => {
     const plan = await planUploads(createUploadItems([
       file('说明.md', '![x](../图/a%20图.png)\n![y](../其他/a%20图.png)', '资料/docs/说明.md'),
