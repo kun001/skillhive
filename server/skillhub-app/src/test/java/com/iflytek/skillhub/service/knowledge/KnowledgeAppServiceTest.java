@@ -204,6 +204,30 @@ class KnowledgeAppServiceTest {
         assertThat(image.getValue().getRelativePath()).isEqualTo("pack/a.png");
     }
 
+    @Test
+    void officeSourcesRequireMembershipPublishedVersionsAndSeparateCacheKeys() throws Exception {
+        KnowledgeDocument document = withId(new KnowledgeDocument(11L, null, "office", "Office", null, "alice"), 21L);
+        KnowledgeDocumentVersion first = withId(new KnowledgeDocumentVersion(21L, 1, "original", "application/msword", "a.docx", 1, "sha", null, "alice"), 31L);
+        KnowledgeDocumentVersion second = withId(new KnowledgeDocumentVersion(21L, 2, "changed", "application/msword", "a.docx", 1, "other-sha", null, "alice"), 32L);
+        KnowledgeDocumentVersion draft = withId(new KnowledgeDocumentVersion(21L, 3, "draft", "application/msword", "a.docx", 1, "draft-sha", null, "alice"), 33L);
+        first.publishDirectly("alice");
+        second.publishDirectly("alice");
+        document.publish(first, "docx");
+        when(documentRepository.findById(21L)).thenReturn(Optional.of(document));
+        when(versionRepository.findById(31L)).thenReturn(Optional.of(first));
+        when(versionRepository.findByDocumentIdAndVersionNumber(21L, 1)).thenReturn(Optional.of(first));
+        when(versionRepository.findByDocumentIdAndVersionNumber(21L, 2)).thenReturn(Optional.of(second));
+        when(versionRepository.findByDocumentIdAndVersionNumber(21L, 3)).thenReturn(Optional.of(draft));
+        var source = service.officePreviewSource(21L, 1, member("alice"));
+        assertThat(source.key()).matches("[a-f0-9]{64}");
+        assertThat(service.officePreviewSource(21L, null, member("alice")).key()).isEqualTo(source.key());
+        assertThat(service.officePreviewSource(21L, 2, member("alice")).key()).isNotEqualTo(source.key());
+        assertThatThrownBy(() -> service.officePreviewSource(21L, 3, member("alice"))).isInstanceOf(DomainNotFoundException.class);
+        assertThatThrownBy(() -> service.officePreviewSource(21L, 1, new KnowledgeAppService.Caller("outsider", Map.of(), Set.of())))
+                .isInstanceOf(DomainNotFoundException.class);
+        verify(storageService, never()).getObject(anyString());
+    }
+
     private static KnowledgeAppService.Caller member(String userId) {
         return new KnowledgeAppService.Caller(userId, Map.of(NAMESPACE_ID, NamespaceRole.MEMBER), Set.of());
     }

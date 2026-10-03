@@ -39,18 +39,18 @@ public class KnowledgeFilePolicy {
             Map.entry("txt", new FileType("text/plain", KnowledgePreviewKind.TEXT)),
             Map.entry("csv", new FileType("text/csv", KnowledgePreviewKind.NONE)),
             Map.entry("json", new FileType("application/json", KnowledgePreviewKind.NONE)),
-            Map.entry("doc", new FileType("application/msword", KnowledgePreviewKind.NONE)),
+            Map.entry("doc", new FileType("application/msword", KnowledgePreviewKind.OFFICE)),
             Map.entry("docx", new FileType(
                     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                    KnowledgePreviewKind.NONE)),
-            Map.entry("xls", new FileType("application/vnd.ms-excel", KnowledgePreviewKind.NONE)),
+                    KnowledgePreviewKind.OFFICE)),
+            Map.entry("xls", new FileType("application/vnd.ms-excel", KnowledgePreviewKind.SPREADSHEET)),
             Map.entry("xlsx", new FileType(
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    KnowledgePreviewKind.NONE)),
-            Map.entry("ppt", new FileType("application/vnd.ms-powerpoint", KnowledgePreviewKind.NONE)),
+                    KnowledgePreviewKind.SPREADSHEET)),
+            Map.entry("ppt", new FileType("application/vnd.ms-powerpoint", KnowledgePreviewKind.OFFICE)),
             Map.entry("pptx", new FileType(
                     "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-                    KnowledgePreviewKind.NONE)),
+                    KnowledgePreviewKind.OFFICE)),
             Map.entry("zip", new FileType("application/zip", KnowledgePreviewKind.NONE)),
             Map.entry("rar", new FileType("application/vnd.rar", KnowledgePreviewKind.NONE)),
             Map.entry("7z", new FileType("application/x-7z-compressed", KnowledgePreviewKind.NONE))

@@ -352,7 +352,8 @@ public class KnowledgeController extends BaseApiController {
     }
 
     private static ResponseEntity<InputStreamResource> streamContent(KnowledgeAppService.FileContent content, String disposition) throws IOException {
-        boolean inline = "inline".equalsIgnoreCase(disposition) && content.previewKind() != KnowledgePreviewKind.NONE;
+        boolean inline = "inline".equalsIgnoreCase(disposition) && Set.of(KnowledgePreviewKind.PDF, KnowledgePreviewKind.IMAGE,
+                KnowledgePreviewKind.MARKDOWN, KnowledgePreviewKind.TEXT).contains(content.previewKind());
         MediaType mediaType = switch (content.previewKind()) {
             case MARKDOWN, TEXT -> new MediaType(MediaType.TEXT_PLAIN, StandardCharsets.UTF_8);
             default -> MediaType.parseMediaType(content.contentType());

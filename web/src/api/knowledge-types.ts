@@ -5,7 +5,16 @@ type Schemas = components['schemas']
 /** Makes the listed keys required and non-null; the backend always populates them. */
 type Populated<T, K extends keyof T> = Omit<T, K> & { [P in K]-?: NonNullable<T[P]> }
 
-export type KnowledgePreviewKind = 'PDF' | 'IMAGE' | 'MARKDOWN' | 'TEXT' | 'NONE'
+export type KnowledgePreviewKind = 'PDF' | 'IMAGE' | 'MARKDOWN' | 'TEXT' | 'OFFICE' | 'SPREADSHEET' | 'NONE'
+
+export type KnowledgeOfficePreview = Omit<Populated<Schemas['KnowledgeOfficePreview'],
+  'status' | 'pageCount' | 'pageLimit' | 'sheetLimit' | 'rowLimit' | 'columnLimit'>, 'sheets'> & {
+  sheets: KnowledgePreviewSheet[]
+}
+export type KnowledgePreviewSheet = Omit<Populated<Schemas['PreviewSheet'], 'name' | 'truncated'>, 'rows' | 'merges'> & {
+  rows: Populated<Schemas['PreviewCell'], 'text' | 'bold' | 'align'>[][]
+  merges: Populated<Schemas['PreviewMerge'], 'row' | 'column' | 'rowSpan' | 'columnSpan'>[]
+}
 
 export type KnowledgeMarkdownImages = Omit<Populated<Schemas['KnowledgeMarkdownImagesResponse'], 'sourcePath' | 'images'>, 'images'> & {
   images: Populated<Schemas['Image'], 'id' | 'path'>[]

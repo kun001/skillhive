@@ -9,6 +9,7 @@ import { buttonVariants } from '@/shared/ui/button'
 import { KnowledgeFileIcon } from './file-icon'
 import { knowledgeKeys } from './use-knowledge-queries'
 import { resolveImagePath } from './markdown-images'
+import { KnowledgeOfficeFilePreview } from './office-preview'
 
 /** Text previews beyond this size are offered as downloads instead of rendering in the page. */
 export const MAX_TEXT_PREVIEW_BYTES = 2 * 1024 * 1024
@@ -87,6 +88,9 @@ export function KnowledgeFilePreview({ document }: { document: KnowledgeDocument
         description={t('knowledge.preview.unsupportedDescription')}
       />
     )
+  }
+  if (kind === 'OFFICE' || kind === 'SPREADSHEET') {
+    return <KnowledgeOfficeFilePreview key={`${document.id}:${document.currentVersion}`} document={document} />
   }
   if (textTooLarge) {
     return <PreviewMessage document={document} title={t('knowledge.preview.tooLarge')} />

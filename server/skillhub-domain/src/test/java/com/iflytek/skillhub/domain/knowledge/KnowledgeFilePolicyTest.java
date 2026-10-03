@@ -39,7 +39,11 @@ class KnowledgeFilePolicyTest {
         assertThat(policy.previewKindFor("JPG")).isEqualTo(KnowledgePreviewKind.IMAGE);
         assertThat(policy.previewKindFor("md")).isEqualTo(KnowledgePreviewKind.MARKDOWN);
         assertThat(policy.previewKindFor("txt")).isEqualTo(KnowledgePreviewKind.TEXT);
-        assertThat(policy.previewKindFor("xlsx")).isEqualTo(KnowledgePreviewKind.NONE);
+        assertThat(policy.previewKindFor("xlsx")).isEqualTo(KnowledgePreviewKind.SPREADSHEET);
+        assertThat(policy.previewKindFor("xls")).isEqualTo(KnowledgePreviewKind.SPREADSHEET);
+        for (String extension : java.util.List.of("doc", "docx", "ppt", "pptx")) {
+            assertThat(policy.previewKindFor(extension)).isEqualTo(KnowledgePreviewKind.OFFICE);
+        }
         assertThat(policy.contentTypeFor("png")).isEqualTo("image/png");
         assertThat(policy.contentTypeFor("unknown")).isEqualTo("application/octet-stream");
     }

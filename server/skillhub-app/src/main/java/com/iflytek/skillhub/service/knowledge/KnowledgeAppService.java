@@ -581,6 +581,28 @@ public class KnowledgeAppService {
                 filePolicy.previewKindFor(extension), () -> storageService.getObject(objectKey));
     }
 
+    public record OfficePreviewSource(String key, String extension, FileContent file) {}
+
+    @Transactional(readOnly = true)
+    public OfficePreviewSource officePreviewSource(Long documentId, Integer versionNumber, Caller caller) {
+        KnowledgeDocument document = resolveDocument(documentId, caller).document();
+        KnowledgeDocumentVersion version = versionNumber == null ? currentVersion(document) : findPublishedVersion(document, versionNumber);
+        String extension = filePolicy.extensionOf(version.getSourceFilename());
+        KnowledgePreviewKind kind = filePolicy.previewKindFor(extension);
+        if (kind != KnowledgePreviewKind.OFFICE && kind != KnowledgePreviewKind.SPREADSHEET) {
+            throw new DomainBadRequestException("error.knowledge.preview.unsupported");
+        }
+        try {
+            String identity = "office-preview-v1:" + documentId + ":" + version.getId() + ":" + version.getSha256();
+            String key = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(
+                    identity.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+            return new OfficePreviewSource(key, extension, new FileContent(version.getSourceFilename(), version.getContentType(),
+                    version.getSizeBytes(), kind, () -> storageService.getObject(version.getContentObjectKey())));
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("SHA-256 is required", exception);
+        }
+    }
+
     @Transactional(readOnly = true)
     public KnowledgeMarkdownImagesResponse listImages(Long documentId, Integer versionNumber, Caller caller) {
         KnowledgeDocument document = resolveDocument(documentId, caller).document();

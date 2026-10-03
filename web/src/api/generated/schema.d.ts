@@ -3236,6 +3236,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/knowledge/documents/{documentId}/preview/pages/{page}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read one authorized Office preview image */
+        get: operations["getKnowledgeOfficePreviewPage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/web/knowledge/documents/{documentId}/preview/pages/{page}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read one authorized Office preview image */
+        get: operations["getKnowledgeOfficePreviewPage_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/web/knowledge/documents/{documentId}/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Generate or read a bounded Office preview */
+        get: operations["getKnowledgeOfficePreview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/knowledge/documents/{documentId}/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Generate or read a bounded Office preview */
+        get: operations["getKnowledgeOfficePreview_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/web/knowledge/documents/{documentId}/images/{imageId}/content": {
         parameters: {
             query?: never;
@@ -5333,6 +5401,52 @@ export interface components {
             /** Format: date-time */
             timestamp?: string;
             requestId?: string;
+        };
+        ApiResponseKnowledgeOfficePreview: {
+            /** Format: int32 */
+            code?: number;
+            msg?: string;
+            data?: components["schemas"]["KnowledgeOfficePreview"];
+            /** Format: date-time */
+            timestamp?: string;
+            requestId?: string;
+        };
+        KnowledgeOfficePreview: {
+            /** @enum {string} */
+            status?: "PROCESSING" | "READY" | "FAILED" | "UNAVAILABLE";
+            kind?: string;
+            /** Format: int32 */
+            pageCount?: number;
+            /** Format: int32 */
+            pageLimit?: number;
+            sheets?: components["schemas"]["PreviewSheet"][];
+            /** Format: int32 */
+            sheetLimit?: number;
+            /** Format: int32 */
+            rowLimit?: number;
+            /** Format: int32 */
+            columnLimit?: number;
+        };
+        PreviewCell: {
+            text?: string;
+            bold?: boolean;
+            align?: string;
+        };
+        PreviewMerge: {
+            /** Format: int32 */
+            row?: number;
+            /** Format: int32 */
+            column?: number;
+            /** Format: int32 */
+            rowSpan?: number;
+            /** Format: int32 */
+            columnSpan?: number;
+        };
+        PreviewSheet: {
+            name?: string;
+            rows?: components["schemas"]["PreviewCell"][][];
+            merges?: components["schemas"]["PreviewMerge"][];
+            truncated?: boolean;
         };
         ApiResponseKnowledgeMarkdownImagesResponse: {
             /** Format: int32 */
@@ -12180,6 +12294,104 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseListSkillLabelDto"];
+                };
+            };
+        };
+    };
+    getKnowledgeOfficePreviewPage: {
+        parameters: {
+            query?: {
+                version?: number;
+            };
+            header?: never;
+            path: {
+                documentId: number;
+                page: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
+    getKnowledgeOfficePreviewPage_1: {
+        parameters: {
+            query?: {
+                version?: number;
+            };
+            header?: never;
+            path: {
+                documentId: number;
+                page: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
+    getKnowledgeOfficePreview: {
+        parameters: {
+            query?: {
+                version?: number;
+            };
+            header?: never;
+            path: {
+                documentId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseKnowledgeOfficePreview"];
+                };
+            };
+        };
+    };
+    getKnowledgeOfficePreview_1: {
+        parameters: {
+            query?: {
+                version?: number;
+            };
+            header?: never;
+            path: {
+                documentId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseKnowledgeOfficePreview"];
                 };
             };
         };

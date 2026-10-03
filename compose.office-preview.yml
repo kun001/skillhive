@@ -1,0 +1,25 @@
+# Add with: docker compose -f <base-compose.yml> -f compose.office-preview.yml up -d
+services:
+  office-preview:
+    image: skillhive-office-preview:local
+    build: ./office-preview
+    restart: unless-stopped
+    volumes: [office_preview_cache:/cache]
+    networks: [preview]
+    mem_limit: 1g
+    cpus: 1.0
+    pids_limit: 128
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+  server:
+    environment:
+      SKILLHUB_KNOWLEDGE_PREVIEW_URL: http://office-preview:8090
+    networks: [default, preview]
+    depends_on:
+      office-preview:
+        condition: service_healthy
+volumes:
+  office_preview_cache:
+networks:
+  preview:
+    internal: true
