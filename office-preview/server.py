@@ -20,7 +20,8 @@ CACHE.mkdir(parents=True, exist_ok=True)
 for cached in CACHE.iterdir():
     if cached.is_dir() and (cached / "state.json").is_file():
         try:
-            if json.loads((cached / "state.json").read_text(encoding="utf-8"))["status"] != "READY":
+            state = json.loads((cached / "state.json").read_text(encoding="utf-8"))
+            if state["status"] != "READY" or state.get("kind") != "OFFICE":
                 shutil.rmtree(cached)
         except (ValueError, KeyError):
             shutil.rmtree(cached)
@@ -122,7 +123,7 @@ class Handler(BaseHTTPRequestHandler):
             length = int(self.headers.get("Content-Length", "0"))
         except ValueError:
             length = 0
-        if not parts or len(parts) != 2 or extension not in ("doc", "docx", "ppt", "pptx", "xls", "xlsx") or not 0 < length <= MAX_BYTES:
+        if not parts or len(parts) != 2 or extension not in ("doc", "docx", "ppt", "pptx") or not 0 < length <= MAX_BYTES:
             self.close_connection = True
             return self.respond(400, {})
         key, root = parts[1], CACHE / parts[1]

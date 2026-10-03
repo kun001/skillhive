@@ -3,8 +3,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libreoffice-writer libreoffice-impress poppler-utils fonts-noto-cjk fonts-liberation \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 RUN useradd --uid 10001 --create-home preview && mkdir /cache && chown preview:preview /cache
 USER preview

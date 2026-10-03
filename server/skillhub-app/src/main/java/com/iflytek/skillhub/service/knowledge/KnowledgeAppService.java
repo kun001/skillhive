@@ -589,7 +589,7 @@ public class KnowledgeAppService {
         KnowledgeDocumentVersion version = versionNumber == null ? currentVersion(document) : findPublishedVersion(document, versionNumber);
         String extension = filePolicy.extensionOf(version.getSourceFilename());
         KnowledgePreviewKind kind = filePolicy.previewKindFor(extension);
-        if (kind != KnowledgePreviewKind.OFFICE && kind != KnowledgePreviewKind.SPREADSHEET) {
+        if (kind != KnowledgePreviewKind.OFFICE) {
             throw new DomainBadRequestException("error.knowledge.preview.unsupported");
         }
         try {

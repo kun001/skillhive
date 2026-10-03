@@ -43,10 +43,10 @@ public class KnowledgeFilePolicy {
             Map.entry("docx", new FileType(
                     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                     KnowledgePreviewKind.OFFICE)),
-            Map.entry("xls", new FileType("application/vnd.ms-excel", KnowledgePreviewKind.SPREADSHEET)),
+            Map.entry("xls", new FileType("application/vnd.ms-excel", KnowledgePreviewKind.NONE)),
             Map.entry("xlsx", new FileType(
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    KnowledgePreviewKind.SPREADSHEET)),
+                    KnowledgePreviewKind.NONE)),
             Map.entry("ppt", new FileType("application/vnd.ms-powerpoint", KnowledgePreviewKind.OFFICE)),
             Map.entry("pptx", new FileType(
                     "application/vnd.openxmlformats-officedocument.presentationml.presentation",

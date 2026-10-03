@@ -7,7 +7,6 @@ import com.iflytek.skillhub.domain.shared.exception.DomainNotFoundException;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -35,7 +34,7 @@ class KnowledgeOfficePreviewServiceTest {
         var source = new KnowledgeAppService.OfficePreviewSource("version-key", "docx",
                 new KnowledgeAppService.FileContent("x.docx", "application/octet-stream", 3, KnowledgePreviewKind.OFFICE, content));
         when(knowledge.officePreviewSource(1L, 2, caller)).thenReturn(source);
-        var ready = new KnowledgeOfficePreview(KnowledgeOfficePreview.Status.READY, "OFFICE", 5, 5, List.of(), 3, 100, 20);
+        var ready = new KnowledgeOfficePreview(KnowledgeOfficePreview.Status.READY, "OFFICE", 5, 5);
         when(gateway.find("version-key")).thenReturn(ready);
         assertThat(service.preview(1L, 2, caller)).isSameAs(ready);
         verifyNoInteractions(content);

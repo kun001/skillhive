@@ -89,7 +89,7 @@ export function KnowledgeFilePreview({ document }: { document: KnowledgeDocument
       />
     )
   }
-  if (kind === 'OFFICE' || kind === 'SPREADSHEET') {
+  if (kind === 'OFFICE') {
     return <KnowledgeOfficeFilePreview key={`${document.id}:${document.currentVersion}`} document={document} />
   }
   if (textTooLarge) {

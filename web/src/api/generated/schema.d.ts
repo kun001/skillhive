@@ -5419,34 +5419,6 @@ export interface components {
             pageCount?: number;
             /** Format: int32 */
             pageLimit?: number;
-            sheets?: components["schemas"]["PreviewSheet"][];
-            /** Format: int32 */
-            sheetLimit?: number;
-            /** Format: int32 */
-            rowLimit?: number;
-            /** Format: int32 */
-            columnLimit?: number;
-        };
-        PreviewCell: {
-            text?: string;
-            bold?: boolean;
-            align?: string;
-        };
-        PreviewMerge: {
-            /** Format: int32 */
-            row?: number;
-            /** Format: int32 */
-            column?: number;
-            /** Format: int32 */
-            rowSpan?: number;
-            /** Format: int32 */
-            columnSpan?: number;
-        };
-        PreviewSheet: {
-            name?: string;
-            rows?: components["schemas"]["PreviewCell"][][];
-            merges?: components["schemas"]["PreviewMerge"][];
-            truncated?: boolean;
         };
         ApiResponseKnowledgeMarkdownImagesResponse: {
             /** Format: int32 */

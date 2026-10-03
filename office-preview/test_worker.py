@@ -1,47 +1,37 @@
-import datetime
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
-import openpyxl
-from worker import spreadsheet, display
+from worker import office
 
 
-class SpreadsheetTests(unittest.TestCase):
-    def test_limits_hidden_sheets_merges_and_saved_values(self):
+class OfficeTests(unittest.TestCase):
+    def test_excel_cannot_invoke_renderer(self):
+        with patch("worker.subprocess.run") as render:
+            for extension in ("xls", "xlsx"):
+                with self.assertRaisesRegex(ValueError, "Unsupported preview type"):
+                    office(Path(f"source.{extension}"))
+            render.assert_not_called()
+
+    def test_page_limit_and_page_images(self):
         with tempfile.TemporaryDirectory() as directory:
-            source = Path(directory) / "test.xlsx"
-            book = openpyxl.Workbook()
-            sheet = book.active
-            sheet.title = "数据"
-            sheet.merge_cells("A1:C1")
-            sheet["A1"] = "合并标题"
-            sheet["A2"] = datetime.date(2026, 10, 3)
-            sheet["B2"] = 0.125
-            sheet["B2"].number_format = "0.0%"
-            sheet["C2"] = "=1+2"  # no cached value; never evaluated
-            sheet.cell(101, 21, "OUTSIDE_PREVIEW")
-            hidden = book.create_sheet("隐藏")
-            hidden.sheet_state = "hidden"
-            for i in range(4):
-                book.create_sheet(f"表{i}")["A1"] = f"工作表{i}"
-            book.save(source)
-            result = spreadsheet(source)
-            self.assertEqual(len(result["sheets"]), 3)
-            self.assertNotIn("隐藏", [s["name"] for s in result["sheets"]])
-            preview = result["sheets"][0]
-            self.assertEqual(len(preview["rows"]), 100)
-            self.assertEqual(len(preview["rows"][0]), 20)
-            self.assertTrue(preview["truncated"])
-            self.assertEqual(preview["rows"][1][0]["text"], "2026-10-03")
-            self.assertEqual(preview["rows"][1][1]["text"], "12.5%")
-            self.assertEqual(preview["rows"][1][2]["text"], "")
-            self.assertEqual(preview["merges"], [{"row": 0, "column": 0, "rowSpan": 1, "columnSpan": 3}])
+            root = Path(directory)
+            source = root / "source.docx"
+            source.touch()
 
-    def test_numbers(self):
-        self.assertEqual(display(1234.5, '"￥"#,##0.00'), "￥1,234.50")
-        self.assertEqual(display(True), "TRUE")
-        self.assertEqual(display("<script>alert(1)</script>"), "<script>alert(1)</script>")
+            def generate(command, **kwargs):
+                if command[0] == "soffice":
+                    self.assertIn('"value": "1-5"', command[command.index("--convert-to") + 1])
+                    source.with_suffix(".pdf").touch()
+                else:
+                    self.assertEqual(command[command.index("-l") + 1], "5")
+                    for page in range(1, 6):
+                        (root / f"page-{page}.jpg").touch()
+
+            with patch("worker.subprocess.run", side_effect=generate):
+                self.assertEqual(office(source), {"status": "READY", "kind": "OFFICE", "pageCount": 5, "pageLimit": 5})
+            self.assertEqual(len(list(root.glob("[1-5].jpg"))), 5)
 
 
 if __name__ == "__main__":

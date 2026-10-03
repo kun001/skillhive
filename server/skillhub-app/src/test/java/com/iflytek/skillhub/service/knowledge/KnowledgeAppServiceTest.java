@@ -24,6 +24,7 @@ import com.iflytek.skillhub.domain.knowledge.KnowledgeDocumentStatus;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeDocumentVersion;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeDocumentVersionRepository;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeFilePolicy;
+import com.iflytek.skillhub.domain.knowledge.KnowledgePreviewKind;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeFolderRepository;
 import com.iflytek.skillhub.domain.namespace.Namespace;
 import com.iflytek.skillhub.domain.namespace.NamespaceRepository;
@@ -31,6 +32,7 @@ import com.iflytek.skillhub.domain.namespace.NamespaceRole;
 import com.iflytek.skillhub.domain.namespace.NamespaceStatus;
 import com.iflytek.skillhub.domain.namespace.NamespaceType;
 import com.iflytek.skillhub.domain.shared.exception.DomainForbiddenException;
+import com.iflytek.skillhub.domain.shared.exception.DomainBadRequestException;
 import com.iflytek.skillhub.domain.shared.exception.DomainNotFoundException;
 import com.iflytek.skillhub.domain.user.UserAccountRepository;
 import com.iflytek.skillhub.dto.knowledge.KnowledgeDocumentResponse;
@@ -225,6 +227,24 @@ class KnowledgeAppServiceTest {
         assertThatThrownBy(() -> service.officePreviewSource(21L, 3, member("alice"))).isInstanceOf(DomainNotFoundException.class);
         assertThatThrownBy(() -> service.officePreviewSource(21L, 1, new KnowledgeAppService.Caller("outsider", Map.of(), Set.of())))
                 .isInstanceOf(DomainNotFoundException.class);
+        verify(storageService, never()).getObject(anyString());
+    }
+
+    @Test
+    void excelPreviewIsUnsupportedWhileOriginalRemainsDownloadable() throws Exception {
+        for (String extension : List.of("xls", "xlsx")) {
+            KnowledgeDocument document = withId(new KnowledgeDocument(11L, null, "excel", "Excel", null, "alice"), 21L);
+            KnowledgeDocumentVersion version = withId(new KnowledgeDocumentVersion(21L, 1, "original", "application/octet-stream",
+                    "a." + extension, 1, "sha", null, "alice"), 31L);
+            version.publishDirectly("alice");
+            document.publish(version, extension);
+            when(documentRepository.findById(21L)).thenReturn(Optional.of(document));
+            when(versionRepository.findById(31L)).thenReturn(Optional.of(version));
+            when(versionRepository.findByDocumentIdAndVersionNumber(21L, 1)).thenReturn(Optional.of(version));
+            assertThatThrownBy(() -> service.officePreviewSource(21L, 1, member("alice")))
+                    .isInstanceOf(DomainBadRequestException.class);
+            assertThat(service.openContent(21L, 1, member("alice")).previewKind()).isEqualTo(KnowledgePreviewKind.NONE);
+        }
         verify(storageService, never()).getObject(anyString());
     }
 

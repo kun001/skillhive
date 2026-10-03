@@ -8,10 +8,6 @@ Without the service, uploads/downloads continue to work and previews offer the o
   then Poppler rasterizes each page to a JPEG (long edge 1600 px). The browser receives
   page images only. Rendering still reads/layouts the source; pagination and fonts can
   differ from Microsoft Office. Chinese Noto fonts are included. Macros are disabled.
-- XLS/XLSX: cached values only, first three visible sheets, 100 rows and 20 columns each.
-  XLSX uses read-only iteration; dates, common number/percent/currency formats, bold text,
-  basic alignment and merged cells are shown. Charts, images, complex custom formats,
-  formula recalculation and online editing are outside this preview's scope.
 - Originals remain immutable. The Java server authorizes the parent document and the
   published version on every manifest/image request. Version-specific opaque keys prevent
   old/new previews from mixing; previews never become knowledge-list entries.
