@@ -13,6 +13,9 @@ import static org.mockito.Mockito.when;
 
 import com.iflytek.skillhub.domain.audit.AuditLogService;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeAccessPolicy;
+import com.iflytek.skillhub.domain.knowledge.KnowledgeAttachmentRepository;
+import com.iflytek.skillhub.domain.knowledge.KnowledgeAttachment;
+import com.iflytek.skillhub.domain.knowledge.KnowledgeMarkdownPolicy;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeBase;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeBaseRepository;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeDocument;
@@ -21,6 +24,7 @@ import com.iflytek.skillhub.domain.knowledge.KnowledgeDocumentStatus;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeDocumentVersion;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeDocumentVersionRepository;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeFilePolicy;
+import com.iflytek.skillhub.domain.knowledge.KnowledgePreviewKind;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeFolderRepository;
 import com.iflytek.skillhub.domain.namespace.Namespace;
 import com.iflytek.skillhub.domain.namespace.NamespaceRepository;
@@ -28,6 +32,7 @@ import com.iflytek.skillhub.domain.namespace.NamespaceRole;
 import com.iflytek.skillhub.domain.namespace.NamespaceStatus;
 import com.iflytek.skillhub.domain.namespace.NamespaceType;
 import com.iflytek.skillhub.domain.shared.exception.DomainForbiddenException;
+import com.iflytek.skillhub.domain.shared.exception.DomainBadRequestException;
 import com.iflytek.skillhub.domain.shared.exception.DomainNotFoundException;
 import com.iflytek.skillhub.domain.user.UserAccountRepository;
 import com.iflytek.skillhub.dto.knowledge.KnowledgeDocumentResponse;
@@ -54,6 +59,7 @@ class KnowledgeAppServiceTest {
     private final KnowledgeFolderRepository folderRepository = mock(KnowledgeFolderRepository.class);
     private final KnowledgeDocumentRepository documentRepository = mock(KnowledgeDocumentRepository.class);
     private final KnowledgeDocumentVersionRepository versionRepository = mock(KnowledgeDocumentVersionRepository.class);
+    private final KnowledgeAttachmentRepository attachmentRepository = mock(KnowledgeAttachmentRepository.class);
     private final UserAccountRepository userAccountRepository = mock(UserAccountRepository.class);
     private final ObjectStorageService storageService = mock(ObjectStorageService.class);
     private final AuditLogService auditLogService = mock(AuditLogService.class);
@@ -65,7 +71,8 @@ class KnowledgeAppServiceTest {
     @BeforeEach
     void setUp() throws Exception {
         service = new KnowledgeAppService(namespaceRepository, baseRepository, folderRepository, documentRepository,
-                versionRepository, userAccountRepository, new KnowledgeAccessPolicy(), new KnowledgeFilePolicy(),
+                versionRepository, attachmentRepository, userAccountRepository, new KnowledgeAccessPolicy(), new KnowledgeFilePolicy(),
+                new KnowledgeMarkdownPolicy(new KnowledgeFilePolicy()),
                 storageService, auditLogService, new RequestIdAccessor());
 
         namespace = new Namespace("team-a", "Team A", "owner");
@@ -133,6 +140,112 @@ class KnowledgeAppServiceTest {
 
         service.deleteDocument(21L, member("alice"), null);
         assertThat(document.getStatus()).isEqualTo(KnowledgeDocumentStatus.ARCHIVED);
+    }
+
+    @Test
+    void markdownUploadStoresImagesInTheSameVersionAndPreservesSource() throws Exception {
+        when(documentRepository.save(any(KnowledgeDocument.class))).thenAnswer(invocation -> withId(invocation.getArgument(0), 21L));
+        when(versionRepository.save(any(KnowledgeDocumentVersion.class))).thenAnswer(invocation -> withId(invocation.getArgument(0), 31L));
+        service.uploadDocument("team-a", "handbook", upload("guide.md"),
+                new KnowledgeAppService.MarkdownUpload("package/docs/guide.md", List.of(upload("a.png")), List.of("package/images/a.png")),
+                null, null, null, member("alice"), null);
+        var image = ArgumentCaptor.forClass(KnowledgeAttachment.class);
+        verify(attachmentRepository).save(image.capture());
+        assertThat(image.getValue().getDocumentVersionId()).isEqualTo(31L);
+        assertThat(image.getValue().getRelativePath()).isEqualTo("package/images/a.png");
+        assertThat(image.getValue().getObjectKey()).startsWith("knowledge/11/21/v1/images/");
+        var version = ArgumentCaptor.forClass(KnowledgeDocumentVersion.class);
+        verify(versionRepository).save(version.capture());
+        assertThat(version.getValue().getSourcePath()).isEqualTo("package/docs/guide.md");
+    }
+
+    @Test
+    void imageReadsRequireMembershipAndTheRequestedPublishedVersion() throws Exception {
+        KnowledgeDocument document = withId(new KnowledgeDocument(11L, null, "guide", "Guide", null, "alice"), 21L);
+        KnowledgeDocumentVersion version = withId(new KnowledgeDocumentVersion(21L, 1, "key", "text/markdown", "guide.md", 1, "sha", null, "alice"), 31L);
+        version.publishDirectly("alice");
+        document.publish(version, "md");
+        when(documentRepository.findById(21L)).thenReturn(Optional.of(document));
+        when(versionRepository.findById(31L)).thenReturn(Optional.of(version));
+        when(attachmentRepository.findById(41L)).thenReturn(Optional.of(new KnowledgeAttachment(99L, "a.png", "a.png", "image/png", 1, "sha", "image-key")));
+        assertThatThrownBy(() -> service.openImage(21L, 41L, null, member("alice")))
+                .isInstanceOf(DomainNotFoundException.class);
+        assertThatThrownBy(() -> service.listImages(21L, null, new KnowledgeAppService.Caller("outsider", Map.of(), Set.of())))
+                .isInstanceOf(DomainNotFoundException.class);
+        when(attachmentRepository.findById(41L)).thenReturn(Optional.of(new KnowledgeAttachment(31L, "a.png", "a.png", "image/png", 1, "sha", "image-key")));
+        assertThat(service.openImage(21L, 41L, null, member("alice")).contentType()).isEqualTo("image/png");
+    }
+
+    private static KnowledgeAppService.Upload upload(String filename) {
+        return new KnowledgeAppService.Upload(filename, 1, () -> new ByteArrayInputStream(new byte[]{1}));
+    }
+
+    @Test
+    void newVersionsKeepUnchangedImagesAndRestoresUseTheOriginalImages() throws Exception {
+        KnowledgeDocument document = withId(new KnowledgeDocument(11L, null, "guide", "Guide", null, "alice"), 21L);
+        KnowledgeDocumentVersion original = withId(new KnowledgeDocumentVersion(21L, 1, "key", "text/markdown", "guide.md", 1, "sha", null, "alice"), 31L);
+        original.publishDirectly("alice");
+        original.setSourcePath("pack/guide.md");
+        document.publish(original, "md");
+        when(documentRepository.findById(21L)).thenReturn(Optional.of(document));
+        when(versionRepository.findById(31L)).thenReturn(Optional.of(original));
+        when(versionRepository.findByDocumentIdAndVersionNumber(21L, 1)).thenReturn(Optional.of(original));
+        when(versionRepository.findByDocumentIdOrderByVersionNumberDesc(21L)).thenReturn(List.of(original));
+        when(versionRepository.save(any(KnowledgeDocumentVersion.class))).thenAnswer(invocation -> withId(invocation.getArgument(0), 32L));
+        var oldImage = new KnowledgeAttachment(31L, "pack/a.png", "a.png", "image/png", 1, "sha", "original-image");
+        when(attachmentRepository.findByDocumentVersionId(31L)).thenReturn(List.of(oldImage));
+        service.uploadVersion(21L, upload("guide.md"), null, member("alice"), null);
+        var image = ArgumentCaptor.forClass(KnowledgeAttachment.class);
+        verify(attachmentRepository).save(image.capture());
+        assertThat(image.getValue().getDocumentVersionId()).isEqualTo(32L);
+        assertThat(image.getValue().getObjectKey()).isEqualTo("original-image");
+        org.mockito.Mockito.clearInvocations(attachmentRepository);
+        service.restoreVersion(21L, 1, null, member("alice"), null);
+        verify(attachmentRepository).save(image.capture());
+        assertThat(image.getValue().getObjectKey()).isEqualTo("original-image");
+        assertThat(image.getValue().getRelativePath()).isEqualTo("pack/a.png");
+    }
+
+    @Test
+    void officeSourcesRequireMembershipPublishedVersionsAndSeparateCacheKeys() throws Exception {
+        KnowledgeDocument document = withId(new KnowledgeDocument(11L, null, "office", "Office", null, "alice"), 21L);
+        KnowledgeDocumentVersion first = withId(new KnowledgeDocumentVersion(21L, 1, "original", "application/msword", "a.docx", 1, "sha", null, "alice"), 31L);
+        KnowledgeDocumentVersion second = withId(new KnowledgeDocumentVersion(21L, 2, "changed", "application/msword", "a.docx", 1, "other-sha", null, "alice"), 32L);
+        KnowledgeDocumentVersion draft = withId(new KnowledgeDocumentVersion(21L, 3, "draft", "application/msword", "a.docx", 1, "draft-sha", null, "alice"), 33L);
+        first.publishDirectly("alice");
+        second.publishDirectly("alice");
+        document.publish(first, "docx");
+        when(documentRepository.findById(21L)).thenReturn(Optional.of(document));
+        when(versionRepository.findById(31L)).thenReturn(Optional.of(first));
+        when(versionRepository.findByDocumentIdAndVersionNumber(21L, 1)).thenReturn(Optional.of(first));
+        when(versionRepository.findByDocumentIdAndVersionNumber(21L, 2)).thenReturn(Optional.of(second));
+        when(versionRepository.findByDocumentIdAndVersionNumber(21L, 3)).thenReturn(Optional.of(draft));
+        var source = service.officePreviewSource(21L, 1, member("alice"));
+        assertThat(source.key()).matches("[a-f0-9]{64}");
+        assertThat(service.officePreviewSource(21L, null, member("alice")).key()).isEqualTo(source.key());
+        assertThat(service.officePreviewSource(21L, 2, member("alice")).key()).isNotEqualTo(source.key());
+        assertThatThrownBy(() -> service.officePreviewSource(21L, 3, member("alice"))).isInstanceOf(DomainNotFoundException.class);
+        assertThatThrownBy(() -> service.officePreviewSource(21L, 1, new KnowledgeAppService.Caller("outsider", Map.of(), Set.of())))
+                .isInstanceOf(DomainNotFoundException.class);
+        verify(storageService, never()).getObject(anyString());
+    }
+
+    @Test
+    void excelPreviewIsUnsupportedWhileOriginalRemainsDownloadable() throws Exception {
+        for (String extension : List.of("xls", "xlsx")) {
+            KnowledgeDocument document = withId(new KnowledgeDocument(11L, null, "excel", "Excel", null, "alice"), 21L);
+            KnowledgeDocumentVersion version = withId(new KnowledgeDocumentVersion(21L, 1, "original", "application/octet-stream",
+                    "a." + extension, 1, "sha", null, "alice"), 31L);
+            version.publishDirectly("alice");
+            document.publish(version, extension);
+            when(documentRepository.findById(21L)).thenReturn(Optional.of(document));
+            when(versionRepository.findById(31L)).thenReturn(Optional.of(version));
+            when(versionRepository.findByDocumentIdAndVersionNumber(21L, 1)).thenReturn(Optional.of(version));
+            assertThatThrownBy(() -> service.officePreviewSource(21L, 1, member("alice")))
+                    .isInstanceOf(DomainBadRequestException.class);
+            assertThat(service.openContent(21L, 1, member("alice")).previewKind()).isEqualTo(KnowledgePreviewKind.NONE);
+        }
+        verify(storageService, never()).getObject(anyString());
     }
 
     private static KnowledgeAppService.Caller member(String userId) {

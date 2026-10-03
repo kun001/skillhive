@@ -40,6 +40,10 @@ class KnowledgeFilePolicyTest {
         assertThat(policy.previewKindFor("md")).isEqualTo(KnowledgePreviewKind.MARKDOWN);
         assertThat(policy.previewKindFor("txt")).isEqualTo(KnowledgePreviewKind.TEXT);
         assertThat(policy.previewKindFor("xlsx")).isEqualTo(KnowledgePreviewKind.NONE);
+        assertThat(policy.previewKindFor("xls")).isEqualTo(KnowledgePreviewKind.NONE);
+        for (String extension : java.util.List.of("doc", "docx", "ppt", "pptx")) {
+            assertThat(policy.previewKindFor(extension)).isEqualTo(KnowledgePreviewKind.OFFICE);
+        }
         assertThat(policy.contentTypeFor("png")).isEqualTo("image/png");
         assertThat(policy.contentTypeFor("unknown")).isEqualTo("application/octet-stream");
     }

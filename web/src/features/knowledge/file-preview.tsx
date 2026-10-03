@@ -8,6 +8,8 @@ import { MarkdownRenderer } from '@/features/skill/markdown-renderer'
 import { buttonVariants } from '@/shared/ui/button'
 import { KnowledgeFileIcon } from './file-icon'
 import { knowledgeKeys } from './use-knowledge-queries'
+import { resolveImagePath } from './markdown-images'
+import { KnowledgeOfficeFilePreview } from './office-preview'
 
 /** Text previews beyond this size are offered as downloads instead of rendering in the page. */
 export const MAX_TEXT_PREVIEW_BYTES = 2 * 1024 * 1024
@@ -60,6 +62,12 @@ export function KnowledgeFilePreview({ document }: { document: KnowledgeDocument
     enabled: (isText && !textTooLarge) || kind === 'PDF',
     staleTime: Infinity,
   })
+  const images = useQuery({
+    queryKey: [...knowledgeKeys.document(document.id), 'images', document.currentVersion],
+    queryFn: () => knowledgeApi.listImages(document.id, document.currentVersion),
+    enabled: kind === 'MARKDOWN' && !textTooLarge,
+    staleTime: Infinity,
+  })
 
   const [pdfUrl, setPdfUrl] = useState<string>()
   useEffect(() => {
@@ -81,6 +89,9 @@ export function KnowledgeFilePreview({ document }: { document: KnowledgeDocument
       />
     )
   }
+  if (kind === 'OFFICE') {
+    return <KnowledgeOfficeFilePreview key={`${document.id}:${document.currentVersion}`} document={document} />
+  }
   if (textTooLarge) {
     return <PreviewMessage document={document} title={t('knowledge.preview.tooLarge')} />
   }
@@ -91,10 +102,10 @@ export function KnowledgeFilePreview({ document }: { document: KnowledgeDocument
       </div>
     )
   }
-  if (content.isError) {
+  if (content.isError || (kind === 'MARKDOWN' && images.isError)) {
     return <PreviewMessage document={document} title={t('knowledge.preview.failed')} />
   }
-  if (content.isLoading || (kind === 'PDF' && !pdfUrl)) {
+  if (content.isLoading || (kind === 'MARKDOWN' && images.isLoading) || (kind === 'PDF' && !pdfUrl)) {
     return <PreviewLoading />
   }
   if (kind === 'PDF') {
@@ -104,7 +115,11 @@ export function KnowledgeFilePreview({ document }: { document: KnowledgeDocument
   if (kind === 'MARKDOWN') {
     return (
       <div className="px-6 py-5 sm:px-10 sm:py-8">
-        <MarkdownRenderer content={text} />
+        <MarkdownRenderer content={text} resolveImageUrl={(src) => {
+          const path = resolveImagePath(images.data?.sourcePath ?? document.fileName, src)
+          const image = images.data?.images.find((candidate) => candidate.path === path)
+          return image ? knowledgeApi.imageUrl(document.id, image.id, document.currentVersion) : src
+        }} />
       </div>
     )
   }

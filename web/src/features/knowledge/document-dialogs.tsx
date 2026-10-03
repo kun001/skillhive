@@ -14,6 +14,8 @@ import { FolderSelect } from './folder-select'
 import type { KnowledgeFolderNode } from './folder-tree'
 import { KNOWLEDGE_ACCEPTED_EXTENSIONS, fileExtension, formatFileSize, validateKnowledgeFile } from './file-types'
 import { useInvalidateKnowledge, useUpdateKnowledgeDocument } from './use-knowledge-queries'
+import { isMarkdown, planUploads } from './markdown-images'
+import { createUploadItems } from './upload-queue'
 
 interface EditDocumentDialogProps {
   open: boolean
@@ -106,26 +108,32 @@ export function NewKnowledgeVersionDialog({ open, onOpenChange, document }: NewV
   const { t } = useTranslation()
   const invalidate = useInvalidateKnowledge()
   const inputRef = useRef<HTMLInputElement>(null)
-  const [file, setFile] = useState<File | null>(null)
+  const [files, setFiles] = useState<File[]>([])
   const [changeNote, setChangeNote] = useState('')
   const [progress, setProgress] = useState<number | null>(null)
 
   useEffect(() => {
     if (open) {
-      setFile(null)
+      setFiles([])
       setChangeNote('')
       setProgress(null)
     }
   }, [open])
 
-  const fileError = file ? validateKnowledgeFile(file) : undefined
+  const file = files.find(isMarkdown) ?? files[0]
+  const fileError = files.map(validateKnowledgeFile).find(Boolean)
   const uploading = progress !== null
 
   const submit = async () => {
     if (!file) return
     setProgress(0)
     try {
-      await knowledgeApi.uploadVersion(document.id, { file, changeNote }, { onProgress: setProgress })
+      const existing = document.previewKind === 'MARKDOWN' ? await knowledgeApi.listImages(document.id, document.currentVersion) : undefined
+      const plan = await planUploads(createUploadItems(files), existing ? { sourcePath: existing.sourcePath, paths: existing.images.map((image) => image.path) } : undefined)
+      if (plan.length !== 1) throw new Error(t('knowledge.upload.versionSingleFile'))
+      const entry = plan[0]
+      if (entry.error) throw new Error(t(entry.error.key, { path: entry.error.path }))
+      await knowledgeApi.uploadVersion(document.id, { file: entry.item.file, changeNote, ...entry.bundle }, { onProgress: setProgress })
       await invalidate()
       toast.success(t('knowledge.versionDialog.uploaded'))
       onOpenChange(false)
@@ -146,9 +154,10 @@ export function NewKnowledgeVersionDialog({ open, onOpenChange, document }: NewV
           <input
             ref={inputRef}
             type="file"
+            multiple
             className="hidden"
             accept={KNOWLEDGE_ACCEPTED_EXTENSIONS.map((extension) => `.${extension}`).join(',')}
-            onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+            onChange={(event) => { setFiles(Array.from(event.target.files ?? [])); event.target.value = '' }}
           />
           <button
             type="button"
@@ -170,6 +179,8 @@ export function NewKnowledgeVersionDialog({ open, onOpenChange, document }: NewV
               <span className="text-sm text-muted-foreground">{t('knowledge.versionDialog.file')}</span>
             )}
           </button>
+          <p className="text-xs leading-5 text-muted-foreground">{t('knowledge.upload.markdownHint')}</p>
+          {files.length > 1 ? <p className="text-xs text-muted-foreground">{t('knowledge.upload.selectedFiles', { count: files.length })}</p> : null}
           <div className="space-y-2">
             <Label htmlFor="kb-version-note">{t('knowledge.versionDialog.changeNote')}</Label>
             <Input

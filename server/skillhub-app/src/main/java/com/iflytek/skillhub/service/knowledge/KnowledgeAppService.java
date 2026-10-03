@@ -3,6 +3,9 @@ package com.iflytek.skillhub.service.knowledge;
 import com.iflytek.skillhub.domain.audit.AuditDetail;
 import com.iflytek.skillhub.domain.audit.AuditLogService;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeAccessPolicy;
+import com.iflytek.skillhub.domain.knowledge.KnowledgeAttachment;
+import com.iflytek.skillhub.domain.knowledge.KnowledgeAttachmentRepository;
+import com.iflytek.skillhub.domain.knowledge.KnowledgeMarkdownPolicy;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeBase;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeBaseRepository;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeBaseStats;
@@ -38,6 +41,7 @@ import com.iflytek.skillhub.dto.knowledge.KnowledgeDocumentVersionResponse;
 import com.iflytek.skillhub.dto.knowledge.KnowledgeFolderPathItem;
 import com.iflytek.skillhub.dto.knowledge.KnowledgeFolderResponse;
 import com.iflytek.skillhub.dto.knowledge.KnowledgeUserResponse;
+import com.iflytek.skillhub.dto.knowledge.KnowledgeMarkdownImagesResponse;
 import com.iflytek.skillhub.dto.knowledge.UpdateKnowledgeBaseRequest;
 import com.iflytek.skillhub.dto.knowledge.UpdateKnowledgeDocumentRequest;
 import com.iflytek.skillhub.dto.knowledge.UpdateKnowledgeFolderRequest;
@@ -49,6 +53,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -94,9 +100,11 @@ public class KnowledgeAppService {
     private final KnowledgeFolderRepository folderRepository;
     private final KnowledgeDocumentRepository documentRepository;
     private final KnowledgeDocumentVersionRepository versionRepository;
+    private final KnowledgeAttachmentRepository attachmentRepository;
     private final UserAccountRepository userAccountRepository;
     private final KnowledgeAccessPolicy accessPolicy;
     private final KnowledgeFilePolicy filePolicy;
+    private final KnowledgeMarkdownPolicy markdownPolicy;
     private final ObjectStorageService storageService;
     private final AuditLogService auditLogService;
     private final RequestIdAccessor requestIdAccessor;
@@ -106,9 +114,11 @@ public class KnowledgeAppService {
                                KnowledgeFolderRepository folderRepository,
                                KnowledgeDocumentRepository documentRepository,
                                KnowledgeDocumentVersionRepository versionRepository,
+                               KnowledgeAttachmentRepository attachmentRepository,
                                UserAccountRepository userAccountRepository,
                                KnowledgeAccessPolicy accessPolicy,
                                KnowledgeFilePolicy filePolicy,
+                               KnowledgeMarkdownPolicy markdownPolicy,
                                ObjectStorageService storageService,
                                AuditLogService auditLogService,
                                RequestIdAccessor requestIdAccessor) {
@@ -117,9 +127,11 @@ public class KnowledgeAppService {
         this.folderRepository = folderRepository;
         this.documentRepository = documentRepository;
         this.versionRepository = versionRepository;
+        this.attachmentRepository = attachmentRepository;
         this.userAccountRepository = userAccountRepository;
         this.accessPolicy = accessPolicy;
         this.filePolicy = filePolicy;
+        this.markdownPolicy = markdownPolicy;
         this.storageService = storageService;
         this.auditLogService = auditLogService;
         this.requestIdAccessor = requestIdAccessor;
@@ -139,6 +151,13 @@ public class KnowledgeAppService {
 
     /** An uploaded file as seen by the service; its content is opened twice (hash, then store). */
     public record Upload(String filename, long sizeBytes, ContentSource content) {
+    }
+
+    public record MarkdownUpload(String sourcePath, List<Upload> images, List<String> imagePaths) {
+        public MarkdownUpload {
+            images = images == null ? List.of() : List.copyOf(images);
+            imagePaths = imagePaths == null ? List.of() : List.copyOf(imagePaths);
+        }
     }
 
     @FunctionalInterface
@@ -360,10 +379,19 @@ public class KnowledgeAppService {
                                                     String description,
                                                     Caller caller,
                                                     AuditRequestContext audit) {
+        return uploadDocument(namespaceSlug, baseSlug, upload, new MarkdownUpload(null, null, null),
+                folderId, title, description, caller, audit);
+    }
+
+    @Transactional
+    public KnowledgeDocumentResponse uploadDocument(String namespaceSlug, String baseSlug, Upload upload,
+                                                    MarkdownUpload markdown, Long folderId, String title,
+                                                    String description, Caller caller, AuditRequestContext audit) {
         BaseContext context = resolveBase(namespaceSlug, baseSlug, caller);
         requireContribute(context, caller);
         String extension = filePolicy.validateUpload(upload.filename(), upload.sizeBytes());
         String filename = filePolicy.validateFilename(upload.filename());
+        String sourcePath = validateMarkdownUpload(upload, markdown);
         requireFolderInBase(new KnowledgeFolderTree(folderRepository.findByKnowledgeBaseId(context.base().getId())), folderId);
 
         KnowledgeDocument document = documentRepository.save(new KnowledgeDocument(
@@ -374,6 +402,8 @@ public class KnowledgeAppService {
                 filePolicy.normalizeDescription(description),
                 caller.userId()));
         KnowledgeDocumentVersion version = storeVersion(context.base(), document, 1, upload, filename, extension, null, caller);
+        version.setSourcePath(sourcePath);
+        storeImages(version, markdown);
         document.publish(version, extension);
         KnowledgeDocument saved = documentRepository.save(document);
         recordAudit(caller, "KNOWLEDGE_DOCUMENT_UPLOAD", TARGET_DOCUMENT, saved.getId(), audit,
@@ -448,6 +478,12 @@ public class KnowledgeAppService {
                                                           String changeNote,
                                                           Caller caller,
                                                           AuditRequestContext audit) {
+        return uploadVersion(documentId, upload, new MarkdownUpload(null, null, null), changeNote, caller, audit);
+    }
+
+    @Transactional
+    public KnowledgeDocumentVersionResponse uploadVersion(Long documentId, Upload upload, MarkdownUpload markdown,
+                                                          String changeNote, Caller caller, AuditRequestContext audit) {
         DocumentContext context = resolveDocument(documentId, caller);
         if (!accessPolicy.canContribute(context.baseContext().namespace(), context.baseContext().base(),
                 context.baseContext().role(), caller.platformRoles())) {
@@ -456,8 +492,32 @@ public class KnowledgeAppService {
         String extension = filePolicy.validateUpload(upload.filename(), upload.sizeBytes());
         String filename = filePolicy.validateFilename(upload.filename());
         KnowledgeDocument document = context.document();
+        KnowledgeDocumentVersion previous = currentVersion(document);
+        if (markdown.sourcePath() == null && previous.getSourcePath() != null) {
+            String previousPath = previous.getSourcePath();
+            markdown = new MarkdownUpload(previousPath.substring(0, previousPath.lastIndexOf('/') + 1) + filename,
+                    markdown.images(), markdown.imagePaths());
+        }
+        String sourcePath = validateMarkdownUpload(upload, markdown);
+        if (filePolicy.previewKindFor(extension) == KnowledgePreviewKind.MARKDOWN) {
+            var combined = new ArrayList<KnowledgeMarkdownPolicy.Image>();
+            var replaced = Set.copyOf(markdown.imagePaths());
+            attachmentRepository.findByDocumentVersionId(previous.getId()).stream()
+                    .filter(image -> !replaced.contains(image.getRelativePath()))
+                    .forEach(image -> combined.add(new KnowledgeMarkdownPolicy.Image(image.getRelativePath(), image.getFileName(), image.getSizeBytes())));
+            for (int i = 0; i < markdown.images().size(); i++) {
+                Upload image = markdown.images().get(i);
+                combined.add(new KnowledgeMarkdownPolicy.Image(markdown.imagePaths().get(i), image.filename(), image.sizeBytes()));
+            }
+            markdownPolicy.validate(filename, upload.sizeBytes(), sourcePath, combined);
+        }
         KnowledgeDocumentVersion version = storeVersion(context.baseContext().base(), document, nextVersionNumber(document),
                 upload, filename, extension, filePolicy.normalizeChangeNote(changeNote), caller);
+        version.setSourcePath(sourcePath);
+        if (filePolicy.previewKindFor(extension) == KnowledgePreviewKind.MARKDOWN) {
+            copyImages(previous, version, Set.copyOf(markdown.imagePaths()));
+        }
+        storeImages(version, markdown);
         document.publish(version, extension);
         documentRepository.save(document);
         recordAudit(caller, "KNOWLEDGE_DOCUMENT_VERSION_UPLOAD", TARGET_DOCUMENT, document.getId(), audit,
@@ -493,6 +553,8 @@ public class KnowledgeAppService {
                 caller.userId());
         restored.publishDirectly(caller.userId());
         restored = versionRepository.save(restored);
+        restored.setSourcePath(source.getSourcePath());
+        copyImages(source, restored, Set.of());
         document.publish(restored, filePolicy.extensionOf(source.getSourceFilename()));
         documentRepository.save(document);
         recordAudit(caller, "KNOWLEDGE_DOCUMENT_VERSION_RESTORE", TARGET_DOCUMENT, document.getId(), audit,
@@ -517,6 +579,84 @@ public class KnowledgeAppService {
         String objectKey = version.getContentObjectKey();
         return new FileContent(filename, version.getContentType(), version.getSizeBytes(),
                 filePolicy.previewKindFor(extension), () -> storageService.getObject(objectKey));
+    }
+
+    public record OfficePreviewSource(String key, String extension, FileContent file) {}
+
+    @Transactional(readOnly = true)
+    public OfficePreviewSource officePreviewSource(Long documentId, Integer versionNumber, Caller caller) {
+        KnowledgeDocument document = resolveDocument(documentId, caller).document();
+        KnowledgeDocumentVersion version = versionNumber == null ? currentVersion(document) : findPublishedVersion(document, versionNumber);
+        String extension = filePolicy.extensionOf(version.getSourceFilename());
+        KnowledgePreviewKind kind = filePolicy.previewKindFor(extension);
+        if (kind != KnowledgePreviewKind.OFFICE) {
+            throw new DomainBadRequestException("error.knowledge.preview.unsupported");
+        }
+        try {
+            String identity = "office-preview-v1:" + documentId + ":" + version.getId() + ":" + version.getSha256();
+            String key = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(
+                    identity.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+            return new OfficePreviewSource(key, extension, new FileContent(version.getSourceFilename(), version.getContentType(),
+                    version.getSizeBytes(), kind, () -> storageService.getObject(version.getContentObjectKey())));
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("SHA-256 is required", exception);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public KnowledgeMarkdownImagesResponse listImages(Long documentId, Integer versionNumber, Caller caller) {
+        KnowledgeDocument document = resolveDocument(documentId, caller).document();
+        KnowledgeDocumentVersion version = versionNumber == null ? currentVersion(document) : findPublishedVersion(document, versionNumber);
+        return new KnowledgeMarkdownImagesResponse(version.getSourcePath(),
+                attachmentRepository.findByDocumentVersionId(version.getId()).stream()
+                        .map(image -> new KnowledgeMarkdownImagesResponse.Image(image.getId(), image.getRelativePath())).toList());
+    }
+
+    @Transactional(readOnly = true)
+    public FileContent openImage(Long documentId, Long imageId, Integer versionNumber, Caller caller) {
+        KnowledgeDocument document = resolveDocument(documentId, caller).document();
+        KnowledgeDocumentVersion version = versionNumber == null ? currentVersion(document) : findPublishedVersion(document, versionNumber);
+        KnowledgeAttachment image = attachmentRepository.findById(imageId)
+                .filter(candidate -> candidate.getDocumentVersionId().equals(version.getId()))
+                .orElseThrow(() -> new DomainNotFoundException("error.knowledge.markdown.imageNotFound"));
+        return new FileContent(image.getFileName(), image.getContentType(), image.getSizeBytes(), KnowledgePreviewKind.IMAGE,
+                () -> storageService.getObject(image.getObjectKey()));
+    }
+
+    private String validateMarkdownUpload(Upload upload, MarkdownUpload markdown) {
+        if (markdown.images().size() != markdown.imagePaths().size()) {
+            throw new DomainBadRequestException("error.knowledge.markdown.pathInvalid");
+        }
+        List<KnowledgeMarkdownPolicy.Image> images = new ArrayList<>();
+        for (int i = 0; i < markdown.images().size(); i++) {
+            Upload image = markdown.images().get(i);
+            images.add(new KnowledgeMarkdownPolicy.Image(markdown.imagePaths().get(i), image.filename(), image.sizeBytes()));
+        }
+        return markdownPolicy.validate(filePolicy.validateFilename(upload.filename()), upload.sizeBytes(), markdown.sourcePath(), images);
+    }
+
+    private void storeImages(KnowledgeDocumentVersion version, MarkdownUpload markdown) {
+        for (int i = 0; i < markdown.images().size(); i++) {
+            Upload image = markdown.images().get(i);
+            String versionKey = version.getContentObjectKey();
+            String objectKey = versionKey.substring(0, versionKey.lastIndexOf('/') + 1) + "images/" + UUID.randomUUID();
+            String contentType = filePolicy.contentTypeFor(filePolicy.extensionOf(image.filename()));
+            String sha256 = sha256Of(image);
+            deleteOnRollback(objectKey);
+            try (InputStream content = image.content().open()) {
+                storageService.putObject(objectKey, content, image.sizeBytes(), contentType);
+            } catch (IOException e) {
+                throw new UncheckedIOException("Failed to store Markdown image", e);
+            }
+            attachmentRepository.save(new KnowledgeAttachment(version.getId(), markdown.imagePaths().get(i), image.filename(),
+                    contentType, image.sizeBytes(), sha256, objectKey));
+        }
+    }
+
+    private void copyImages(KnowledgeDocumentVersion source, KnowledgeDocumentVersion target, Set<String> replacedPaths) {
+        attachmentRepository.findByDocumentVersionId(source.getId()).stream()
+                .filter(image -> !replacedPaths.contains(image.getRelativePath()))
+                .forEach(image -> attachmentRepository.save(image.copyTo(target.getId())));
     }
 
     // ---------------------------------------------------------------- resolution
@@ -604,6 +744,7 @@ public class KnowledgeAppService {
         String objectKey = "knowledge/%d/%d/v%d/%s".formatted(base.getId(), document.getId(), versionNumber, UUID.randomUUID());
         String contentType = filePolicy.contentTypeFor(extension);
         String sha256 = sha256Of(upload);
+        deleteOnRollback(objectKey);
         try (InputStream content = upload.content().open()) {
             storageService.putObject(objectKey, content, upload.sizeBytes(), contentType);
         } catch (IOException e) {
@@ -614,6 +755,23 @@ public class KnowledgeAppService {
                 changeNote, caller.userId());
         version.publishDirectly(caller.userId());
         return versionRepository.save(version);
+    }
+
+    /** A failed bundle must not leave partially uploaded content in object storage. */
+    private void deleteOnRollback(String objectKey) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) return;
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCompletion(int status) {
+                if (status == STATUS_COMMITTED) return;
+                try {
+                    storageService.deleteObject(objectKey);
+                } catch (RuntimeException error) {
+                    org.slf4j.LoggerFactory.getLogger(KnowledgeAppService.class)
+                            .warn("Failed to clean up a rolled-back knowledge upload", error);
+                }
+            }
+        });
     }
 
     /** Hashes the upload in its own pass so the digest never depends on how storage consumes the stream. */
