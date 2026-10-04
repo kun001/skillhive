@@ -5,6 +5,7 @@ import { getCurrentUser } from '@/api/client'
 import { RoleGuard } from '@/shared/components/role-guard'
 import { RouteError } from '@/shared/components/route-error'
 import { createRequireAuth } from '@/shared/lib/auth-route'
+import { API_TOKEN_UI_ENABLED } from '@/shared/lib/feature-flags'
 import { clearDynamicImportReloadGuard, recoverFromDynamicImportError } from '@/shared/lib/dynamic-import-recovery'
 import { normalizeSearchQuery } from '@/shared/lib/search-query'
 import { validateKnowledgeBaseSearch } from '@/features/knowledge/search-params'
@@ -474,7 +475,12 @@ const dashboardNotificationsRoute = createRoute({
 const dashboardTokensRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: 'dashboard/tokens',
-  beforeLoad: requireAuth,
+  beforeLoad: (context) => {
+    if (!API_TOKEN_UI_ENABLED) {
+      throw redirect({ to: '/dashboard' })
+    }
+    return requireAuth(context)
+  },
   component: TokensPage,
 })
 

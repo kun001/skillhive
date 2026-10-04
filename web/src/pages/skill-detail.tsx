@@ -2,7 +2,7 @@ import { startTransition, useCallback, useEffect, useRef, useState, type MouseEv
 import { useTranslation } from 'react-i18next'
 import { Link, useParams, useNavigate, useRouterState, useSearch } from '@tanstack/react-router'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, ArrowUpCircle, ChevronDown, ChevronUp, Clock, Folder, Globe, Lock, RefreshCw, ShieldCheck, User, Users } from 'lucide-react'
+import { ArrowLeft, ArrowUpCircle, ChevronDown, ChevronUp, Clock, Globe, Lock, RefreshCw, ShieldCheck, User, Users } from 'lucide-react'
 import { MarkdownRenderer } from '@/features/skill/markdown-renderer'
 import { resolvePackageRelativeLink } from '@/features/skill/package-relative-link'
 import { FileTree } from '@/features/skill/file-tree'
@@ -149,7 +149,6 @@ export function SkillDetailPage() {
   // File preview state
   const [previewNode, setPreviewNode] = useState<FileTreeNode | null>(null)
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false)
-  const [fileBrowserOpen, setFileBrowserOpen] = useState(true)
   const overviewContentRef = useRef<HTMLDivElement | null>(null)
   const overviewSectionRef = useRef<HTMLDivElement | null>(null)
   const overviewLayoutQuietRef = useRef(false)
@@ -1092,37 +1091,6 @@ export function SkillDetailPage() {
 
       {/* Sidebar */}
       <aside className="w-full lg:w-80 flex-shrink-0 space-y-5">
-        {/* File Tree Sidebar — collapsible, mirrors SecurityAuditSummary card pattern */}
-        {files && files.length > 0 && (
-          <Card className="p-5 space-y-3">
-            <button
-              type="button"
-              className="flex w-full items-center gap-2 text-left"
-              aria-expanded={fileBrowserOpen}
-              onClick={() => setFileBrowserOpen((v) => !v)}
-            >
-              <Folder className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm font-semibold font-heading text-foreground">
-                {t('fileTree.title')}
-              </span>
-              <span className="text-xs text-muted-foreground ml-auto mr-2">
-                {files.length}
-              </span>
-              <span className={cn(
-                'text-muted-foreground transition-transform duration-200',
-                fileBrowserOpen && 'rotate-180'
-              )}>
-                <ChevronDown className="h-4 w-4" />
-              </span>
-            </button>
-            {fileBrowserOpen && (
-              <div className="max-h-[400px] overflow-y-auto -mx-5 px-5">
-                <FileTree files={files} onFileClick={handleFileClick} bare />
-              </div>
-            )}
-          </Card>
-        )}
-
         <Card className="p-5 space-y-5">
           <div className="flex items-center justify-between">
             <div className="text-sm text-muted-foreground">{t('skillDetail.version')}</div>
