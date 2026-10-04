@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/features/auth/use-auth'
 import { canViewGovernanceCenter } from '@/shared/lib/governance-access'
+import { API_TOKEN_UI_ENABLED } from '@/shared/lib/feature-flags'
 import { APP_SHELL_PAGE_CLASS_NAME } from '@/app/page-shell-style'
 import { DashboardPageHeader } from '@/shared/components/dashboard-page-header'
 import {
@@ -49,7 +50,7 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
       { key: 'namespaces', icon: Globe, label: 'sidebar.namespaces', to: '/dashboard/namespaces' },
       { key: 'stars', icon: Star, label: 'sidebar.stars', to: '/dashboard/stars' },
       { key: 'subscriptions', icon: Heart, label: 'sidebar.subscriptions', to: '/dashboard/subscriptions' },
-      { key: 'tokens', icon: Key, label: 'sidebar.tokens', to: '/dashboard/tokens' },
+      ...(API_TOKEN_UI_ENABLED ? [{ key: 'tokens', icon: Key, label: 'sidebar.tokens', to: '/dashboard/tokens' }] : []),
       { key: 'reviewProgress', icon: Clock, label: 'sidebar.reviewProgress', to: '/dashboard/review-progress' },
     ],
   },
@@ -82,7 +83,7 @@ export const SIDEBAR_NAV = SIDEBAR_NAV_ITEMS.map(({ key, icon, label, to, admin,
 const OVERVIEW_CARDS = [
   { key: 'skills', icon: Package, label: 'overview.mySkills', to: '/dashboard/skills', desc: 'overview.mySkillsDesc' },
   { key: 'knowledge', icon: BookOpen, label: 'hiveLanding.knowledgeLabel', to: '/knowledge', desc: 'hiveLanding.knowledgeDescription' },
-  { key: 'tokens', icon: Key, label: 'overview.tokens', to: '/dashboard/tokens', desc: 'overview.tokensDesc' },
+  ...(API_TOKEN_UI_ENABLED ? [{ key: 'tokens', icon: Key, label: 'overview.tokens', to: '/dashboard/tokens', desc: 'overview.tokensDesc' }] : []),
   { key: 'stars', icon: Star, label: 'overview.stars', to: '/dashboard/stars', desc: 'overview.starsDesc' },
   { key: 'profile', icon: UserCog, label: 'overview.profile', to: '/settings/profile', desc: 'overview.profileDesc' },
   { key: 'security', icon: Lock, label: 'overview.security', to: '/settings/security', desc: 'overview.securityDesc' },

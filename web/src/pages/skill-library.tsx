@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useRouterState, useSearch } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { Download, Grid2X2, List, Package, Search, Star } from 'lucide-react'
+import { Download, Grid2X2, List, Package, Plus, Search, Star } from 'lucide-react'
 import type { SkillSummary } from '@/api/types'
 import { APP_SHELL_PAGE_CLASS_NAME } from '@/app/page-shell-style'
 import { useVisibleLabels } from '@/shared/hooks/use-label-queries'
@@ -11,6 +11,7 @@ import { formatCompactCount } from '@/shared/lib/number-format'
 import { EmptyState } from '@/shared/components/empty-state'
 import { Pagination } from '@/shared/components/pagination'
 import { SkeletonList } from '@/shared/components/skeleton-loader'
+import { buttonVariants } from '@/shared/ui/button'
 
 const PAGE_SIZE = 20
 type LibrarySort = 'all' | 'downloads' | 'newest'
@@ -73,9 +74,18 @@ export function SkillLibraryPage() {
 
   return (
     <div className={`${APP_SHELL_PAGE_CLASS_NAME} mx-auto w-full max-w-[1280px]`}>
-      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
-        <h1 className="text-3xl font-semibold text-foreground">{t('skillLibrary.title')}</h1>
-        <p className="text-sm text-muted-foreground">{t('skillLibrary.subtitle')}{skills.data ? ` · ${t('skillLibrary.count', { count: total })}` : ''}</p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 flex-wrap items-baseline gap-x-4 gap-y-2">
+          <h1 className="text-3xl font-semibold text-foreground">{t('skillLibrary.title')}</h1>
+          <p className="text-sm text-muted-foreground">{t('skillLibrary.subtitle')}{skills.data ? ` · ${t('skillLibrary.count', { count: total })}` : ''}</p>
+        </div>
+        <Link
+          to="/dashboard/publish"
+          className={buttonVariants({ className: 'shrink-0 self-start sm:self-auto' })}
+        >
+          <Plus className="h-4 w-4" aria-hidden="true" />
+          {t('publish.title')}
+        </Link>
       </div>
 
       <section aria-label={t('skillLibrary.title')} className="space-y-4">
