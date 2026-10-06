@@ -190,6 +190,7 @@ export function PublishPage() {
               value={normalizeSelectValue(namespaceSlug) ?? EMPTY_NAMESPACE_VALUE}
               onValueChange={(value) => {
                 setNamespaceSlug(value === EMPTY_NAMESPACE_VALUE ? '' : value)
+                  if (value !== 'global' && visibility === 'PUBLIC') setVisibility('NAMESPACE_ONLY')
               }}
             >
               <SelectTrigger id="namespace">
@@ -214,6 +215,7 @@ export function PublishPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
+              {selectedNamespace?.type === 'GLOBAL' ? <SelectItem value="PUBLIC">{t('publish.visibilityOptions.public')}</SelectItem> : null}
               <SelectItem value="NAMESPACE_ONLY">{namespaceOnlyLabel}</SelectItem>
               <SelectItem value="PRIVATE">{t('publish.visibilityOptions.private')}</SelectItem>
             </SelectContent>

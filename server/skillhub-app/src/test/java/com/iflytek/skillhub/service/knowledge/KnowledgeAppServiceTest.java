@@ -56,6 +56,19 @@ import org.springframework.data.domain.PageRequest;
 
 class KnowledgeAppServiceTest {
 
+    @Test
+    void globalKnowledgeIsAbsentFromMemberListsAndDirectLinks() {
+        namespace.setType(NamespaceType.GLOBAL);
+        when(baseRepository.findByNamespaceIdInAndStatus(any(), eq(KnowledgeBaseStatus.ACTIVE))).thenReturn(List.of(base));
+        when(namespaceRepository.findByIdIn(any())).thenReturn(List.of(namespace));
+        assertThat(service.listBases(member("alice"))).isEmpty();
+        assertThatThrownBy(() -> service.getBase("team-a", "handbook", member("alice")))
+                .isInstanceOf(DomainNotFoundException.class);
+        when(baseRepository.findByStatus(KnowledgeBaseStatus.ACTIVE)).thenReturn(List.of(base));
+        assertThat(service.listBases(new KnowledgeAppService.Caller("admin", Map.of(), Set.of("SUPER_ADMIN"))))
+                .hasSize(1);
+    }
+
     private static final long NAMESPACE_ID = 7L;
 
     private final NamespaceRepository namespaceRepository = mock(NamespaceRepository.class);

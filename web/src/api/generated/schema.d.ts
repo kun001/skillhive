@@ -10569,6 +10569,8 @@ export interface operations {
             query?: {
                 q?: string;
                 namespace?: string;
+                /** @description Skill library: public or team */
+                library?: "public" | "team";
                 label?: string[];
                 /** @description Optional response expansions. Supported value: labels */
                 include?: string[];

@@ -88,12 +88,19 @@ describe('PublishPage', () => {
     expect(selectRecords[1]?.value).toBe('PRIVATE')
   })
 
-  it('falls back to public visibility when search params are missing', () => {
+  it('defaults to team visibility when search params are missing', () => {
     useSearchMock.mockReturnValue({})
 
     renderToStaticMarkup(createElement(PublishPage))
 
     expect(selectRecords[0]?.value).toBe('__select_namespace__')
+    expect(selectRecords[1]?.value).toBe('NAMESPACE_ONLY')
+  })
+
+  it('prefills public visibility for the public library publishing entry', () => {
+    useSearchMock.mockReturnValue({ namespace: 'global', visibility: 'PUBLIC' })
+    renderToStaticMarkup(createElement(PublishPage))
+    expect(selectRecords[0]?.value).toBe('global')
     expect(selectRecords[1]?.value).toBe('PUBLIC')
   })
 

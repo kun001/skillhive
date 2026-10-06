@@ -11,6 +11,23 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class VisibilityCheckerTest {
 
+    @Test
+    void publishedGlobalPublicSkillsAreAccessibleWithoutMembership() {
+        var repository = org.mockito.Mockito.mock(com.iflytek.skillhub.domain.namespace.NamespaceRepository.class);
+        var global = new com.iflytek.skillhub.domain.namespace.Namespace("global", "Global", "system");
+        global.setType(com.iflytek.skillhub.domain.namespace.NamespaceType.GLOBAL);
+        org.mockito.Mockito.when(repository.findById(NAMESPACE_ID)).thenReturn(java.util.Optional.of(global));
+        var publicChecker = new VisibilityChecker(repository);
+        assertTrue(publicChecker.canAccess(publicSkill, null, Map.of()));
+        assertTrue(publicChecker.canAccess(publicSkill, OTHER_USER_ID, Map.of()));
+        assertFalse(publicChecker.canAccess(namespaceOnlySkill, null, Map.of()));
+        assertFalse(publicChecker.canAccess(privateSkill, null, Map.of()));
+        assertFalse(publicChecker.canAccess(unpublishedPublicSkill, null, Map.of()));
+        assertFalse(publicChecker.canAccess(hiddenPublicSkill, null, Map.of()));
+        publicSkill.setStatus(SkillStatus.ARCHIVED);
+        assertFalse(publicChecker.canAccess(publicSkill, null, Map.of()));
+    }
+
     private VisibilityChecker checker;
     private Skill publicSkill;
     private Skill namespaceOnlySkill;

@@ -204,13 +204,13 @@ const landingRoute = createRoute({
 const skillsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: 'skills',
-  beforeLoad: requireAuth,
   component: SkillLibraryPage,
-  validateSearch: (search: Record<string, unknown>): { q: string; label?: string; sort: 'all' | 'downloads' | 'newest'; page: number; view: 'list' | 'grid' } => {
+  validateSearch: (search: Record<string, unknown>): { q: string; label?: string; library?: 'public' | 'team'; sort: 'all' | 'downloads' | 'newest'; page: number; view: 'list' | 'grid' } => {
     const sort = search.sort === 'downloads' || search.sort === 'newest' ? search.sort : 'all'
     const page = Number(search.page)
     return {
       q: normalizeSearchQuery(typeof search.q === 'string' ? search.q : ''),
+      library: search.library === 'team' ? 'team' : 'public',
       label: typeof search.label === 'string' && search.label ? search.label : undefined,
       sort,
       page: Number.isInteger(page) && page > 0 ? page : 0,
@@ -315,7 +315,7 @@ const namespaceRoute = createRoute({
 const skillDetailRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/space/$namespace/$slug',
-  beforeLoad: requireAuth,
+  beforeLoad: (context) => context.params.namespace === 'global' ? undefined : requireAuth(context),
   validateSearch: (search: Record<string, unknown>): { returnTo?: string; version?: string } => ({
     returnTo: typeof search.returnTo === 'string' && search.returnTo.startsWith('/') ? search.returnTo : undefined,
     version: typeof search.version === 'string' && search.version ? search.version : undefined,
