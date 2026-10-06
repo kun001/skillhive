@@ -14,6 +14,19 @@ export interface ReleaseNote {
 // Confirm the date and image tag when deploying; Git submission is not deployment.
 export const releases: ReleaseNote[] = [
   {
+    id: '20261006-public-team-skills',
+    version: 'cloud-20261006-public-team-skills',
+    date: '2026-10-06',
+    title: { zh: '新增公共技能库与团队技能库', en: 'Separate public and team skill libraries' },
+    summary: { zh: '公共技能无需登录即可浏览和下载；团队技能按成员权限访问。', en: 'Browse and download public skills without signing in; team skills follow member access permissions.' },
+    changes: [
+      { zh: '技能库新增“公共技能库”和“团队技能库”两个入口，分别查看公共技能和你加入的团队共享技能。', en: 'The skill library now has Public Skills and Team Skills views for public skills and skills shared by teams you belong to.' },
+      { zh: '所有人都可查看和下载已发布的公共技能，无需登录；团队技能继续按成员权限控制浏览、编辑和下载。', en: 'Everyone can view and download published public skills without signing in. Browsing, editing and downloading team skills still follow member permissions.' },
+      { zh: 'Global 空间及其知识资料仅向平台管理员显示，普通成员不再看到管理入口；公共技能仍可正常使用。', en: 'The Global space and its knowledge resources are visible only to platform administrators. Ordinary members no longer see its management entry, while public skills remain accessible.' },
+      { zh: '切换技能库时保留搜索、标签和排序条件，并从第一页开始展示。', en: 'Switching libraries keeps the search, label and sort filters and returns to the first page.' },
+    ],
+  },
+  {
     id: '20261006-register-username',
     version: 'cloud-20261006-register-username',
     date: '2026-10-06',
