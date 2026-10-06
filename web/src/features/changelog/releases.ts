@@ -14,6 +14,20 @@ export interface ReleaseNote {
 // Confirm the date and image tag when deploying; Git submission is not deployment.
 export const releases: ReleaseNote[] = [
   {
+    id: '20261006-namespace-knowledge',
+    version: 'cloud-20261006-namespace-knowledge',
+    date: '2026-10-06',
+    title: { zh: '团队空间汇集技能与知识库', en: 'Team spaces bring skills and knowledge together' },
+    summary: { zh: '在团队空间里同时查看技能和知识库，并可跨知识库搜索文件。', en: 'See a team space’s skills and knowledge bases in one place, and search files across knowledge bases.' },
+    changes: [
+      { zh: '团队空间页分为“技能”和“知识库”两个标签，知识库标签列出该空间的知识库，并可在空间内搜索文件；非成员会看到仅限成员访问的提示。', en: 'Team space pages have Skills and Knowledge tabs. The knowledge tab lists the space’s knowledge bases and searches files within the space; non-members see that knowledge is for members only.' },
+      { zh: '知识库首页的搜索同时查找知识库和所有可访问知识库中的文件，结果标明所属团队空间和知识库。', en: 'Search on the knowledge home finds knowledge bases and files across every accessible knowledge base, showing the team space and knowledge base of each result.' },
+      { zh: '知识库卡片标明所属团队空间，可按团队空间筛选；知识库页面的路径可返回所属团队空间。', en: 'Knowledge base cards show their team space and can be filtered by space; the knowledge base breadcrumb links back to its team space.' },
+      { zh: '文件列表在手机和窄屏上完整显示，长文件名自动截断，文件大小和更新时间显示在文件名下方。', en: 'File lists fit phones and narrow screens: long names are truncated, with size and update time shown beneath the name.' },
+      { zh: '精简首页首屏，移除搜索框和技能数量统计。', en: 'Simplified the homepage hero by removing the search box and skill count.' },
+    ],
+  },
+  {
     id: '20261006-member-permissions',
     version: 'cloud-20261006-member-permissions',
     date: '2026-10-06',
