@@ -14,6 +14,17 @@ export interface ReleaseNote {
 // Confirm the date and image tag when deploying; Git submission is not deployment.
 export const releases: ReleaseNote[] = [
   {
+    id: '20261006-register-username',
+    version: 'cloud-20261006-register-username',
+    date: '2026-10-06',
+    title: { zh: '支持中文用户名，登录注册更简洁', en: 'Chinese usernames and a simpler sign-in' },
+    summary: { zh: '注册时可以使用中文用户名；登录和注册页只保留账号密码方式。', en: 'Usernames can now be Chinese, and the sign-in and registration pages offer username and password only.' },
+    changes: [
+      { zh: '用户名支持中文、字母、数字或下划线，长度 2-64 位；用户 ID 仍随机分配。', en: 'Usernames accept Chinese characters, letters, digits or underscores, 2-64 characters long; user IDs are still assigned at random.' },
+      { zh: '登录页和注册页移除 OAuth 入口，只保留账号密码表单。', en: 'Removed the OAuth option from the sign-in and registration pages, leaving the username and password form.' },
+    ],
+  },
+  {
     id: '20261006-namespace-knowledge',
     version: 'cloud-20261006-namespace-knowledge',
     date: '2026-10-06',

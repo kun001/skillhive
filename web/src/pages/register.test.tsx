@@ -16,10 +16,6 @@ vi.mock('react-i18next', async () => {
   }
 })
 
-vi.mock('@/features/auth/login-button', () => ({
-  LoginButton: () => null,
-}))
-
 vi.mock('@/features/auth/use-local-auth', () => ({
   useLocalRegister: () => ({
     mutateAsync: vi.fn(),
@@ -35,20 +31,12 @@ vi.mock('@/shared/ui/button', () => ({
 vi.mock('@/shared/ui/card', () => ({
   Card: ({ children }: { children: unknown }) => children,
   CardContent: ({ children }: { children: unknown }) => children,
-  CardDescription: ({ children }: { children: unknown }) => children,
   CardHeader: ({ children }: { children: unknown }) => children,
   CardTitle: ({ children }: { children: unknown }) => children,
 }))
 
 vi.mock('@/shared/ui/input', () => ({
   Input: () => null,
-}))
-
-vi.mock('@/shared/ui/tabs', () => ({
-  Tabs: ({ children }: { children: unknown }) => children,
-  TabsContent: ({ children }: { children: unknown }) => children,
-  TabsList: ({ children }: { children: unknown }) => children,
-  TabsTrigger: ({ children }: { children: unknown }) => children,
 }))
 
 import { renderToStaticMarkup } from 'react-dom/server'
@@ -63,7 +51,8 @@ describe('RegisterPage', () => {
     const html = renderToStaticMarkup(<RegisterPage />)
 
     expect(html).toContain('register.title')
-    expect(html).toContain('register.subtitle')
     expect(html).toContain('register.submit')
+    expect(html).not.toContain('register.subtitle')
+    expect(html).not.toContain('OAuth')
   })
 })

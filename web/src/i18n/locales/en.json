@@ -110,9 +110,7 @@
   },
   "login": {
     "title": "Login to SkillHive",
-    "subtitle": "Choose a method to continue",
-    "tabPassword": "Password",
-    "tabOAuth": "OAuth",
+    "subtitle": "Sign in to continue",
     "username": "Username",
     "password": "Password",
     "usernamePlaceholder": "Enter username",
@@ -126,7 +124,6 @@
     "forgotPassword": "Forgot password?",
     "noAccount": "Don't have an account?",
     "register": "Sign up now",
-    "oauthHint": "After OAuth authentication, you will be automatically redirected back to this site.",
     "passwordCompatHint": "This deployment has the password compatibility layer enabled. The form will route to {{name}} instead of the fixed local account endpoint.",
     "enterpriseSsoTitle": "Enterprise SSO",
     "enterpriseSsoHint": "This deployment has the compatibility layer enabled. If your browser already has a {{name}} session, you can try establishing a SkillHub session directly.",
@@ -140,13 +137,10 @@
   },
   "register": {
     "title": "Create Account",
-    "subtitle": "Register locally or sign in directly with OAuth.",
-    "tabLocal": "Local Account",
-    "tabOAuth": "OAuth",
     "username": "Username",
     "email": "Email",
     "password": "Password",
-    "usernamePlaceholder": "3-64 characters: letters, numbers, or underscores",
+    "usernamePlaceholder": "2-64 characters: letters (Chinese supported), numbers, or underscores",
     "emailPlaceholder": "Enter your email",
     "emailRequired": "Email is required",
     "passwordPlaceholder": "At least 8 characters with 3 character types",
@@ -154,9 +148,8 @@
     "submit": "Register & Login",
     "hasAccount": "Already have an account?",
     "login": "Back to login",
-    "oauthHint": "Sign in directly with your existing OAuth account, no local password needed.",
     "usernameRequired": "Username is required",
-    "usernameInvalid": "Only letters, numbers, or underscores allowed (3-64 characters)",
+    "usernameInvalid": "Only letters (Chinese supported), numbers, or underscores allowed (2-64 characters)",
     "usernameExists": "Username already exists",
     "passwordRequired": "Password is required",
     "passwordTooShort": "Password must be at least 8 characters",
@@ -1210,10 +1203,6 @@
     "copy": "Copy content",
     "copySuccess": "Copied to clipboard",
     "close": "Close"
-  },
-  "loginButton": {
-    "loading": "Loading...",
-    "loginWith": "Login with {{name}}"
   },
   "ratingInput": {
     "yourRating": "Your rating: {{score}} stars"

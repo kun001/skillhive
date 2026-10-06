@@ -83,7 +83,7 @@ flowchart LR
 
 演示地址：**[https://skillhive.team](https://skillhive.team)**
 
-在[登录页面](https://skillhive.team/login)选择「账号密码」，使用下面任一账号登录。它们都是普通成员，只能看到各自有权限的团队资源。
+在[登录页面](https://skillhive.team/login)使用下面任一账号登录。它们都是普通成员，只能看到各自有权限的团队资源。
 
 | 用户名 | 密码 | 上传的技能 |
 | --- | --- | --- |

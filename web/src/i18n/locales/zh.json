@@ -110,9 +110,7 @@
   },
   "login": {
     "title": "登录 SkillHive",
-    "subtitle": "选择一个方式登录以继续",
-    "tabPassword": "账号密码",
-    "tabOAuth": "OAuth",
+    "subtitle": "登录以继续",
     "username": "用户名",
     "password": "密码",
     "usernamePlaceholder": "输入用户名",
@@ -126,7 +124,6 @@
     "forgotPassword": "忘记密码？",
     "noAccount": "还没有账号？",
     "register": "立即注册",
-    "oauthHint": "使用 OAuth 登录时，认证完成后会自动返回当前站点。",
     "passwordCompatHint": "当前部署已启用账号密码兼容接入层。表单将路由到 {{name}}，而不是固定使用本地账号接口。",
     "enterpriseSsoTitle": "企业单点登录",
     "enterpriseSsoHint": "当前部署已启用兼容接入层。若浏览器中已存在 {{name}} 会话，可直接尝试建立 SkillHub 登录态。",
@@ -140,13 +137,10 @@
   },
   "register": {
     "title": "创建账号",
-    "subtitle": "支持本地注册，也可以直接使用 OAuth 登录进入平台。",
-    "tabLocal": "本地账号",
-    "tabOAuth": "OAuth",
     "username": "用户名",
     "email": "邮箱",
     "password": "密码",
-    "usernamePlaceholder": "3-64 位字母、数字或下划线",
+    "usernamePlaceholder": "2-64 位中文、字母、数字或下划线",
     "emailPlaceholder": "请输入邮箱",
     "emailRequired": "请输入邮箱",
     "passwordPlaceholder": "至少 8 位，包含 3 种字符类型",
@@ -154,9 +148,8 @@
     "submit": "注册并登录",
     "hasAccount": "已有账号？",
     "login": "返回登录",
-    "oauthHint": "直接使用现有 OAuth 账户进入平台，无需再创建本地密码。",
     "usernameRequired": "请输入用户名",
-    "usernameInvalid": "仅支持字母、数字或下划线（3-64 位）",
+    "usernameInvalid": "仅支持中文、字母、数字或下划线（2-64 位）",
     "usernameExists": "用户名已存在",
     "passwordRequired": "请输入密码",
     "passwordTooShort": "密码至少需要 8 个字符",
@@ -1210,10 +1203,6 @@
     "copy": "复制内容",
     "copySuccess": "已复制到剪贴板",
     "close": "关闭"
-  },
-  "loginButton": {
-    "loading": "加载中...",
-    "loginWith": "使用 {{name}} 登录"
   },
   "ratingInput": {
     "yourRating": "你的评分: {{score}} 星"
