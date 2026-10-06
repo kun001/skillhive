@@ -26,6 +26,7 @@ import com.iflytek.skillhub.repository.GovernanceQueryRepository;
 import com.iflytek.skillhub.repository.ReviewProgressQueryRepository;
 import com.iflytek.skillhub.service.ReviewSkillDetailAppService;
 import org.junit.jupiter.api.Test;
+import com.iflytek.skillhub.service.MemberResourceAccessService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -61,6 +62,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class ReviewPortalControllerTest {
+
+    @org.springframework.boot.test.mock.mockito.MockBean
+    private MemberResourceAccessService memberResourceAccessService;
 
     @Autowired
     private MockMvc mockMvc;
@@ -196,7 +200,7 @@ class ReviewPortalControllerTest {
                                 new SkillLifecycleVersionResponse(99L, "1.1.0", "PUBLISHED"),
                                 new SkillLifecycleVersionResponse(100L, "1.2.0", "PENDING_REVIEW"),
                                 null,
-                                "REVIEW_TASK"
+                                "REVIEW_TASK", true
                         ),
                         List.of(new SkillVersionResponse(100L, "1.2.0", "PENDING_REVIEW", null, 1, 10L, null, true, null)),
                         List.of(new SkillFileResponse(1L, "README.md", 123L, "text/markdown", "sha")),

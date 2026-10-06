@@ -90,6 +90,23 @@ public class NamespacePortalQueryAppService {
     }
 
     @Transactional(readOnly = true)
+    public List<MyNamespaceResponse> listMyNamespaces(Map<Long, NamespaceRole> roles, Set<String> platformRoles, String userId) {
+        return listMyNamespaces(roles, platformRoles).stream().map(item -> withCapabilities(item, userId, platformRoles)).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<MyNamespaceResponse> listMyNamespacesPage(Pageable pageable, Map<Long, NamespaceRole> roles, Set<String> platformRoles, String userId) {
+        PageResponse<MyNamespaceResponse> page = listMyNamespacesPage(pageable, roles, platformRoles);
+        return new PageResponse<>(page.items().stream().map(item -> withCapabilities(item, userId, platformRoles)).toList(), page.total(), page.page(), page.size());
+    }
+
+    private MyNamespaceResponse withCapabilities(MyNamespaceResponse item, String userId, Set<String> roles) {
+        boolean admin = roles != null && roles.contains("SUPER_ADMIN");
+        var member = namespaceMemberService.getMember(item.id(), userId).orElse(null);
+        return item.withCapabilities(admin || member != null && member.canEdit(), admin || member != null && member.canDownload());
+    }
+
+    @Transactional(readOnly = true)
     public List<MyNamespaceResponse> listMyNamespaces(Map<Long, NamespaceRole> userNamespaceRoles,
                                                       Set<String> platformRoles) {
         Map<Long, NamespaceRole> namespaceRoles = userNamespaceRoles != null ? userNamespaceRoles : Map.of();

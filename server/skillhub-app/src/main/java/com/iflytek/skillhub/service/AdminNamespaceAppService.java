@@ -188,6 +188,8 @@ public class AdminNamespaceAppService {
             throw new DomainBadRequestException("error.namespace.member.owner.setDirect");
         }
         member.setRole(request.role());
+        if (request.canEdit() != null) member.setCanEdit(request.canEdit());
+        if (request.canDownload() != null) member.setCanDownload(request.canDownload());
         NamespaceMember saved = namespaceMemberRepository.save(member);
         return MemberResponse.from(saved, userAccountRepository.findById(saved.getUserId()).orElse(null));
     }

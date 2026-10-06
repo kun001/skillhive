@@ -113,9 +113,9 @@ public class PostgresFullTextQueryService implements SearchQueryService {
         sql.append("WHERE 1=1 ");
 
         // Visibility filtering
-        sql.append("AND (d.visibility = 'PUBLIC' ");
+        sql.append("AND (FALSE ");
         if (query.visibilityScope().userId() != null) {
-            sql.append("OR (d.visibility = 'NAMESPACE_ONLY' AND d.namespace_id IN :memberNamespaceIds) ");
+            sql.append("OR (d.visibility IN ('PUBLIC', 'NAMESPACE_ONLY') AND d.namespace_id IN :memberNamespaceIds) ");
         }
         sql.append(") ");
 

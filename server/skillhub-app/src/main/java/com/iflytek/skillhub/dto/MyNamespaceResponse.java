@@ -25,8 +25,16 @@ public record MyNamespaceResponse(
         boolean canUnfreeze,
         boolean canArchive,
         boolean canRestore,
-        boolean canDelete
+        boolean canDelete,
+        boolean canEdit,
+        boolean canDownload
 ) {
+    public MyNamespaceResponse withCapabilities(boolean edit, boolean download) {
+        return new MyNamespaceResponse(id, slug, displayName, status, description, type, avatarUrl, createdBy,
+                createdAt, updatedAt, currentUserRole, immutable, canFreeze, canUnfreeze, canArchive, canRestore,
+                canDelete, edit, download);
+    }
+
     public static MyNamespaceResponse from(Namespace namespace,
                                            NamespaceRole currentUserRole,
                                            NamespaceAccessPolicy accessPolicy,
@@ -48,7 +56,9 @@ public record MyNamespaceResponse(
                 accessPolicy.canUnfreeze(namespace, currentUserRole),
                 accessPolicy.canArchive(namespace, currentUserRole),
                 accessPolicy.canRestore(namespace, currentUserRole),
-                canDelete
+                canDelete,
+                true,
+                true
         );
     }
 }

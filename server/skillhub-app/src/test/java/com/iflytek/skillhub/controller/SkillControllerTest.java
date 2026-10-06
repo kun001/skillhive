@@ -34,6 +34,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 class SkillControllerTest {
 
+    @MockBean
+    private com.iflytek.skillhub.service.MemberResourceAccessService memberAccess;
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -72,7 +75,7 @@ class SkillControllerTest {
                         "[{\"path\":\"SKILL.md\"}]"
                 ));
 
-        mockMvc.perform(get("/api/v1/skills/team/demo/versions/1.0.0"))
+        mockMvc.perform(get("/api/v1/skills/team/demo/versions/1.0.0").with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user("viewer")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(0))
                 .andExpect(jsonPath("$.data.version").value("1.0.0"))
@@ -107,7 +110,7 @@ class SkillControllerTest {
         try {
             for (String zoneId : List.of("Asia/Shanghai", "America/Los_Angeles")) {
                 TimeZone.setDefault(TimeZone.getTimeZone(zoneId));
-                mockMvc.perform(get("/api/v1/skills/team/demo/versions/1.0.0"))
+                mockMvc.perform(get("/api/v1/skills/team/demo/versions/1.0.0").with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user("viewer")))
                         .andExpect(status().isOk())
                         .andExpect(jsonPath("$.data.publishedAt").value("2026-03-12T12:00:00Z"));
             }
@@ -137,7 +140,7 @@ class SkillControllerTest {
                         "/api/v1/skills/team/demo/versions/1.2.0/download"
                 ));
 
-        mockMvc.perform(get("/api/v1/skills/team/demo/resolve").param("tag", "latest"))
+        mockMvc.perform(get("/api/v1/skills/team/demo/resolve").with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user("viewer")).param("tag", "latest"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(0))
                 .andExpect(jsonPath("$.data.namespace").value("team"))
@@ -183,7 +186,7 @@ class SkillControllerTest {
                         "OWNER_PREVIEW"
                 ));
 
-        mockMvc.perform(get("/api/web/skills/team/demo"))
+        mockMvc.perform(get("/api/web/skills/team/demo").with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user("viewer")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(0))
                 .andExpect(jsonPath("$.data.ownerDisplayName").value("Alice"))
@@ -206,7 +209,7 @@ class SkillControllerTest {
                 eq(Map.<Long, NamespaceRole>of())))
                 .thenThrow(new DomainForbiddenException("error.namespace.archived", "team"));
 
-        mockMvc.perform(get("/api/web/skills/team/demo"))
+        mockMvc.perform(get("/api/web/skills/team/demo").with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user("viewer")))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value(403));
     }
@@ -221,7 +224,7 @@ class SkillControllerTest {
                 eq(Map.<Long, NamespaceRole>of())))
                 .thenReturn(List.of(new SkillFile(20L, "README.md", 32L, "text/markdown", "hash", "key")));
 
-        mockMvc.perform(get("/api/v1/skills/team/demo/tags/latest/files"))
+        mockMvc.perform(get("/api/v1/skills/team/demo/tags/latest/files").with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user("viewer")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(0))
                 .andExpect(jsonPath("$.data[0].filePath").value("README.md"))
@@ -244,7 +247,7 @@ class SkillControllerTest {
                 .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(version)));
         when(skillQueryService.isDownloadAvailable(version)).thenReturn(false);
 
-        mockMvc.perform(get("/api/v1/skills/team/demo/versions"))
+        mockMvc.perform(get("/api/v1/skills/team/demo/versions").with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user("viewer")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.items[0].downloadAvailable").value(false))
                 .andExpect(jsonPath("$.data.items[0].complianceSnapshot.items[0].standard").value("mitre-attack"));
@@ -281,7 +284,7 @@ class SkillControllerTest {
                                                 new SkillQueryService.SkillVersionCompareLineDTO("ADD", "new", null, 2)
                                         )))))));
 
-        mockMvc.perform(get("/api/v1/skills/team/demo/versions/compare")
+        mockMvc.perform(get("/api/v1/skills/team/demo/versions/compare").with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user("viewer"))
                         .param("from", "1.0.0")
                         .param("to", "1.1.0"))
                 .andExpect(status().isOk())
@@ -304,7 +307,7 @@ class SkillControllerTest {
                 eq(Map.<Long, NamespaceRole>of())))
                 .thenThrow(new DomainBadRequestException("error.skill.version.compare.same"));
 
-        mockMvc.perform(get("/api/v1/skills/team/demo/versions/compare")
+        mockMvc.perform(get("/api/v1/skills/team/demo/versions/compare").with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user("viewer"))
                         .param("from", "1.0.0")
                         .param("to", "1.0.0"))
                 .andExpect(status().isBadRequest())

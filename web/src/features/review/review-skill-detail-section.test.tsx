@@ -33,6 +33,7 @@ function createDetail(): ReviewSkillDetail {
       ratingCount: 0,
       hidden: false,
       namespace: 'team-a',
+      canDownload: true,
       canManageLifecycle: false,
       canSubmitPromotion: false,
       canInteract: false,

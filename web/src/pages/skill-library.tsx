@@ -6,6 +6,7 @@ import type { SkillSummary } from '@/api/types'
 import { APP_SHELL_PAGE_CLASS_NAME } from '@/app/page-shell-style'
 import { useVisibleLabels } from '@/shared/hooks/use-label-queries'
 import { useSearchSkills } from '@/shared/hooks/use-skill-queries'
+import { useMyNamespaces } from '@/features/namespace/use-my-namespaces'
 import { normalizeSearchQuery } from '@/shared/lib/search-query'
 import { formatCompactCount } from '@/shared/lib/number-format'
 import { EmptyState } from '@/shared/components/empty-state'
@@ -58,6 +59,8 @@ export function SkillLibraryPage() {
   const [queryInput, setQueryInput] = useState(q)
   const labels = useVisibleLabels()
   const skills = useSearchSkills({ q, label, sort: sort === 'all' ? 'relevance' : sort, page, size: PAGE_SIZE })
+  const namespaces = useMyNamespaces()
+  const canPublish = namespaces.data?.some((namespace) => namespace.status === 'ACTIVE' && namespace.canEdit !== false)
   const total = skills.data?.total ?? 0
   const totalPages = Math.ceil(total / PAGE_SIZE)
 
@@ -79,13 +82,13 @@ export function SkillLibraryPage() {
           <h1 className="text-3xl font-semibold text-foreground">{t('skillLibrary.title')}</h1>
           <p className="text-sm text-muted-foreground">{t('skillLibrary.subtitle')}{skills.data ? ` · ${t('skillLibrary.count', { count: total })}` : ''}</p>
         </div>
-        <Link
+        {canPublish ? <Link
           to="/dashboard/publish"
           className={buttonVariants({ className: 'shrink-0 self-start sm:self-auto' })}
         >
           <Plus className="h-4 w-4" aria-hidden="true" />
           {t('publish.title')}
-        </Link>
+        </Link> : null}
       </div>
 
       <section aria-label={t('skillLibrary.title')} className="space-y-4">

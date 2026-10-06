@@ -14,7 +14,9 @@ public record MemberResponse(
         String email,
         NamespaceRole role,
         Instant createdAt,
-        Instant updatedAt
+        Instant updatedAt,
+        boolean canEdit,
+        boolean canDownload
 ) {
     public static MemberResponse from(NamespaceMember member) {
         return new MemberResponse(
@@ -25,7 +27,9 @@ public record MemberResponse(
                 null,
                 member.getRole(),
                 member.getCreatedAt(),
-                member.getUpdatedAt()
+                member.getUpdatedAt(),
+                member.canEdit(),
+                member.canDownload()
         );
     }
 
@@ -38,7 +42,9 @@ public record MemberResponse(
                 user != null ? user.getEmail() : null,
                 member.getRole(),
                 member.getCreatedAt(),
-                member.getUpdatedAt()
+                member.getUpdatedAt(),
+                member.canEdit(),
+                member.canDownload()
         );
     }
 }

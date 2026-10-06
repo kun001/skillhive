@@ -74,6 +74,10 @@ class SkillVersionDeleteFlowIntegrationTest {
                 new Namespace("version-delete-" + suffix, "Version Delete " + suffix, ownerId)
         );
 
+        var member = new com.iflytek.skillhub.domain.namespace.NamespaceMember(namespace.getId(), ownerId, com.iflytek.skillhub.domain.namespace.NamespaceRole.MEMBER);
+        org.mockito.Mockito.when(namespaceMemberRepository.findByNamespaceIdAndUserId(namespace.getId(), ownerId)).thenReturn(java.util.Optional.of(member));
+        org.mockito.Mockito.when(namespaceMemberRepository.findByUserId(ownerId)).thenReturn(List.of(member));
+
         Skill skill = new Skill(namespace.getId(), "demo-skill-" + suffix, ownerId, SkillVisibility.PUBLIC);
         skill.setCreatedBy(ownerId);
         skill.setUpdatedBy(ownerId);

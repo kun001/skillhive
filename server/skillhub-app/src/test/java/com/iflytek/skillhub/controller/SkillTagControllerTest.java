@@ -4,6 +4,7 @@ import com.iflytek.skillhub.domain.namespace.NamespaceMemberRepository;
 import com.iflytek.skillhub.domain.skill.SkillTag;
 import com.iflytek.skillhub.domain.skill.service.SkillTagService;
 import org.junit.jupiter.api.Test;
+import com.iflytek.skillhub.service.MemberResourceAccessService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -24,7 +25,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@org.springframework.security.test.context.support.WithMockUser
 class SkillTagControllerTest {
+
+    @org.springframework.boot.test.mock.mockito.MockBean
+    private MemberResourceAccessService memberResourceAccessService;
 
     @Autowired
     private MockMvc mockMvc;

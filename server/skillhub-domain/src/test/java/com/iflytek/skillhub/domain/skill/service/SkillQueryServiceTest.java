@@ -220,7 +220,7 @@ class SkillQueryServiceTest {
                 .thenReturn(Optional.of(new UserAccount("owner-1", "Owner", null, null)));
 
         SkillQueryService.SkillDetailDTO detail =
-                service.getSkillDetail("global", "archived-skill", "viewer", Map.of());
+                service.getSkillDetail("global", "archived-skill", "viewer", Map.of(1L, NamespaceRole.MEMBER));
 
         assertEquals("ARCHIVED", detail.status());
         assertEquals("archived-skill", detail.slug());
@@ -373,7 +373,7 @@ class SkillQueryServiceTest {
     void testListSkillsByNamespace_ShouldHideHiddenSkillsFromRegularUsers() throws Exception {
         String namespaceSlug = "test-ns";
         String userId = "user-100";
-        Map<Long, NamespaceRole> userNsRoles = Map.of();
+        Map<Long, NamespaceRole> userNsRoles = Map.of(1L, NamespaceRole.MEMBER);
         Pageable pageable = PageRequest.of(0, 10);
 
         Namespace namespace = new Namespace(namespaceSlug, "Test NS", "user-1");
@@ -711,7 +711,7 @@ class SkillQueryServiceTest {
     void testResolveVersion_ShouldEncodeDownloadUrlPathSegments() throws Exception {
         String namespaceSlug = "global";
         String skillSlug = "smoke-skill-two";
-        Map<Long, NamespaceRole> userNsRoles = Map.of();
+        Map<Long, NamespaceRole> userNsRoles = Map.of(1L, NamespaceRole.MEMBER);
 
         Namespace namespace = new Namespace(namespaceSlug, "Global", "user-1");
         setId(namespace, 1L);
@@ -738,7 +738,7 @@ class SkillQueryServiceTest {
                 null,
                 null,
                 null,
-                null,
+                "viewer",
                 userNsRoles
         );
 
@@ -823,7 +823,7 @@ class SkillQueryServiceTest {
         when(skillVersionRepository.findById(11L)).thenReturn(Optional.of(version));
 
         DomainBadRequestException ex = assertThrows(DomainBadRequestException.class, () ->
-                service.resolveVersion(namespaceSlug, skillSlug, null, null, null, null, Map.of()));
+                service.resolveVersion(namespaceSlug, skillSlug, null, null, null, "viewer", Map.of(1L, NamespaceRole.MEMBER)));
 
         assertEquals("error.skill.version.notDownloadable", ex.messageCode());
         assertArrayEquals(new Object[]{"1.0.0"}, ex.messageArgs());
@@ -874,7 +874,7 @@ class SkillQueryServiceTest {
         when(skillVersionRepository.findById(11L)).thenReturn(Optional.of(version));
 
         DomainBadRequestException ex = assertThrows(DomainBadRequestException.class, () ->
-                service.resolveVersion(namespaceSlug, skillSlug, null, null, null, null, Map.of()));
+                service.resolveVersion(namespaceSlug, skillSlug, null, null, null, "viewer", Map.of(1L, NamespaceRole.MEMBER)));
 
         assertEquals("error.skill.version.notDownloadable", ex.messageCode());
         assertArrayEquals(new Object[]{"1.0.0"}, ex.messageArgs());
@@ -902,7 +902,7 @@ class SkillQueryServiceTest {
         when(skillVersionRepository.findBySkillIdAndVersion(3L, "1.0.0")).thenReturn(Optional.of(version));
 
         DomainBadRequestException ex = assertThrows(DomainBadRequestException.class, () ->
-                service.resolveVersion(namespaceSlug, skillSlug, "1.0.0", null, null, null, Map.of()));
+                service.resolveVersion(namespaceSlug, skillSlug, "1.0.0", null, null, "viewer", Map.of(1L, NamespaceRole.MEMBER)));
 
         assertEquals("error.skill.version.notDownloadable", ex.messageCode());
         assertArrayEquals(new Object[]{"1.0.0"}, ex.messageArgs());
@@ -932,7 +932,7 @@ class SkillQueryServiceTest {
         when(skillVersionRepository.findById(11L)).thenReturn(Optional.of(version));
 
         DomainBadRequestException ex = assertThrows(DomainBadRequestException.class, () ->
-                service.resolveVersion(namespaceSlug, skillSlug, null, "stable", null, null, Map.of()));
+                service.resolveVersion(namespaceSlug, skillSlug, null, "stable", null, "viewer", Map.of(1L, NamespaceRole.MEMBER)));
 
         assertEquals("error.skill.version.notDownloadable", ex.messageCode());
         assertArrayEquals(new Object[]{"1.0.0"}, ex.messageArgs());
@@ -1013,7 +1013,7 @@ class SkillQueryServiceTest {
         String namespaceSlug = "test-ns";
         String skillSlug = "test-skill";
         String userId = "owner-1";
-        Map<Long, NamespaceRole> userNsRoles = Map.of();
+        Map<Long, NamespaceRole> userNsRoles = Map.of(1L, NamespaceRole.MEMBER);
 
         Namespace namespace = new Namespace(namespaceSlug, "Test NS", userId);
         setId(namespace, 1L);
@@ -1034,7 +1034,7 @@ class SkillQueryServiceTest {
         String namespaceSlug = "team-ns";
         String skillSlug = "team-skill";
         String userId = "owner-1";
-        Map<Long, NamespaceRole> userNsRoles = Map.of();
+        Map<Long, NamespaceRole> userNsRoles = Map.of(1L, NamespaceRole.MEMBER);
 
         Namespace namespace = new Namespace(namespaceSlug, "Team NS", userId);
         setId(namespace, 1L);
@@ -1065,7 +1065,7 @@ class SkillQueryServiceTest {
         String namespaceSlug = "team-ns";
         String skillSlug = "team-skill";
         String userId = "owner-1";
-        Map<Long, NamespaceRole> userNsRoles = Map.of();
+        Map<Long, NamespaceRole> userNsRoles = Map.of(1L, NamespaceRole.MEMBER);
 
         Namespace namespace = new Namespace(namespaceSlug, "Team NS", userId);
         setId(namespace, 1L);
@@ -1094,7 +1094,7 @@ class SkillQueryServiceTest {
         String namespaceSlug = "team-ns";
         String skillSlug = "team-skill";
         String userId = "owner-1";
-        Map<Long, NamespaceRole> userNsRoles = Map.of();
+        Map<Long, NamespaceRole> userNsRoles = Map.of(1L, NamespaceRole.MEMBER);
 
         Namespace namespace = new Namespace(namespaceSlug, "Team NS", userId);
         setId(namespace, 1L);
@@ -1202,7 +1202,7 @@ class SkillQueryServiceTest {
         String namespaceSlug = "test-ns";
         String skillSlug = "test-skill";
         String ownerId = "owner-1";
-        Map<Long, NamespaceRole> userNsRoles = Map.of();
+        Map<Long, NamespaceRole> userNsRoles = Map.of(1L, NamespaceRole.MEMBER);
 
         Namespace namespace = new Namespace(namespaceSlug, "Test NS", ownerId);
         setId(namespace, 1L);
@@ -1237,7 +1237,7 @@ class SkillQueryServiceTest {
         String namespaceSlug = "test-ns";
         String skillSlug = "test-skill";
         String ownerId = "owner-1";
-        Map<Long, NamespaceRole> userNsRoles = Map.of();
+        Map<Long, NamespaceRole> userNsRoles = Map.of(1L, NamespaceRole.MEMBER);
 
         Namespace namespace = new Namespace(namespaceSlug, "Test NS", ownerId);
         setId(namespace, 1L);
@@ -1272,7 +1272,7 @@ class SkillQueryServiceTest {
         String namespaceSlug = "test-ns";
         String skillSlug = "test-skill";
         String ownerId = "owner-1";
-        Map<Long, NamespaceRole> userNsRoles = Map.of();
+        Map<Long, NamespaceRole> userNsRoles = Map.of(1L, NamespaceRole.MEMBER);
 
         Namespace namespace = new Namespace(namespaceSlug, "Test NS", ownerId);
         setId(namespace, 1L);
@@ -1312,7 +1312,7 @@ class SkillQueryServiceTest {
         when(skillRepository.findByNamespaceIdAndSlug(1L, skillSlug)).thenReturn(List.of(skill));
 
         SkillQueryService.SkillDetailDTO result = service.getSkillDetail(
-                namespaceSlug, skillSlug, ownerId, Map.of());
+                namespaceSlug, skillSlug, ownerId, Map.of(1L, NamespaceRole.MEMBER));
 
         assertNull(result.headlineVersion());
         assertTrue(result.canInteract());
@@ -1323,7 +1323,7 @@ class SkillQueryServiceTest {
         String namespaceSlug = "test-ns";
         String skillSlug = "test-skill";
         String ownerId = "owner-1";
-        Map<Long, NamespaceRole> userNsRoles = Map.of();
+        Map<Long, NamespaceRole> userNsRoles = Map.of(1L, NamespaceRole.MEMBER);
 
         Namespace namespace = new Namespace(namespaceSlug, "Test NS", ownerId);
         setId(namespace, 1L);
@@ -1361,7 +1361,7 @@ class SkillQueryServiceTest {
         String skillSlug = "test-skill";
         String version = "1.1.0";
         String ownerId = "owner-1";
-        Map<Long, NamespaceRole> userNsRoles = Map.of();
+        Map<Long, NamespaceRole> userNsRoles = Map.of(1L, NamespaceRole.MEMBER);
 
         Namespace namespace = new Namespace(namespaceSlug, "Test NS", ownerId);
         setId(namespace, 1L);
@@ -1397,7 +1397,7 @@ class SkillQueryServiceTest {
         String skillSlug = "test-skill";
         String version = "1.1.0";
         String ownerId = "owner-1";
-        Map<Long, NamespaceRole> userNsRoles = Map.of();
+        Map<Long, NamespaceRole> userNsRoles = Map.of(1L, NamespaceRole.MEMBER);
 
         Namespace namespace = new Namespace(namespaceSlug, "Test NS", ownerId);
         setId(namespace, 1L);
@@ -1453,7 +1453,7 @@ class SkillQueryServiceTest {
         String namespaceSlug = "test-ns";
         String skillSlug = "test-skill";
         String userId = "owner-1";
-        Map<Long, NamespaceRole> userNsRoles = Map.of();
+        Map<Long, NamespaceRole> userNsRoles = Map.of(1L, NamespaceRole.MEMBER);
 
         Namespace namespace = new Namespace(namespaceSlug, "Test NS", userId);
         setId(namespace, 1L);

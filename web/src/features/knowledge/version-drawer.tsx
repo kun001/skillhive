@@ -87,14 +87,14 @@ export function KnowledgeVersionDrawer({ open, onOpenChange, document }: Version
                         {version.fileName} · {formatFileSize(version.sizeBytes)} · {version.createdBy.displayName}
                       </p>
                       <div className="mt-2 flex gap-2">
-                        <a
+                        {document.canDownload ? <a
                           href={knowledgeApi.contentUrl(document.id, { version: version.versionNumber })}
                           download
                           className={buttonVariants({ variant: 'outline', size: 'sm' })}
                         >
                           <Download className="mr-1.5 h-3.5 w-3.5" aria-hidden />
                           {t('knowledge.actions.download')}
-                        </a>
+                        </a> : null}
                         {document.canManage && !version.current ? (
                           <Button variant="outline" size="sm" onClick={() => setRestoring(version)}>
                             <RotateCcw className="mr-1.5 h-3.5 w-3.5" aria-hidden />

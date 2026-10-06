@@ -19,8 +19,22 @@ class RouteSecurityPolicyRegistryTest {
     private final RouteSecurityPolicyRegistry registry = new RouteSecurityPolicyRegistry();
 
     @Test
+    void knowledgeReadsAndWritesRequireLogin() {
+        for (String path : List.of("/api/web/knowledge/bases", "/api/web/knowledge/documents/10/content",
+                "/api/web/knowledge/documents/10/preview/pages/1", "/api/web/knowledge/documents/10/images/2/content")) {
+            assertEquals(RouteSecurityPolicyRegistry.AccessLevel.AUTHENTICATED, registry.accessLevel("GET", path));
+            for (String method : List.of("POST", "PUT", "DELETE")) {
+                assertEquals(RouteSecurityPolicyRegistry.AccessLevel.AUTHENTICATED, registry.accessLevel(method, path));
+            }
+            assertFalse(registry.authorizeApiToken("GET", path, ALL_SCOPES).allowed());
+        }
+        assertEquals(RouteSecurityPolicyRegistry.AccessLevel.AUTHENTICATED,
+                registry.accessLevel("GET", "/api/v1/knowledge/bases"));
+    }
+
+    @Test
     void accessLevel_respectsMethodSpecificPublicRoutesAndProtectedFallback() {
-        assertEquals(RouteSecurityPolicyRegistry.AccessLevel.PERMIT_ALL,
+        assertEquals(RouteSecurityPolicyRegistry.AccessLevel.AUTHENTICATED,
                 registry.accessLevel("GET", "/api/web/skills"));
         assertEquals(RouteSecurityPolicyRegistry.AccessLevel.AUTHENTICATED,
                 registry.accessLevel("POST", "/api/web/skills"));
@@ -35,8 +49,8 @@ class RouteSecurityPolicyRegistryTest {
     }
 
     @Test
-    void reviewRoutesExposePublicListingButProtectCurrentUserMutations() {
-        assertEquals(RouteSecurityPolicyRegistry.AccessLevel.PERMIT_ALL,
+    void reviewRoutesRequireLogin() {
+        assertEquals(RouteSecurityPolicyRegistry.AccessLevel.AUTHENTICATED,
                 registry.accessLevel("GET", "/api/v1/skills/10/reviews"));
         assertEquals(RouteSecurityPolicyRegistry.AccessLevel.AUTHENTICATED,
                 registry.accessLevel("GET", "/api/v1/skills/10/reviews/me"));

@@ -143,7 +143,7 @@ class NamespacePortalCommandAppServiceTest {
         UserAccount user = new UserAccount("user-2", "Alice", "alice@example.com", null);
 
         when(namespaceService.getNamespaceBySlug("team-a")).thenReturn(ns);
-        when(namespaceMemberService.updateMemberRole(1L, "user-2", NamespaceRole.OWNER, "owner-1"))
+        when(namespaceMemberService.updateMemberPermissions(1L, "user-2", NamespaceRole.OWNER, null, null, "owner-1"))
                 .thenReturn(member);
         when(userAccountRepository.findById("user-2"))
                 .thenReturn(Optional.of(user));
@@ -167,7 +167,7 @@ class NamespacePortalCommandAppServiceTest {
         ReflectionTestUtils.setField(member, "id", 20L);
 
         when(namespaceService.getNamespaceBySlug("team-a")).thenReturn(ns);
-        when(namespaceMemberService.updateMemberRole(1L, "ghost", NamespaceRole.ADMIN, "owner-1"))
+        when(namespaceMemberService.updateMemberPermissions(1L, "ghost", NamespaceRole.ADMIN, null, null, "owner-1"))
                 .thenReturn(member);
         when(userAccountRepository.findById("ghost"))
                 .thenReturn(Optional.empty());

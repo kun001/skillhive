@@ -41,15 +41,15 @@ class VisibilityCheckerTest {
     }
 
     @Test
-    void testPublicSkillAccessibleByAnonymous() {
+    void testLegacyPublicSkillNotAccessibleByAnonymous() {
         boolean canAccess = checker.canAccess(publicSkill, null, Map.of());
-        assertTrue(canAccess);
+        assertFalse(canAccess);
     }
 
     @Test
-    void testPublicSkillAccessibleByAnyUser() {
+    void testLegacyPublicSkillNotAccessibleByNonMember() {
         boolean canAccess = checker.canAccess(publicSkill, OTHER_USER_ID, Map.of());
-        assertTrue(canAccess);
+        assertFalse(canAccess);
     }
 
     @Test
@@ -79,7 +79,7 @@ class VisibilityCheckerTest {
 
     @Test
     void testPrivateSkillAccessibleByOwner() {
-        boolean canAccess = checker.canAccess(privateSkill, OWNER_ID, Map.of());
+        boolean canAccess = checker.canAccess(privateSkill, OWNER_ID, Map.of(NAMESPACE_ID, NamespaceRole.MEMBER));
         assertTrue(canAccess);
     }
 
@@ -131,7 +131,7 @@ class VisibilityCheckerTest {
 
     @Test
     void testUnpublishedSkillAccessibleByOwner() {
-        boolean canAccess = checker.canAccess(unpublishedPublicSkill, OWNER_ID, Map.of());
+        boolean canAccess = checker.canAccess(unpublishedPublicSkill, OWNER_ID, Map.of(NAMESPACE_ID, NamespaceRole.MEMBER));
         assertTrue(canAccess);
     }
 
@@ -149,7 +149,7 @@ class VisibilityCheckerTest {
 
     @Test
     void testHiddenSkillAccessibleByOwner() {
-        boolean canAccess = checker.canAccess(hiddenPublicSkill, OWNER_ID, Map.of());
+        boolean canAccess = checker.canAccess(hiddenPublicSkill, OWNER_ID, Map.of(NAMESPACE_ID, NamespaceRole.MEMBER));
         assertTrue(canAccess);
     }
 

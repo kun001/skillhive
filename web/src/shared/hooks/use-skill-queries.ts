@@ -41,7 +41,7 @@ async function getSkillVersionCompare(namespace: string, slug: string, from: str
 
 async function getSkillDocumentation(namespace: string, slug: string, version: string, path: string): Promise<string> {
   const cleanNamespace = namespace.startsWith('@') ? namespace.slice(1) : namespace
-  return fetchText(`${WEB_API_PREFIX}/skills/${cleanNamespace}/${encodeURIComponent(slug)}/versions/${encodeURIComponent(version)}/file?path=${encodeURIComponent(path)}`)
+  return fetchText(`${WEB_API_PREFIX}/skills/${cleanNamespace}/${encodeURIComponent(slug)}/versions/${encodeURIComponent(version)}/file?disposition=inline&path=${encodeURIComponent(path)}`)
 }
 
 async function publishSkill(params: { namespace: string; file: File; visibility: string; confirmWarnings?: boolean }): Promise<PublishResult> {

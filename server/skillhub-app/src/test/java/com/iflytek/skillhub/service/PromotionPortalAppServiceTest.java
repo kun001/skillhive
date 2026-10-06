@@ -39,6 +39,7 @@ class PromotionPortalAppServiceTest {
     @Mock
     private AuditLogService auditLogService;
 
+    @Mock private MemberResourceAccessService memberAccess;
     private PromotionPortalAppService service;
 
     @BeforeEach
@@ -49,7 +50,7 @@ class PromotionPortalAppServiceTest {
                 governanceQueryRepository,
                 rbacService,
                 auditLogService,
-                new RequestIdAccessor()
+                new RequestIdAccessor(), memberAccess
         );
     }
 

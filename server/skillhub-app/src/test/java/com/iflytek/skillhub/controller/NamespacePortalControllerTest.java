@@ -343,7 +343,7 @@ class NamespacePortalControllerTest {
         NamespaceMember member = new NamespaceMember(1L, "user-2", NamespaceRole.OWNER);
         UserAccount user = new UserAccount("user-2", "Alice", "alice@example.com", null);
         given(namespaceService.getNamespaceBySlug("team-a")).willReturn(namespace);
-        given(namespaceMemberService.updateMemberRole(1L, "user-2", NamespaceRole.OWNER, "owner-1"))
+        given(namespaceMemberService.updateMemberPermissions(1L, "user-2", NamespaceRole.OWNER, null, null, "owner-1"))
                 .willReturn(member);
         given(userAccountRepository.findById("user-2"))
                 .willReturn(java.util.Optional.of(user));

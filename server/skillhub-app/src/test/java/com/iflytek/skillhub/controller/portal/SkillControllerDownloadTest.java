@@ -34,6 +34,9 @@ import static org.mockito.Mockito.verify;
 @Import(TestRedisConfig.class)
 class SkillControllerDownloadTest {
 
+    @MockBean
+    private com.iflytek.skillhub.service.MemberResourceAccessService memberAccess;
+
     @Autowired
     private MockMvc mockMvc;
 

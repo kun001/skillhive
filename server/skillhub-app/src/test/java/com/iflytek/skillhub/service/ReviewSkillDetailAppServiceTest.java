@@ -51,6 +51,7 @@ class ReviewSkillDetailAppServiceTest {
     @Mock
     private SkillDownloadService skillDownloadService;
 
+    @Mock private com.iflytek.skillhub.domain.namespace.MemberResourcePolicy memberPolicy;
     private ReviewSkillDetailAppService service;
 
     @BeforeEach
@@ -62,8 +63,9 @@ class ReviewSkillDetailAppServiceTest {
                 rbacService,
                 skillQueryService,
                 skillDownloadService,
-                new ComplianceSnapshotProjectionService(new com.fasterxml.jackson.databind.ObjectMapper())
+                new ComplianceSnapshotProjectionService(new com.fasterxml.jackson.databind.ObjectMapper()), memberPolicy
         );
+        org.mockito.Mockito.lenient().when(memberPolicy.canDownload(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.any())).thenReturn(true);
     }
 
     @Test

@@ -20,6 +20,7 @@ public class VisibilityChecker {
         if (isSuperAdmin(platformRoles)) {
             return true;
         }
+        if (currentUserId == null || !roles.containsKey(skill.getNamespaceId())) return false;
         if (skill.isHidden()) {
             return isOwner(skill, currentUserId) || isAdminOrAbove(roles.get(skill.getNamespaceId()));
         }
@@ -27,7 +28,7 @@ public class VisibilityChecker {
             return isOwner(skill, currentUserId);
         }
         return switch (skill.getVisibility()) {
-            case PUBLIC -> true;
+            case PUBLIC -> roles.containsKey(skill.getNamespaceId());
             case NAMESPACE_ONLY -> roles.containsKey(skill.getNamespaceId());
             case PRIVATE -> isOwner(skill, currentUserId) || isAdminOrAbove(roles.get(skill.getNamespaceId()));
         };

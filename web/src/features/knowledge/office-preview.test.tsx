@@ -9,10 +9,11 @@ import { KnowledgeFilePreview } from './file-preview'
 const api = vi.hoisted(() => ({ officePreview: vi.fn(), contentUrl: vi.fn(() => '/original'),
   previewPageUrl: vi.fn((_id: number, version: number, page: number) => `/page/${page}?version=${version}`) }))
 vi.mock('@/api/client', () => ({ knowledgeApi: api }))
+vi.mock('@/features/auth/use-auth', () => ({ useAuth: () => ({ user: null }) }))
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string, args?: { count?: number }) => `${key}${args?.count ?? ''}` }) }))
 afterEach(() => { cleanup(); vi.clearAllMocks() })
 
-const document = { id: 42, currentVersion: 2, previewKind: 'OFFICE' } as KnowledgeDocument
+const document = { id: 42, currentVersion: 2, previewKind: 'OFFICE', canDownload: true } as KnowledgeDocument
 const base = { status: 'READY', kind: 'OFFICE', pageCount: 5, pageLimit: 5 }
 function mount(file = document) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })
@@ -20,6 +21,12 @@ function mount(file = document) {
 }
 
 describe('bounded Office previews', () => {
+  it('keeps preview pages available but hides original downloads for read-only members without download permission', async () => {
+    api.officePreview.mockResolvedValue(base)
+    mount({ ...document, canDownload: false })
+    expect(await screen.findAllByRole('img')).toHaveLength(5)
+    expect(screen.queryByRole('link')).toBeNull()
+  })
   it.each(['xls', 'xlsx'])('offers download without requesting a preview for %s', (extension) => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })
     render(<QueryClientProvider client={client}><KnowledgeFilePreview document={{ ...document,

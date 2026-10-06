@@ -1,0 +1,3 @@
+# Linux container launchers must keep LF endings in every checkout.
+/server/mvnw text eol=lf
+/web/docker-entrypoint.d/*.sh text eol=lf

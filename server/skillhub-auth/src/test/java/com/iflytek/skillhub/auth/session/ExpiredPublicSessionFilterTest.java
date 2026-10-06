@@ -32,7 +32,7 @@ class ExpiredPublicSessionFilterTest {
 
     @Test
     void expiredSessionOnPublicRoute_shouldBeHiddenFromDownstreamSecurityFilters() throws Exception {
-        MockHttpServletRequest request = expiredSessionRequest("GET", "/api/web/skills");
+        MockHttpServletRequest request = expiredSessionRequest("GET", "/api/v1/auth/methods");
         request.setCookies(
                 new Cookie("SESSION", "expired"),
                 new Cookie("JSESSIONID", "expired-servlet"),
@@ -60,7 +60,7 @@ class ExpiredPublicSessionFilterTest {
 
     @Test
     void validSessionOnPublicRoute_shouldRemainUnchanged() throws Exception {
-        MockHttpServletRequest request = expiredSessionRequest("GET", "/api/web/skills");
+        MockHttpServletRequest request = expiredSessionRequest("GET", "/api/v1/auth/methods");
         request.setRequestedSessionIdValid(true);
         FilterChain chain = mock(FilterChain.class);
 
@@ -71,9 +71,9 @@ class ExpiredPublicSessionFilterTest {
 
     @Test
     void forwardedPrefix_shouldUseServletPathForPublicRouteDecision() throws Exception {
-        MockHttpServletRequest request = expiredSessionRequest("GET", "/skillhub/api/web/skills");
+        MockHttpServletRequest request = expiredSessionRequest("GET", "/skillhub/api/v1/auth/methods");
         request.setContextPath("/skillhub");
-        request.setServletPath("/api/web/skills");
+        request.setServletPath("/api/v1/auth/methods");
         FilterChain chain = mock(FilterChain.class);
 
         filter.doFilter(request, new MockHttpServletResponse(), chain);

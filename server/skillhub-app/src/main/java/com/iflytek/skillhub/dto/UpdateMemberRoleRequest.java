@@ -5,5 +5,9 @@ import jakarta.validation.constraints.NotNull;
 
 public record UpdateMemberRoleRequest(
         @NotNull(message = "{validation.member.role.notNull}")
-        NamespaceRole role
-) {}
+        NamespaceRole role,
+        Boolean canEdit,
+        Boolean canDownload
+) {
+    public UpdateMemberRoleRequest(NamespaceRole role) { this(role, null, null); }
+}

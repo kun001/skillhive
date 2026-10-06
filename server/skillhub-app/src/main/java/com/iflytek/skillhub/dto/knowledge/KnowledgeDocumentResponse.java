@@ -22,6 +22,7 @@ public record KnowledgeDocumentResponse(
         KnowledgeUserResponse owner,
         Instant createdAt,
         Instant updatedAt,
-        boolean canManage
+        boolean canManage,
+        boolean canDownload
 ) {
 }

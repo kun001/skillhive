@@ -1,4 +1,5 @@
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useAuth } from '@/features/auth/use-auth'
 import { knowledgeApi } from '@/api/client'
 import type {
   CreateKnowledgeBaseRequest,
@@ -23,41 +24,59 @@ export const knowledgeKeys = {
 }
 
 export function useKnowledgeBases() {
-  return useQuery({ queryKey: knowledgeKeys.bases(), queryFn: () => knowledgeApi.listBases() })
+  const { user, isLoading } = useAuth()
+  const scope = user?.userId ?? 'guest'
+  return useQuery({ queryKey: [...knowledgeKeys.bases(), scope], enabled: !isLoading, queryFn: () => knowledgeApi.listBases() })
 }
 
 export function useKnowledgeBase(namespace: string, base: string) {
-  return useQuery({ queryKey: knowledgeKeys.base(namespace, base), queryFn: () => knowledgeApi.getBase(namespace, base) })
+  const { user, isLoading } = useAuth()
+  const scope = user?.userId ?? 'guest'
+  return useQuery({ queryKey: [...knowledgeKeys.base(namespace, base), scope], enabled: !isLoading, queryFn: () => knowledgeApi.getBase(namespace, base) })
 }
 
 export function useKnowledgeFolders(namespace: string, base: string) {
+  const { user, isLoading } = useAuth()
+  const scope = user?.userId ?? 'guest'
   return useQuery({
-    queryKey: knowledgeKeys.folders(namespace, base),
+    queryKey: [...knowledgeKeys.folders(namespace, base), scope],
+    enabled: !isLoading,
+    retry: false,
     queryFn: () => knowledgeApi.listFolders(namespace, base),
   })
 }
 
 export function useKnowledgeDocuments(namespace: string, base: string, query: KnowledgeDocumentQuery) {
+  const { user, isLoading } = useAuth()
+  const scope = user?.userId ?? 'guest'
   return useQuery({
-    queryKey: knowledgeKeys.documents(namespace, base, query),
+    queryKey: [...knowledgeKeys.documents(namespace, base, query), scope],
+    enabled: !isLoading,
+    retry: false,
     queryFn: () => knowledgeApi.listDocuments(namespace, base, query),
-    placeholderData: keepPreviousData,
+    placeholderData: (previous, query) => query?.queryKey.at(-1) === scope ? previous : undefined,
   })
 }
 
 export function useKnowledgeDocument(documentId: number) {
+  const { user, isLoading } = useAuth()
+  const scope = user?.userId ?? 'guest'
   return useQuery({
-    queryKey: knowledgeKeys.document(documentId),
+    queryKey: [...knowledgeKeys.document(documentId), scope],
+    retry: false,
     queryFn: () => knowledgeApi.getDocument(documentId),
-    enabled: Number.isFinite(documentId),
+    enabled: !isLoading && Number.isFinite(documentId),
   })
 }
 
 export function useKnowledgeVersions(documentId: number, enabled = true) {
+  const { user, isLoading } = useAuth()
+  const scope = user?.userId ?? 'guest'
   return useQuery({
-    queryKey: knowledgeKeys.versions(documentId),
+    queryKey: [...knowledgeKeys.versions(documentId), scope],
+    retry: false,
     queryFn: () => knowledgeApi.listVersions(documentId),
-    enabled: enabled && Number.isFinite(documentId),
+    enabled: !isLoading && enabled && Number.isFinite(documentId),
   })
 }
 

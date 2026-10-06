@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Download, Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useAuth } from '@/features/auth/use-auth'
 import { knowledgeApi } from '@/api/client'
 import type { KnowledgeDocument } from '@/api/knowledge-types'
 import { buttonVariants } from '@/shared/ui/button'
@@ -9,17 +10,18 @@ import { knowledgeKeys } from './use-knowledge-queries'
 
 export function KnowledgeOfficeFilePreview({ document }: { document: KnowledgeDocument }) {
   const { t } = useTranslation()
+  const { user } = useAuth()
   const [imageFailed, setImageFailed] = useState(false)
   const preview = useQuery({
-    queryKey: [...knowledgeKeys.document(document.id), 'office-preview', document.currentVersion],
+    queryKey: [...knowledgeKeys.document(document.id), 'office-preview', document.currentVersion, user?.userId ?? 'guest'],
     queryFn: () => knowledgeApi.officePreview(document.id, document.currentVersion),
     refetchInterval: (query) => query.state.data?.status === 'PROCESSING' ? 2000 : false,
     staleTime: Infinity,
     retry: false,
   })
   const data = preview.data
-  const download = <a href={knowledgeApi.contentUrl(document.id, { version: document.currentVersion })} download
-    className={buttonVariants({ variant: 'outline', size: 'sm' })}><Download className="mr-2 h-4 w-4" aria-hidden />{t('knowledge.preview.downloadOriginal')}</a>
+  const download = document.canDownload ? <a href={knowledgeApi.contentUrl(document.id, { version: document.currentVersion })} download
+    className={buttonVariants({ variant: 'outline', size: 'sm' })}><Download className="mr-2 h-4 w-4" aria-hidden />{t('knowledge.preview.downloadOriginal')}</a> : null
 
   if (preview.isPending || data?.status === 'PROCESSING') {
     return <div className="flex min-h-[24rem] flex-col items-center justify-center gap-4 px-6 text-center">

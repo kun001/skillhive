@@ -22,6 +22,7 @@ import com.iflytek.skillhub.service.SkillReviewAppService;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
+import com.iflytek.skillhub.service.MemberResourceAccessService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -37,30 +38,33 @@ import org.springframework.test.web.servlet.MockMvc;
 @ActiveProfiles("test")
 class SkillReviewControllerTest {
 
+    @org.springframework.boot.test.mock.mockito.MockBean
+    private MemberResourceAccessService memberResourceAccessService;
+
     @Autowired private MockMvc mockMvc;
     @MockBean private SkillReviewAppService reviewAppService;
     @MockBean private NamespaceMemberRepository namespaceMemberRepository;
 
     @Test
-    void publicReviewListIsAnonymous() throws Exception {
+    void memberReviewListReturnsEnvelope() throws Exception {
         when(reviewAppService.list(eq(10L), eq(null), any(), eq(Set.of()), eq(0), eq(20)))
                 .thenReturn(new PageResponse<>(List.of(), 0, 0, 20));
 
-        mockMvc.perform(get("/api/v1/skills/10/reviews"))
+        mockMvc.perform(get("/api/v1/skills/10/reviews").with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user("viewer")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(0))
                 .andExpect(jsonPath("$.data.total").value(0));
     }
 
     @Test
-    void publicReviewListOmitsInternalUserAndModerationFields() throws Exception {
+    void memberReviewListOmitsInternalUserAndModerationFields() throws Exception {
         SkillReviewResponse review = new SkillReviewResponse(
                 8L, null, "Alice", null, (short) 5, "Useful", "VISIBLE", false,
                 null, null, null);
         when(reviewAppService.list(eq(10L), eq(null), any(), eq(Set.of()), eq(0), eq(20)))
                 .thenReturn(new PageResponse<>(List.of(review), 1, 0, 20));
 
-        mockMvc.perform(get("/api/v1/skills/10/reviews"))
+        mockMvc.perform(get("/api/v1/skills/10/reviews").with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user("viewer")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.items[0].displayName").value("Alice"))
                 .andExpect(jsonPath("$.data.items[0].userId").doesNotExist())

@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Download, Loader2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useAuth } from '@/features/auth/use-auth'
 import { knowledgeApi } from '@/api/client'
 import type { KnowledgeDocument } from '@/api/knowledge-types'
 import { MarkdownRenderer } from '@/features/skill/markdown-renderer'
@@ -31,10 +32,10 @@ function PreviewMessage({ document, title, description }: { document: KnowledgeD
         <p className="font-medium text-foreground">{title}</p>
         {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
       </div>
-      <a href={knowledgeApi.contentUrl(document.id)} download className={buttonVariants({ variant: 'default' })}>
+      {document.canDownload ? <a href={knowledgeApi.contentUrl(document.id)} download className={buttonVariants({ variant: 'default' })}>
         <Download className="mr-2 h-4 w-4" aria-hidden />
         {t('knowledge.actions.download')}
-      </a>
+      </a> : null}
     </div>
   )
 }
@@ -51,19 +52,20 @@ function PreviewLoading() {
 
 export function KnowledgeFilePreview({ document }: { document: KnowledgeDocument }) {
   const { t } = useTranslation()
+  const { user } = useAuth()
   const url = knowledgeApi.contentUrl(document.id, { version: document.currentVersion, inline: true })
   const kind = document.previewKind
   const isText = kind === 'MARKDOWN' || kind === 'TEXT'
   const textTooLarge = isText && document.sizeBytes > MAX_TEXT_PREVIEW_BYTES
 
   const content = useQuery({
-    queryKey: [...knowledgeKeys.document(document.id), 'preview', document.currentVersion],
+    queryKey: [...knowledgeKeys.document(document.id), 'preview', document.currentVersion, user?.userId ?? 'guest'],
     queryFn: () => fetchPreview(url, isText ? 'text' : 'blob'),
     enabled: (isText && !textTooLarge) || kind === 'PDF',
     staleTime: Infinity,
   })
   const images = useQuery({
-    queryKey: [...knowledgeKeys.document(document.id), 'images', document.currentVersion],
+    queryKey: [...knowledgeKeys.document(document.id), 'images', document.currentVersion, user?.userId ?? 'guest'],
     queryFn: () => knowledgeApi.listImages(document.id, document.currentVersion),
     enabled: kind === 'MARKDOWN' && !textTooLarge,
     staleTime: Infinity,

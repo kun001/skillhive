@@ -364,7 +364,7 @@ class PostgresFullTextQueryServiceTest {
     }
 
     @Test
-    void anonymousSearchSqlShouldOnlyReadPublicActiveVisibleNonArchivedSkills() {
+    void anonymousSearchSqlShouldNotExposeTeamResources() {
         EntityManager entityManager = mock(EntityManager.class);
         Query nativeQuery = mock(Query.class);
         Query countQuery = mock(Query.class);
@@ -390,7 +390,7 @@ class PostgresFullTextQueryServiceTest {
         ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
         verify(entityManager, org.mockito.Mockito.times(2)).createNativeQuery(sqlCaptor.capture());
         assertThat(sqlCaptor.getAllValues().getFirst())
-                .contains("AND (d.visibility = 'PUBLIC' )")
+                .contains("AND (FALSE )")
                 .contains("AND d.status = 'ACTIVE'")
                 .contains("AND s.status = 'ACTIVE'")
                 .contains("AND s.hidden = FALSE")

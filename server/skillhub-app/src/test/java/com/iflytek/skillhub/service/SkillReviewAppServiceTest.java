@@ -23,6 +23,7 @@ import com.iflytek.skillhub.domain.social.SkillRating;
 import com.iflytek.skillhub.domain.social.SkillRatingService;
 import com.iflytek.skillhub.observability.RequestIdAccessor;
 import com.iflytek.skillhub.repository.SkillReviewQueryRepository;
+import com.iflytek.skillhub.domain.namespace.NamespaceRole;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -63,12 +64,12 @@ class SkillReviewAppServiceTest {
     void publicListingExcludesHiddenReviewsForRegularViewer() {
         Skill skill = publishedSkill(SkillVisibility.PUBLIC);
         when(skillRepository.findById(10L)).thenReturn(Optional.of(skill));
-        when(queryRepository.list(eq(10L), eq(null), eq(false), any(Pageable.class)))
+        when(queryRepository.list(eq(10L), eq("viewer"), eq(false), any(Pageable.class)))
                 .thenReturn(Page.empty());
 
-        service.list(10L, null, Map.of(), Set.of(), 0, 20);
+        service.list(10L, "viewer", Map.of(1L, NamespaceRole.MEMBER), Set.of(), 0, 20);
 
-        verify(queryRepository).list(eq(10L), eq(null), eq(false), any(Pageable.class));
+        verify(queryRepository).list(eq(10L), eq("viewer"), eq(false), any(Pageable.class));
     }
 
     @Test
@@ -78,7 +79,7 @@ class SkillReviewAppServiceTest {
         when(queryRepository.list(eq(10L), eq("admin"), eq(true), any(Pageable.class)))
                 .thenReturn(Page.empty());
 
-        service.list(10L, "admin", Map.of(), Set.of("SKILL_ADMIN"), 0, 20);
+        service.list(10L, "admin", Map.of(1L, NamespaceRole.MEMBER), Set.of("SKILL_ADMIN"), 0, 20);
 
         verify(queryRepository).list(eq(10L), eq("admin"), eq(true), any(Pageable.class));
     }
@@ -88,11 +89,11 @@ class SkillReviewAppServiceTest {
         Skill skill = publishedSkill(SkillVisibility.PUBLIC);
         when(skillRepository.findById(10L)).thenReturn(Optional.of(skill));
 
-        assertThatThrownBy(() -> service.list(10L, null, Map.of(), Set.of(), -1, 20))
+        assertThatThrownBy(() -> service.list(10L, "viewer", Map.of(1L, NamespaceRole.MEMBER), Set.of(), -1, 20))
                 .isInstanceOf(DomainBadRequestException.class);
-        assertThatThrownBy(() -> service.list(10L, null, Map.of(), Set.of(), 0, 0))
+        assertThatThrownBy(() -> service.list(10L, "viewer", Map.of(1L, NamespaceRole.MEMBER), Set.of(), 0, 0))
                 .isInstanceOf(DomainBadRequestException.class);
-        assertThatThrownBy(() -> service.list(10L, null, Map.of(), Set.of(), 0, 101))
+        assertThatThrownBy(() -> service.list(10L, "viewer", Map.of(1L, NamespaceRole.MEMBER), Set.of(), 0, 101))
                 .isInstanceOf(DomainBadRequestException.class);
 
         verify(queryRepository, never()).list(any(), any(), anyBoolean(), any(Pageable.class));
@@ -119,7 +120,7 @@ class SkillReviewAppServiceTest {
         when(skillVersionRepository.findById(100L)).thenReturn(Optional.of(pending));
 
         assertThatThrownBy(() -> service.upsert(
-                10L, "owner", (short) 5, "not published", Map.of(), Set.of()))
+                10L, "owner", (short) 5, "not published", Map.of(1L, NamespaceRole.MEMBER), Set.of()))
                 .isInstanceOf(com.iflytek.skillhub.domain.shared.exception.DomainBadRequestException.class)
                 .hasMessage("error.skillReview.notInteractable");
 
@@ -136,7 +137,7 @@ class SkillReviewAppServiceTest {
         when(skillVersionRepository.findById(100L)).thenReturn(Optional.of(published));
 
         assertThatThrownBy(() -> service.upsert(
-                10L, "owner", (short) 5, "archived", Map.of(), Set.of()))
+                10L, "owner", (short) 5, "archived", Map.of(1L, NamespaceRole.MEMBER), Set.of()))
                 .isInstanceOf(DomainBadRequestException.class)
                 .hasMessage("error.skillReview.notInteractable");
 

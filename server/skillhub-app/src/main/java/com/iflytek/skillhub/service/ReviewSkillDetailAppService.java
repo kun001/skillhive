@@ -29,6 +29,7 @@ import java.util.Set;
 @Service
 public class ReviewSkillDetailAppService {
 
+    private final com.iflytek.skillhub.domain.namespace.MemberResourcePolicy memberPolicy;
     private final ReviewTaskRepository reviewTaskRepository;
     private final NamespaceRepository namespaceRepository;
     private final ReviewService reviewService;
@@ -43,7 +44,9 @@ public class ReviewSkillDetailAppService {
                                        RbacService rbacService,
                                        SkillQueryService skillQueryService,
                                        SkillDownloadService skillDownloadService,
-                                       ComplianceSnapshotProjectionService complianceSnapshotProjectionService) {
+                                       ComplianceSnapshotProjectionService complianceSnapshotProjectionService,
+                                       com.iflytek.skillhub.domain.namespace.MemberResourcePolicy memberPolicy) {
+        this.memberPolicy = memberPolicy;
         this.reviewTaskRepository = reviewTaskRepository;
         this.namespaceRepository = namespaceRepository;
         this.reviewService = reviewService;
@@ -85,7 +88,8 @@ public class ReviewSkillDetailAppService {
                 snapshot.publishedVersion() != null ? toLifecycleVersion(snapshot.publishedVersion()) : null,
                 toLifecycleVersion(snapshot.activeVersion()),
                 null,
-                "REVIEW_TASK"
+                "REVIEW_TASK",
+                memberPolicy.canDownload(context.namespace().getId(), userId, rbacService.getUserRoleCodes(userId))
         );
 
         List<SkillVersionResponse> versions = snapshot.versions().stream()
@@ -113,7 +117,7 @@ public class ReviewSkillDetailAppService {
                 files,
                 snapshot.documentationPath(),
                 snapshot.documentationContent(),
-                "/api/v1/reviews/" + reviewId + "/download",
+                skill.canDownload() ? "/api/v1/reviews/" + reviewId + "/download" : null,
                 snapshot.activeVersion().getVersion()
         );
     }
@@ -124,6 +128,7 @@ public class ReviewSkillDetailAppService {
         ReviewAccessContext context = loadAuthorizedContext(reviewId, userId, userNsRoles);
         SkillQueryService.ReviewSkillSnapshotDTO snapshot =
                 skillQueryService.getReviewSkillSnapshot(context.task().getSkillVersionId());
+        memberPolicy.assertDownload(context.namespace().getId(), userId, rbacService.getUserRoleCodes(userId));
         return skillDownloadService.downloadReviewVersion(snapshot.skill(), snapshot.activeVersion());
     }
 

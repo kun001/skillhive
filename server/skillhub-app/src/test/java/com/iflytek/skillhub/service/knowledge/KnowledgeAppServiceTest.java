@@ -64,6 +64,8 @@ class KnowledgeAppServiceTest {
     private final ObjectStorageService storageService = mock(ObjectStorageService.class);
     private final AuditLogService auditLogService = mock(AuditLogService.class);
 
+    private final com.iflytek.skillhub.domain.namespace.NamespaceMemberRepository members = mock(com.iflytek.skillhub.domain.namespace.NamespaceMemberRepository.class);
+    private final com.iflytek.skillhub.domain.namespace.MemberResourcePolicy memberPolicy = new com.iflytek.skillhub.domain.namespace.MemberResourcePolicy(members);
     private KnowledgeAppService service;
     private Namespace namespace;
     private KnowledgeBase base;
@@ -73,7 +75,8 @@ class KnowledgeAppServiceTest {
         service = new KnowledgeAppService(namespaceRepository, baseRepository, folderRepository, documentRepository,
                 versionRepository, attachmentRepository, userAccountRepository, new KnowledgeAccessPolicy(), new KnowledgeFilePolicy(),
                 new KnowledgeMarkdownPolicy(new KnowledgeFilePolicy()),
-                storageService, auditLogService, new RequestIdAccessor());
+                storageService, auditLogService, new RequestIdAccessor(), memberPolicy);
+        when(members.findByNamespaceIdAndUserId(eq(NAMESPACE_ID), anyString())).thenAnswer(invocation -> Optional.of(new com.iflytek.skillhub.domain.namespace.NamespaceMember(NAMESPACE_ID, invocation.getArgument(1), NamespaceRole.MEMBER)));
 
         namespace = new Namespace("team-a", "Team A", "owner");
         namespace.setType(NamespaceType.TEAM);

@@ -34,6 +34,7 @@ public class PromotionPortalAppService {
     private final GovernanceQueryRepository governanceQueryRepository;
     private final RbacService rbacService;
     private final AuditLogService auditLogService;
+    private final MemberResourceAccessService memberAccess;
     private final RequestIdAccessor requestIdAccessor;
 
     public PromotionPortalAppService(PromotionService promotionService,
@@ -41,7 +42,8 @@ public class PromotionPortalAppService {
                                      GovernanceQueryRepository governanceQueryRepository,
                                      RbacService rbacService,
                                      AuditLogService auditLogService,
-                                     RequestIdAccessor requestIdAccessor) {
+                                     RequestIdAccessor requestIdAccessor, MemberResourceAccessService memberAccess) {
+        this.memberAccess = memberAccess;
         this.promotionService = promotionService;
         this.promotionRequestRepository = promotionRequestRepository;
         this.governanceQueryRepository = governanceQueryRepository;
@@ -57,6 +59,7 @@ public class PromotionPortalAppService {
                                                 String userId,
                                                 Map<Long, NamespaceRole> userNsRoles,
                                                 AuditRequestContext auditContext) {
+        memberAccess.check(Map.of("skillId", sourceSkillId.toString()), userId, platformRoles(userId), true, false);
         PromotionRequest promotion = promotionService.submitPromotion(
                 sourceSkillId,
                 sourceVersionId,

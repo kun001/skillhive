@@ -324,7 +324,7 @@ public class KnowledgeController extends BaseApiController {
             @RequestAttribute(value = "userNsRoles", required = false) Map<Long, NamespaceRole> userNsRoles,
             @AuthenticationPrincipal PlatformPrincipal principal) throws IOException {
         KnowledgeAppService.FileContent content = knowledgeAppService.openContent(
-                documentId, version, caller(userId, userNsRoles, principal));
+                documentId, version, caller(userId, userNsRoles, principal), "inline".equalsIgnoreCase(disposition));
         return streamContent(content, disposition);
     }
 

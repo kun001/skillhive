@@ -95,6 +95,7 @@ public class KnowledgeAppService {
     private static final int MAX_DISPLAY_NAME_LENGTH = 128;
     private static final SecureRandom RANDOM = new SecureRandom();
 
+    private final com.iflytek.skillhub.domain.namespace.MemberResourcePolicy memberPolicy;
     private final NamespaceRepository namespaceRepository;
     private final KnowledgeBaseRepository baseRepository;
     private final KnowledgeFolderRepository folderRepository;
@@ -121,7 +122,9 @@ public class KnowledgeAppService {
                                KnowledgeMarkdownPolicy markdownPolicy,
                                ObjectStorageService storageService,
                                AuditLogService auditLogService,
-                               RequestIdAccessor requestIdAccessor) {
+                               RequestIdAccessor requestIdAccessor,
+                               com.iflytek.skillhub.domain.namespace.MemberResourcePolicy memberPolicy) {
+        this.memberPolicy = memberPolicy;
         this.namespaceRepository = namespaceRepository;
         this.baseRepository = baseRepository;
         this.folderRepository = folderRepository;
@@ -301,7 +304,7 @@ public class KnowledgeAppService {
                                                 AuditRequestContext audit) {
         BaseContext context = resolveBase(namespaceSlug, baseSlug, caller);
         KnowledgeFolder folder = findFolderInBase(context, folderId);
-        if (!accessPolicy.canManageFolder(context.namespace(), context.base(), folder, caller.userId(),
+        if (!memberPolicy.canEdit(context.namespace().getId(), caller.userId(), caller.platformRoles()) || !accessPolicy.canManageFolder(context.namespace(), context.base(), folder, caller.userId(),
                 context.role(), caller.platformRoles())) {
             throw new DomainForbiddenException("error.knowledge.permission.denied");
         }
@@ -328,7 +331,7 @@ public class KnowledgeAppService {
                              AuditRequestContext audit) {
         BaseContext context = resolveBase(namespaceSlug, baseSlug, caller);
         KnowledgeFolder folder = findFolderInBase(context, folderId);
-        if (!accessPolicy.canManageFolder(context.namespace(), context.base(), folder, caller.userId(),
+        if (!memberPolicy.canEdit(context.namespace().getId(), caller.userId(), caller.platformRoles()) || !accessPolicy.canManageFolder(context.namespace(), context.base(), folder, caller.userId(),
                 context.role(), caller.platformRoles())) {
             throw new DomainForbiddenException("error.knowledge.permission.denied");
         }
@@ -567,6 +570,11 @@ public class KnowledgeAppService {
 
     @Transactional(readOnly = true)
     public FileContent openContent(Long documentId, Integer versionNumber, Caller caller) {
+        return openContent(documentId, versionNumber, caller, false);
+    }
+
+    @Transactional(readOnly = true)
+    public FileContent openContent(Long documentId, Integer versionNumber, Caller caller, boolean inline) {
         DocumentContext context = resolveDocument(documentId, caller);
         KnowledgeDocument document = context.document();
         KnowledgeDocumentVersion version = versionNumber == null
@@ -576,6 +584,11 @@ public class KnowledgeAppService {
                 ? version.getSourceFilename()
                 : document.getTitle();
         String extension = filePolicy.extensionOf(filename);
+        KnowledgePreviewKind kind = filePolicy.previewKindFor(extension);
+        if (!inline || !Set.of(KnowledgePreviewKind.PDF, KnowledgePreviewKind.IMAGE,
+                KnowledgePreviewKind.MARKDOWN, KnowledgePreviewKind.TEXT).contains(kind)) {
+            memberPolicy.assertDownload(context.baseContext().namespace().getId(), caller.userId(), caller.platformRoles());
+        }
         String objectKey = version.getContentObjectKey();
         return new FileContent(filename, version.getContentType(), version.getSizeBytes(),
                 filePolicy.previewKindFor(extension), () -> storageService.getObject(objectKey));
@@ -718,12 +731,14 @@ public class KnowledgeAppService {
     }
 
     private void requireContribute(BaseContext context, Caller caller) {
+        memberPolicy.assertEdit(context.namespace().getId(), caller.userId(), caller.platformRoles());
         if (!accessPolicy.canContribute(context.namespace(), context.base(), context.role(), caller.platformRoles())) {
             throw new DomainForbiddenException("error.knowledge.permission.denied");
         }
     }
 
     private void requireManageDocument(DocumentContext context, Caller caller) {
+        memberPolicy.assertEdit(context.baseContext().namespace().getId(), caller.userId(), caller.platformRoles());
         BaseContext base = context.baseContext();
         if (!accessPolicy.canManageDocument(base.namespace(), base.base(), context.document(), caller.userId(),
                 base.role(), caller.platformRoles())) {
@@ -896,12 +911,12 @@ public class KnowledgeAppService {
                 stats == null ? 0 : stats.documentCount(),
                 updatedAt,
                 accessPolicy.canManageBase(context.namespace(), base, context.role(), caller.platformRoles()),
-                accessPolicy.canContribute(context.namespace(), base, context.role(), caller.platformRoles()));
+                memberPolicy.canEdit(context.namespace().getId(), caller.userId(), caller.platformRoles()) && accessPolicy.canContribute(context.namespace(), base, context.role(), caller.platformRoles()));
     }
 
     private KnowledgeFolderResponse toFolderResponse(BaseContext context, KnowledgeFolder folder, long documentCount, Caller caller) {
         return new KnowledgeFolderResponse(folder.getId(), folder.getParentId(), folder.getName(), documentCount,
-                accessPolicy.canManageFolder(context.namespace(), context.base(), folder, caller.userId(),
+                memberPolicy.canEdit(context.namespace().getId(), caller.userId(), caller.platformRoles()) && accessPolicy.canManageFolder(context.namespace(), context.base(), folder, caller.userId(),
                         context.role(), caller.platformRoles()));
     }
 
@@ -948,8 +963,9 @@ public class KnowledgeAppService {
                 user(document.getOwnerId(), names),
                 document.getCreatedAt(),
                 document.getUpdatedAt(),
-                accessPolicy.canManageDocument(context.namespace(), context.base(), document, caller.userId(),
-                        context.role(), caller.platformRoles()));
+                memberPolicy.canEdit(context.namespace().getId(), caller.userId(), caller.platformRoles()) && accessPolicy.canManageDocument(context.namespace(), context.base(), document, caller.userId(),
+                        context.role(), caller.platformRoles()),
+                memberPolicy.canDownload(context.namespace().getId(), caller.userId(), caller.platformRoles()));
     }
 
     private KnowledgeDocumentVersionResponse toVersionResponse(KnowledgeDocumentVersion version,

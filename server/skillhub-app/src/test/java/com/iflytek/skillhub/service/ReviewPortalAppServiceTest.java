@@ -43,6 +43,7 @@ class ReviewPortalAppServiceTest {
     @Mock private AuditLogService auditLogService;
     @Mock private RequestIdAccessor requestIdAccessor;
 
+    @Mock private MemberResourceAccessService memberAccess;
     private ReviewPortalAppService service;
 
     @BeforeEach
@@ -55,7 +56,7 @@ class ReviewPortalAppServiceTest {
                 reviewProgressQueryRepository,
                 rbacService,
                 auditLogService,
-                requestIdAccessor);
+                requestIdAccessor, memberAccess);
     }
 
     @Test

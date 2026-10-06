@@ -21,7 +21,7 @@ export function KnowledgeDocumentActions({ document, canContribute, onOpen, onNe
   const { t } = useTranslation()
   return (
     <div className="flex items-center justify-end gap-1" onClick={(event) => event.stopPropagation()}>
-      <a
+      {document.canDownload ? <a
         href={knowledgeApi.contentUrl(document.id)}
         download
         title={t('knowledge.actions.download')}
@@ -29,7 +29,7 @@ export function KnowledgeDocumentActions({ document, canContribute, onOpen, onNe
         className={buttonVariants({ variant: 'ghost', size: 'icon', className: 'h-8 w-8' })}
       >
         <Download className="h-4 w-4" />
-      </a>
+      </a> : null}
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t('knowledge.actions.more')}>

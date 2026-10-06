@@ -7,6 +7,7 @@ import zh from './locales/zh.json'
 import { hiveLandingEn, hiveLandingZh } from './hive-landing'
 import { knowledgeEn, knowledgeZh } from './knowledge'
 import { skillLibraryEn, skillLibraryZh } from './skill-library'
+import { changelogEn, changelogZh } from './changelog'
 
 /**
  * Initializes i18next for the browser app. Language preference is restored from
@@ -18,9 +19,9 @@ i18n
   .use(initReactI18next)
   .init({
     resources: {
-      en: { translation: { ...en, hiveLanding: hiveLandingEn, knowledge: knowledgeEn, skillLibrary: skillLibraryEn } },
+      en: { translation: { ...en, hiveLanding: hiveLandingEn, knowledge: knowledgeEn, skillLibrary: skillLibraryEn, changelog: changelogEn } },
       ru: { translation: ru },
-      zh: { translation: { ...zh, hiveLanding: hiveLandingZh, knowledge: knowledgeZh, skillLibrary: skillLibraryZh } },
+      zh: { translation: { ...zh, hiveLanding: hiveLandingZh, knowledge: knowledgeZh, skillLibrary: skillLibraryZh, changelog: changelogZh } },
     },
     fallbackLng: 'en',
     interpolation: {
