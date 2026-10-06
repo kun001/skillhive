@@ -13,6 +13,7 @@ import com.iflytek.skillhub.dto.knowledge.CreateKnowledgeFolderRequest;
 import com.iflytek.skillhub.dto.knowledge.KnowledgeBaseResponse;
 import com.iflytek.skillhub.dto.knowledge.KnowledgeDocumentDetailResponse;
 import com.iflytek.skillhub.dto.knowledge.KnowledgeDocumentResponse;
+import com.iflytek.skillhub.dto.knowledge.KnowledgeDocumentSearchHitResponse;
 import com.iflytek.skillhub.dto.knowledge.KnowledgeDocumentVersionResponse;
 import com.iflytek.skillhub.dto.knowledge.KnowledgeFolderResponse;
 import com.iflytek.skillhub.dto.knowledge.KnowledgeMarkdownImagesResponse;
@@ -223,6 +224,21 @@ public class KnowledgeController extends BaseApiController {
         return ok("response.success.created", knowledgeAppService.uploadDocument(
                 namespace, base, toUpload(file), toMarkdownUpload(sourcePath, images, imagePaths), folderId, title, description,
                 caller(userId, userNsRoles, principal), AuditRequestContext.from(httpRequest)));
+    }
+
+    @GetMapping("/documents/search")
+    @Operation(operationId = "searchKnowledgeDocuments",
+            summary = "Search file titles and descriptions across the knowledge bases visible to the caller")
+    public ApiResponse<PageResponse<KnowledgeDocumentSearchHitResponse>> searchDocuments(
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) String namespace,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestAttribute("userId") String userId,
+            @RequestAttribute(value = "userNsRoles", required = false) Map<Long, NamespaceRole> userNsRoles,
+            @AuthenticationPrincipal PlatformPrincipal principal) {
+        return ok("response.success.read",
+                knowledgeAppService.searchDocuments(q, namespace, page, size, caller(userId, userNsRoles, principal)));
     }
 
     @GetMapping("/documents/{documentId}")

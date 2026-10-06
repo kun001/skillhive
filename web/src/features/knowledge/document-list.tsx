@@ -11,44 +11,52 @@ interface DocumentListProps extends KnowledgeDocumentActionHandlers {
   canContribute: boolean
 }
 
+/**
+ * File table. The fixed layout lets the name column take the remaining width and truncate long
+ * names instead of widening the table; secondary columns collapse into the name cell on narrow screens.
+ */
 export function KnowledgeDocumentTable({ documents, canContribute, ...handlers }: DocumentListProps) {
   const { t, i18n } = useTranslation()
   return (
     <div className="overflow-hidden rounded-xl border border-border/60 bg-card">
-      <Table>
+      <Table className="table-fixed">
         <TableHeader>
           <TableRow>
-            <TableHead className="min-w-[16rem]">{t('knowledge.table.name')}</TableHead>
-            <TableHead className="hidden w-24 md:table-cell">{t('knowledge.table.size')}</TableHead>
-            <TableHead className="hidden w-32 lg:table-cell">{t('knowledge.table.owner')}</TableHead>
-            <TableHead className="hidden w-44 sm:table-cell">{t('knowledge.table.updated')}</TableHead>
-            <TableHead className="hidden w-16 md:table-cell">{t('knowledge.table.version')}</TableHead>
-            <TableHead className="w-24 text-right"><span className="sr-only">{t('knowledge.table.actions')}</span></TableHead>
+            <TableHead>{t('knowledge.table.name')}</TableHead>
+            <TableHead className="hidden w-24 lg:table-cell">{t('knowledge.table.size')}</TableHead>
+            <TableHead className="hidden w-32 xl:table-cell">{t('knowledge.table.owner')}</TableHead>
+            <TableHead className="hidden w-40 md:table-cell">{t('knowledge.table.updated')}</TableHead>
+            <TableHead className="hidden w-16 xl:table-cell">{t('knowledge.table.version')}</TableHead>
+            <TableHead className="w-[5.5rem] text-right"><span className="sr-only">{t('knowledge.table.actions')}</span></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {documents.map((document) => (
+          {documents.map((document) => {
+            const updated = formatLocalDateTime(document.updatedAt, i18n.language, { dateStyle: 'short', timeStyle: 'short' })
+            return (
             <TableRow key={document.id} className="cursor-pointer" onClick={() => handlers.onOpen(document)}>
               <TableCell>
                 <div className="flex min-w-0 items-center gap-3">
                   <KnowledgeFileIcon extension={document.fileExtension} />
-                  <div className="min-w-0">
-                    <p className="truncate font-medium text-foreground">{document.title}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium text-foreground" title={document.title}>{document.title}</p>
                     <p className="truncate text-xs text-muted-foreground">{document.description || document.fileName}</p>
+                    <p className="truncate text-xs text-muted-foreground md:hidden">
+                      {formatFileSize(document.sizeBytes)} · {updated}
+                    </p>
                   </div>
                 </div>
               </TableCell>
-              <TableCell className="hidden text-sm text-muted-foreground md:table-cell">{formatFileSize(document.sizeBytes)}</TableCell>
-              <TableCell className="hidden truncate text-sm text-muted-foreground lg:table-cell">{document.owner.displayName}</TableCell>
-              <TableCell className="hidden text-sm text-muted-foreground sm:table-cell">
-                {formatLocalDateTime(document.updatedAt, i18n.language, { dateStyle: 'short', timeStyle: 'short' })}
-              </TableCell>
-              <TableCell className="hidden text-sm text-muted-foreground md:table-cell">v{document.currentVersion}</TableCell>
+              <TableCell className="hidden text-sm text-muted-foreground lg:table-cell">{formatFileSize(document.sizeBytes)}</TableCell>
+              <TableCell className="hidden truncate text-sm text-muted-foreground xl:table-cell">{document.owner.displayName}</TableCell>
+              <TableCell className="hidden text-sm text-muted-foreground md:table-cell">{updated}</TableCell>
+              <TableCell className="hidden text-sm text-muted-foreground xl:table-cell">v{document.currentVersion}</TableCell>
               <TableCell>
                 <KnowledgeDocumentActions document={document} canContribute={canContribute} {...handlers} />
               </TableCell>
             </TableRow>
-          ))}
+            )
+          })}
         </TableBody>
       </Table>
     </div>

@@ -805,7 +805,14 @@
     "notFound": "Пространство имён не найдено",
     "skillList": "Скиллы",
     "emptyTitle": "Нет скиллов",
-    "emptyDescription": "В этом пространстве имён ещё не опубликовано ни одного скилла"
+    "emptyDescription": "В этом пространстве имён ещё не опубликовано ни одного скилла",
+    "tabSkills": "Скиллы",
+    "tabKnowledge": "Базы знаний",
+    "knowledgeSearch": "Поиск файлов в базах знаний этого пространства…",
+    "knowledgeEmptyTitle": "Нет баз знаний",
+    "knowledgeEmptyDescription": "В этом пространстве имён пока нет баз знаний",
+    "knowledgeMembersOnly": "Базы знаний доступны только участникам пространства",
+    "knowledgeMembersOnlyDescription": "Вступите в это командное пространство, чтобы видеть его базы знаний и файлы"
   },
   "skillDetail": {
     "back": "Назад",

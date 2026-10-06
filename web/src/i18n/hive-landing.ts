@@ -4,8 +4,7 @@ export const hiveLandingZh = {
   homeAria: 'SkillHive 首页',
   heroTitleFirst: '让团队经验，', heroTitleSecond: '转化为持续能力。',
   heroDescription: 'SkillHive 汇集团队文档、操作经验与可复用 Skill，让知识更容易查找，让成熟做法更容易分享、审核和复用。',
-  skillTotal: 'Skill 已收录 {{count}} 个', searchScope: '搜索范围', knowledgeLabel: '知识库',
-  searchPlaceholder: '输入关键词', searchSkill: '搜索 Skill', searchKnowledge: '搜索团队知识', search: '搜索',
+  knowledgeLabel: '知识库',
   capabilityEyebrow: '产品能力', capabilityTitle: '知识与技能，一处沉淀。',
   features: {
     knowledge: { title: '团队知识库', description: '沉淀文档、经验总结和操作指引，帮助成员快速理解背景、做法与注意事项。' },
@@ -49,8 +48,7 @@ export const hiveLandingEn = {
   homeAria: 'SkillHive home',
   heroTitleFirst: 'Turn team experience ', heroTitleSecond: 'into lasting capability.',
   heroDescription: 'SkillHive brings team documents, working knowledge, and reusable Skills together so proven practices are easier to find, share, review, and reuse.',
-  skillTotal: '{{count}} Skills in the registry', searchScope: 'Search scope', knowledgeLabel: 'Knowledge base',
-  searchPlaceholder: 'Enter keywords', searchSkill: 'Search Skills', searchKnowledge: 'Search team knowledge', search: 'Search',
+  knowledgeLabel: 'Knowledge base',
   capabilityEyebrow: 'Capabilities', capabilityTitle: 'Knowledge and skills, in one place.',
   features: {
     knowledge: { title: 'Team knowledge base', description: 'Keep documents, lessons learned, and guides together so everyone can understand the context and steps.' },

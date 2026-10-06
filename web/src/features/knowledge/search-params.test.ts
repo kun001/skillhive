@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { updatedFromForRange, validateKnowledgeBaseSearch } from './search-params'
+import { updatedFromForRange, validateKnowledgeBaseSearch, validateKnowledgeIndexSearch } from './search-params'
+
+describe('validateKnowledgeIndexSearch', () => {
+  it('trims the keyword, strips the namespace @ and drops blanks', () => {
+    expect(validateKnowledgeIndexSearch({ q: '  年假 ', namespace: '@team-a' })).toEqual({ q: '年假', namespace: 'team-a' })
+    expect(validateKnowledgeIndexSearch({ q: '   ', namespace: 7 })).toEqual({ q: undefined, namespace: undefined })
+    expect(validateKnowledgeIndexSearch({ q: 'x'.repeat(150) }).q).toHaveLength(100)
+  })
+})
 
 describe('validateKnowledgeBaseSearch', () => {
   it('keeps valid values and drops defaults', () => {

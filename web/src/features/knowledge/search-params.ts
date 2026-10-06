@@ -16,6 +16,18 @@ export interface KnowledgeBaseSearch {
   view?: KnowledgeView
 }
 
+/** URL state of the knowledge index: keyword and team space filter. */
+export interface KnowledgeIndexSearch {
+  q?: string
+  namespace?: string
+}
+
+export function validateKnowledgeIndexSearch(search: Record<string, unknown>): KnowledgeIndexSearch {
+  const q = typeof search.q === 'string' ? search.q.trim().slice(0, 100) : ''
+  const namespace = typeof search.namespace === 'string' ? search.namespace.trim().replace(/^@/, '') : ''
+  return { q: q || undefined, namespace: namespace || undefined }
+}
+
 const SORTS: KnowledgeDocumentSort[] = ['updated', 'title', 'created']
 const TIME_RANGES: KnowledgeTimeRange[] = ['7', '30', '90']
 

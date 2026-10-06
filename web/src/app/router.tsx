@@ -8,7 +8,7 @@ import { createRequireAuth } from '@/shared/lib/auth-route'
 import { API_TOKEN_UI_ENABLED } from '@/shared/lib/feature-flags'
 import { clearDynamicImportReloadGuard, recoverFromDynamicImportError } from '@/shared/lib/dynamic-import-recovery'
 import { normalizeSearchQuery } from '@/shared/lib/search-query'
-import { validateKnowledgeBaseSearch } from '@/features/knowledge/search-params'
+import { validateKnowledgeBaseSearch, validateKnowledgeIndexSearch } from '@/features/knowledge/search-params'
 
 /**
  * Central route registry for the SkillHive web app.
@@ -271,6 +271,7 @@ const knowledgeRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: 'knowledge',
   beforeLoad: requireAuth,
+  validateSearch: validateKnowledgeIndexSearch,
   component: KnowledgePage,
 })
 
@@ -305,6 +306,9 @@ const namespaceRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/space/$namespace',
   beforeLoad: requireAuth,
+  validateSearch: (search: Record<string, unknown>): { tab?: 'skills' | 'knowledge' } => ({
+    tab: search.tab === 'skills' || search.tab === 'knowledge' ? search.tab : undefined,
+  }),
   component: NamespacePage,
 })
 
