@@ -61,6 +61,12 @@ public class NamespaceMemberService {
 
     @Transactional
     public NamespaceMember updateMemberRole(Long namespaceId, String userId, NamespaceRole newRole, String operatorUserId) {
+        return updateMemberPermissions(namespaceId, userId, newRole, null, null, operatorUserId);
+    }
+
+    @Transactional
+    public NamespaceMember updateMemberPermissions(Long namespaceId, String userId, NamespaceRole newRole,
+                                                    Boolean canEdit, Boolean canDownload, String operatorUserId) {
         assertMemberMutationAllowed(namespaceId);
         namespaceService.assertAdminOrOwner(namespaceId, operatorUserId);
 
@@ -71,7 +77,12 @@ public class NamespaceMemberService {
         NamespaceMember member = namespaceMemberRepository.findByNamespaceIdAndUserId(namespaceId, userId)
                 .orElseThrow(() -> new DomainBadRequestException("error.namespace.member.notFound"));
 
+        if (member.getRole() == NamespaceRole.OWNER) {
+            throw new DomainBadRequestException("error.namespace.member.owner.setDirect");
+        }
         member.setRole(newRole);
+        if (canEdit != null) member.setCanEdit(canEdit);
+        if (canDownload != null) member.setCanDownload(canDownload);
         return namespaceMemberRepository.save(member);
     }
 
@@ -97,6 +108,10 @@ public class NamespaceMemberService {
 
         namespaceMemberRepository.save(currentOwner);
         namespaceMemberRepository.save(newOwner);
+    }
+
+    public Optional<NamespaceMember> getMember(Long namespaceId, String userId) {
+        return namespaceMemberRepository.findByNamespaceIdAndUserId(namespaceId, userId);
     }
 
     public Optional<NamespaceRole> getMemberRole(Long namespaceId, String userId) {

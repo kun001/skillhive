@@ -1,4 +1,4 @@
-const VALID_VISIBILITIES = new Set(['PUBLIC', 'NAMESPACE_ONLY', 'PRIVATE'])
+const VALID_VISIBILITIES = new Set(['NAMESPACE_ONLY', 'PRIVATE'])
 
 interface PublishPrefillSearch {
   namespace?: string
@@ -29,7 +29,7 @@ export function normalizePublishPrefill(search: PublishPrefillSearch): PublishPr
 
   return {
     namespace,
-    visibility: VALID_VISIBILITIES.has(normalizedVisibility) ? normalizedVisibility : 'PUBLIC',
+    visibility: VALID_VISIBILITIES.has(normalizedVisibility) ? normalizedVisibility : 'NAMESPACE_ONLY',
     resubmitSkill,
     resubmitVersion,
   }

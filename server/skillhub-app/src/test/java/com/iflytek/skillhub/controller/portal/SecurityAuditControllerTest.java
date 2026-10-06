@@ -18,6 +18,7 @@ import com.iflytek.skillhub.domain.skill.SkillVisibility;
 import com.iflytek.skillhub.dto.SkillLifecycleMutationResponse;
 import com.iflytek.skillhub.service.SecurityScanRetryAppService;
 import org.junit.jupiter.api.Test;
+import com.iflytek.skillhub.service.MemberResourceAccessService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -46,6 +47,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class SecurityAuditControllerTest {
+
+    @org.springframework.boot.test.mock.mockito.MockBean
+    private MemberResourceAccessService memberResourceAccessService;
 
     @Autowired
     private MockMvc mockMvc;
@@ -98,6 +102,8 @@ class SecurityAuditControllerTest {
 
     @Test
     void getSecurityAudit_returnsAuditPayload() throws Exception {
+        given(namespaceMemberRepository.findByUserId("reviewer-1"))
+                .willReturn(List.of(new NamespaceMember(5L, "reviewer-1", NamespaceRole.ADMIN)));
         SecurityAudit audit = new SecurityAudit(42L, ScannerType.SKILL_SCANNER);
         setField(audit, "id", 7L);
         audit.setScanId("scan-123");
@@ -130,6 +136,8 @@ class SecurityAuditControllerTest {
 
     @Test
     void getSecurityAudit_returnsEmptyListWhenAuditMissing() throws Exception {
+        given(namespaceMemberRepository.findByUserId("reviewer-1"))
+                .willReturn(List.of(new NamespaceMember(5L, "reviewer-1", NamespaceRole.ADMIN)));
         given(skillVersionRepository.findById(42L)).willReturn(java.util.Optional.of(skillVersion(42L, 8L)));
         given(skillRepository.findById(8L)).willReturn(java.util.Optional.of(skill(8L, "reviewer-1")));
         given(securityAuditRepository.findLatestActiveByVersionId(42L)).willReturn(List.of());

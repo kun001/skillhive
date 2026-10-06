@@ -1,3 +1,4 @@
+import type { NamespaceMember } from '@/api/types'
 import { useState } from 'react'
 import { useParams } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
@@ -43,6 +44,7 @@ export function NamespaceMembersPage() {
   const params = useParams({ from: '/dashboard/namespaces/$slug/members' })
   const slug = params.slug
   const [page, setPage] = useState(0)
+  const [draftPermissions, setDraftPermissions] = useState<Record<string, { canEdit: boolean; canDownload: boolean }>>({})
   const [draftRoles, setDraftRoles] = useState<Record<string, string>>({})
   const [pendingRemoval, setPendingRemoval] = useState<PendingRemoval | null>(null)
   const [savingRoleUserId, setSavingRoleUserId] = useState<string | null>(null)
@@ -79,11 +81,10 @@ export function NamespaceMembersPage() {
 
   const resolveDraftRole = (userId: string, currentRole: string) => draftRoles[userId] ?? currentRole
 
-  const handleRoleSave = async (userId: string, currentRole: string) => {
-    const nextRole = resolveDraftRole(userId, currentRole)
-    if (nextRole === currentRole) {
-      return
-    }
+  const handleRoleSave = async (member: NamespaceMember) => {
+    const { userId } = member
+    const nextRole = resolveDraftRole(userId, member.role)
+    const permissions = draftPermissions[userId] ?? { canEdit: member.canEdit !== false, canDownload: member.canDownload !== false }
 
     setSavingRoleUserId(userId)
     try {
@@ -91,11 +92,13 @@ export function NamespaceMembersPage() {
         slug,
         userId,
         role: nextRole,
+        ...permissions,
       })
       toast.success(
         t('members.updateRoleSuccessTitle'),
         t('members.updateRoleSuccessDescription', { userId, role: nextRole }),
       )
+      setDraftPermissions((current) => { const next = { ...current }; delete next[userId]; return next })
       setDraftRoles((current) => {
         const next = { ...current }
         delete next[userId]
@@ -203,6 +206,8 @@ export function NamespaceMembersPage() {
                     <th className="text-left p-4 font-medium font-heading text-sm text-muted-foreground">{t('members.colUsername')}</th>
                     <th className="text-left p-4 font-medium font-heading text-sm text-muted-foreground">{t('members.colEmail')}</th>
                     <th className="text-left p-4 font-medium font-heading text-sm text-muted-foreground">{t('members.colRole')}</th>
+                    <th className="text-left p-4 font-medium font-heading text-sm text-muted-foreground">{t('members.resourceAccess')}</th>
+                    <th className="text-left p-4 font-medium font-heading text-sm text-muted-foreground">{t('members.allowDownload')}</th>
                     <th className="text-left p-4 font-medium font-heading text-sm text-muted-foreground">{t('members.colJoinedAt')}</th>
                     <th className="text-right p-4 font-medium font-heading text-sm text-muted-foreground">{t('members.colActions')}</th>
                   </tr>
@@ -211,6 +216,8 @@ export function NamespaceMembersPage() {
                   {members.map((member) => {
                     const roleValue = resolveDraftRole(member.userId, member.role)
                     const isOwner = member.role === 'OWNER'
+                    const permissions = draftPermissions[member.userId] ?? { canEdit: member.canEdit !== false, canDownload: member.canDownload !== false }
+                    const fullAccess = roleValue !== 'MEMBER'
                     const isSavingRole = savingRoleUserId === member.userId
                     const isRemoving = removingUserId === member.userId
 
@@ -247,8 +254,8 @@ export function NamespaceMembersPage() {
                                 type="button"
                                 variant="outline"
                                 size="sm"
-                                disabled={roleValue === member.role || isSavingRole}
-                                onClick={() => handleRoleSave(member.userId, member.role)}
+                                disabled={(!draftPermissions[member.userId] && roleValue === member.role) || isSavingRole}
+                                onClick={() => handleRoleSave(member)}
                               >
                                 {isSavingRole ? t('members.savingRole') : t('members.saveRole')}
                               </Button>
@@ -262,6 +269,21 @@ export function NamespaceMembersPage() {
                                   : t('members.roleMember')}
                             </span>
                           )}
+                        </td>
+                        <td className="p-4">
+                          <Select value={fullAccess || permissions.canEdit ? 'edit' : 'read'} disabled={!canManageMembers || fullAccess || isSavingRole}
+                            onValueChange={(value) => setDraftPermissions((current) => ({ ...current, [member.userId]: { ...permissions, canEdit: value === 'edit' } }))}>
+                            <SelectTrigger className="w-28" aria-label={t('members.resourceAccess')}><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="read">{t('members.readOnlyAccess')}</SelectItem>
+                              <SelectItem value="edit">{t('members.editAccess')}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </td>
+                        <td className="p-4">
+                          <input type="checkbox" className="h-4 w-4 accent-primary" aria-label={t('members.allowDownload')}
+                            checked={fullAccess || permissions.canDownload} disabled={!canManageMembers || fullAccess || isSavingRole}
+                            onChange={(event) => setDraftPermissions((current) => ({ ...current, [member.userId]: { ...permissions, canDownload: event.target.checked } }))} />
                         </td>
                         <td className="p-4 text-sm text-muted-foreground">
                           {formatLocalDateTime(member.createdAt, i18n.language, { dateStyle: 'medium' })}

@@ -114,6 +114,8 @@ export interface Namespace {
 }
 
 export interface ManagedNamespace extends Namespace {
+  canEdit?: boolean
+  canDownload?: boolean
   createdBy?: string
   currentUserRole?: NamespaceRole
   immutable: boolean
@@ -165,6 +167,8 @@ export interface AdminNamespaceList {
 }
 
 export interface NamespaceMember {
+  canEdit?: boolean
+  canDownload?: boolean
   id: number
   userId: string
   displayName?: string

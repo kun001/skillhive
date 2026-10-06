@@ -132,6 +132,10 @@ class SkillDeleteFlowIntegrationTest {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         Namespace namespace = namespaceRepository.save(new Namespace("global-delete-" + suffix, "Global Delete " + suffix, "system"));
 
+        var member = new com.iflytek.skillhub.domain.namespace.NamespaceMember(namespace.getId(), ownerId, com.iflytek.skillhub.domain.namespace.NamespaceRole.MEMBER);
+        org.mockito.Mockito.when(namespaceMemberRepository.findByNamespaceIdAndUserId(namespace.getId(), ownerId)).thenReturn(java.util.Optional.of(member));
+        org.mockito.Mockito.when(namespaceMemberRepository.findByUserId(ownerId)).thenReturn(List.of(member));
+
         Skill skill = new Skill(namespace.getId(), "demo-skill-" + suffix, ownerId, SkillVisibility.PUBLIC);
         skill.setCreatedBy(ownerId);
         skill.setUpdatedBy(ownerId);

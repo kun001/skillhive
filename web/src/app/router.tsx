@@ -87,6 +87,7 @@ const PrivacyPolicyPage = createLazyRouteComponent(() => import('@/pages/privacy
 const SearchPage = createLazyRouteComponent(() => import('@/pages/search'), 'SearchPage')
 const SkillLibraryPage = createLazyRouteComponent(() => import('@/pages/skill-library'), 'SkillLibraryPage')
 const KnowledgePage = createLazyRouteComponent(() => import('@/pages/knowledge'), 'KnowledgePage')
+const ChangelogPage = createLazyRouteComponent(() => import('@/pages/changelog'), 'ChangelogPage')
 const KnowledgeBasePage = createLazyRouteComponent(() => import('@/pages/knowledge-base'), 'KnowledgeBasePage')
 const KnowledgeDocumentPage = createLazyRouteComponent(() => import('@/pages/knowledge-document'), 'KnowledgeDocumentPage')
 const TermsOfServicePage = createLazyRouteComponent(() => import('@/pages/terms'), 'TermsOfServicePage')
@@ -203,6 +204,7 @@ const landingRoute = createRoute({
 const skillsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: 'skills',
+  beforeLoad: requireAuth,
   component: SkillLibraryPage,
   validateSearch: (search: Record<string, unknown>): { q: string; label?: string; sort: 'all' | 'downloads' | 'newest'; page: number; view: 'list' | 'grid' } => {
     const sort = search.sort === 'downloads' || search.sort === 'newest' ? search.sort : 'all'
@@ -251,6 +253,7 @@ const privacyRoute = createRoute({
 const searchRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: 'search',
+  beforeLoad: requireAuth,
   component: SearchPage,
   validateSearch: (search: Record<string, unknown>): { q: string; namespace?: string; label?: string; sort: string; page: number; starredOnly: boolean } => {
     return {
@@ -269,6 +272,12 @@ const knowledgeRoute = createRoute({
   path: 'knowledge',
   beforeLoad: requireAuth,
   component: KnowledgePage,
+})
+
+const changelogRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: 'changelog',
+  component: ChangelogPage,
 })
 
 const knowledgeBaseRoute = createRoute({
@@ -302,6 +311,7 @@ const namespaceRoute = createRoute({
 const skillDetailRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/space/$namespace/$slug',
+  beforeLoad: requireAuth,
   validateSearch: (search: Record<string, unknown>): { returnTo?: string; version?: string } => ({
     returnTo: typeof search.returnTo === 'string' && search.returnTo.startsWith('/') ? search.returnTo : undefined,
     version: typeof search.version === 'string' && search.version ? search.version : undefined,
@@ -312,6 +322,7 @@ const skillDetailRoute = createRoute({
 const skillVersionCompareRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/space/$namespace/$slug/compare',
+  beforeLoad: requireAuth,
   validateSearch: (search: Record<string, unknown>): { from: string; to: string } => ({
     from: typeof search.from === 'string' ? search.from : '',
     to: typeof search.to === 'string' ? search.to : '',
@@ -551,6 +562,7 @@ const routeTree = rootRoute.addChildren([
   privacyRoute,
   searchRoute,
   knowledgeRoute,
+  changelogRoute,
   knowledgeBaseRoute,
   knowledgeDocumentRoute,
   termsRoute,

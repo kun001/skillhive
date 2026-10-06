@@ -16,13 +16,13 @@ describe('normalizePublishPrefill', () => {
     })
   })
 
-  it('falls back to PUBLIC when visibility is missing or invalid', () => {
+  it('falls back to NAMESPACE_ONLY when visibility is missing or invalid', () => {
     expect(normalizePublishPrefill({
       namespace: 'team-ai',
       visibility: 'internal',
     })).toEqual({
       namespace: 'team-ai',
-      visibility: 'PUBLIC',
+      visibility: 'NAMESPACE_ONLY',
       resubmitSkill: '',
       resubmitVersion: '',
     })
@@ -33,7 +33,7 @@ describe('normalizePublishPrefill', () => {
       namespace: '  team-ml  ',
     })).toEqual({
       namespace: 'team-ml',
-      visibility: 'PUBLIC',
+      visibility: 'NAMESPACE_ONLY',
       resubmitSkill: '',
       resubmitVersion: '',
     })

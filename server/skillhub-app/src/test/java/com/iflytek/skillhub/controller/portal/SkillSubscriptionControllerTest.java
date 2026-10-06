@@ -4,6 +4,7 @@ import com.iflytek.skillhub.auth.rbac.PlatformPrincipal;
 import com.iflytek.skillhub.domain.namespace.NamespaceMemberRepository;
 import com.iflytek.skillhub.domain.social.SkillSubscriptionService;
 import org.junit.jupiter.api.Test;
+import com.iflytek.skillhub.service.MemberResourceAccessService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -28,6 +29,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class SkillSubscriptionControllerTest {
+
+    @org.springframework.boot.test.mock.mockito.MockBean
+    private MemberResourceAccessService memberResourceAccessService;
 
     @Autowired
     private MockMvc mockMvc;
@@ -127,10 +131,9 @@ class SkillSubscriptionControllerTest {
     }
 
     @Test
-    void check_subscribed_unauthenticated_returns_false() throws Exception {
+    void check_subscribed_unauthenticated_requires_login() throws Exception {
         mockMvc.perform(get("/api/web/skills/10/subscription"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(0))
-                .andExpect(jsonPath("$.data").value(false));
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value(401));
     }
 }

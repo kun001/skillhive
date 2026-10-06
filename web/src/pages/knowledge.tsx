@@ -17,37 +17,30 @@ import { Input } from '@/shared/ui/input'
 export function KnowledgePage() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
-  const { hasRole } = useAuth()
+  const { user, hasRole } = useAuth()
   const bases = useKnowledgeBases()
-  const myNamespaces = useMyNamespaces()
+  const myNamespaces = useMyNamespaces(!!user)
   const [filter, setFilter] = useState('')
   const [createOpen, setCreateOpen] = useState(false)
 
   const manageableNamespaces = useMemo(
     () =>
-      (myNamespaces.data ?? [])
+      (user ? myNamespaces.data ?? [] : [])
         .filter((namespace) => namespace.type === 'TEAM' && namespace.status === 'ACTIVE')
         .filter((namespace) => hasRole('SUPER_ADMIN') || namespace.currentUserRole === 'OWNER' || namespace.currentUserRole === 'ADMIN')
         .map((namespace) => ({ slug: namespace.slug, displayName: namespace.displayName })),
-    [myNamespaces.data, hasRole],
+    [myNamespaces.data, hasRole, user],
   )
 
-  const groups = useMemo(() => {
+  const visibleBases = useMemo(() => {
     const keyword = filter.trim().toLowerCase()
-    const visible = (bases.data ?? []).filter(
+    return (bases.data ?? []).filter(
       (base) =>
         !keyword
         || base.displayName.toLowerCase().includes(keyword)
         || (base.description ?? '').toLowerCase().includes(keyword)
         || base.namespaceDisplayName.toLowerCase().includes(keyword),
     )
-    const byNamespace = new Map<string, { displayName: string; bases: KnowledgeBase[] }>()
-    for (const base of visible) {
-      const group = byNamespace.get(base.namespace) ?? { displayName: base.namespaceDisplayName, bases: [] }
-      group.bases.push(base)
-      byNamespace.set(base.namespace, group)
-    }
-    return [...byNamespace.entries()]
   }, [bases.data, filter])
 
   const openBase = (base: KnowledgeBase) =>
@@ -99,18 +92,11 @@ export function KnowledgePage() {
           description={t(canCreate ? 'knowledge.emptyAdmin' : 'knowledge.emptyMember')}
           action={canCreate ? <Button onClick={() => setCreateOpen(true)}>{t('knowledge.createBase')}</Button> : undefined}
         />
-      ) : groups.length === 0 ? (
+      ) : visibleBases.length === 0 ? (
         <EmptyState title={t('knowledge.noMatch')} />
       ) : (
-        <div className="space-y-8">
-          {groups.map(([namespace, group]) => (
-            <section key={namespace} className="space-y-3">
-              <h2 className="flex items-baseline gap-2 text-sm font-semibold text-foreground">
-                {group.displayName}
-                <span className="font-normal text-muted-foreground">@{namespace}</span>
-              </h2>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {group.bases.map((base) => (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {visibleBases.map((base) => (
                   <button
                     key={base.id}
                     type="button"
@@ -123,6 +109,7 @@ export function KnowledgePage() {
                       </span>
                       <span className="min-w-0 flex-1 truncate font-semibold text-foreground">{base.displayName}</span>
                     </div>
+
                     <p className="mt-3 line-clamp-2 min-h-[2.5rem] text-sm text-muted-foreground">{base.description || ' '}</p>
                     <p className="mt-4 text-xs text-muted-foreground">
                       {t('knowledge.fileCount', { count: base.documentCount })}
@@ -131,9 +118,6 @@ export function KnowledgePage() {
                     </p>
                   </button>
                 ))}
-              </div>
-            </section>
-          ))}
         </div>
       )}
 

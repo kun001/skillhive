@@ -4020,6 +4020,8 @@ export interface components {
         UpdateMemberRoleRequest: {
             /** @enum {string} */
             role: "OWNER" | "ADMIN" | "MEMBER";
+            canEdit?: boolean;
+            canDownload?: boolean;
         };
         ApiResponseMemberResponse: {
             /** Format: int32 */
@@ -4044,6 +4046,8 @@ export interface components {
             createdAt?: string;
             /** Format: date-time */
             updatedAt?: string;
+            canEdit?: boolean;
+            canDownload?: boolean;
         };
         NamespaceRequest: {
             slug: string;
@@ -4114,6 +4118,7 @@ export interface components {
             /** Format: date-time */
             updatedAt?: string;
             canManage?: boolean;
+            canDownload?: boolean;
         };
         KnowledgeUserResponse: {
             id?: string;
@@ -5104,6 +5109,7 @@ export interface components {
             ownerPreviewVersion?: components["schemas"]["SkillLifecycleVersionResponse"];
             ownerPreviewReviewComment?: string;
             resolutionMode?: string;
+            canDownload?: boolean;
         };
         ApiResponseReviewSkillDetailResponse: {
             /** Format: int32 */
@@ -5374,6 +5380,8 @@ export interface components {
             canArchive?: boolean;
             canRestore?: boolean;
             canDelete?: boolean;
+            canEdit?: boolean;
+            canDownload?: boolean;
         };
         PageResponseMyNamespaceResponse: {
             items?: components["schemas"]["MyNamespaceResponse"][];
@@ -10628,6 +10636,7 @@ export interface operations {
         parameters: {
             query: {
                 path: string;
+                disposition?: string;
             };
             header?: never;
             path: {
@@ -10654,6 +10663,7 @@ export interface operations {
         parameters: {
             query: {
                 path: string;
+                disposition?: string;
             };
             header?: never;
             path: {
@@ -10976,6 +10986,7 @@ export interface operations {
         parameters: {
             query: {
                 path: string;
+                disposition?: string;
             };
             header?: never;
             path: {
@@ -11002,6 +11013,7 @@ export interface operations {
         parameters: {
             query: {
                 path: string;
+                disposition?: string;
             };
             header?: never;
             path: {

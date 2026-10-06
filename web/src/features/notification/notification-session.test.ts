@@ -15,10 +15,11 @@ describe('getNotificationQueryKeyScope', () => {
 })
 
 describe('clearSessionScopedQueries', () => {
-  it('removes user-scoped notification and dashboard caches without touching public search caches', () => {
+  it('removes user-scoped notification and dashboard caches including private search caches', () => {
     const queryClient = new QueryClient()
     queryClient.setQueryData(['notifications', 'user-a', 'unread-count'], { count: 3 })
     queryClient.setQueryData(['labels', 'visible'], [{ slug: 'official' }])
+    queryClient.setQueryData(['knowledge', 'document', 1, 'preview', 1], 'private text')
     queryClient.setQueryData(['skills', 'my', { page: 0, size: 12 }], { items: [] })
     queryClient.setQueryData(['skills', 'search', { q: '', sort: 'relevance', page: 0, size: 12, starredOnly: false }], { items: [] })
 
@@ -26,7 +27,8 @@ describe('clearSessionScopedQueries', () => {
 
     expect(queryClient.getQueryData(['notifications', 'user-a', 'unread-count'])).toBeUndefined()
     expect(queryClient.getQueryData(['labels', 'visible'])).toBeUndefined()
+    expect(queryClient.getQueryData(['knowledge', 'document', 1, 'preview', 1])).toBeUndefined()
     expect(queryClient.getQueryData(['skills', 'my', { page: 0, size: 12 }])).toBeUndefined()
-    expect(queryClient.getQueryData(['skills', 'search', { q: '', sort: 'relevance', page: 0, size: 12, starredOnly: false }])).toEqual({ items: [] })
+    expect(queryClient.getQueryData(['skills', 'search', { q: '', sort: 'relevance', page: 0, size: 12, starredOnly: false }])).toBeUndefined()
   })
 })

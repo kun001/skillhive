@@ -2,7 +2,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { Namespace, NamespaceMember, ManagedNamespace, CreateNamespaceRequest, NamespaceCandidateUser, NamespaceRole, BatchMemberResponse, PagedResponse } from '@/api/types'
 import { namespaceApi } from '@/api/client'
 import { ApiError } from '@/shared/lib/api-error'
-import { replaceNamespaceMemberRole } from '@/shared/lib/namespace-member-cache'
 import { shouldEnableNamespaceMemberCandidates } from './skill-query-helpers'
 
 async function getMyNamespaces(): Promise<ManagedNamespace[]> {
@@ -55,8 +54,8 @@ async function addNamespaceMember(params: { slug: string; userId: string; role: 
   return namespaceApi.addMember(params.slug, { userId: params.userId, role: params.role })
 }
 
-async function updateNamespaceMemberRole(params: { slug: string; userId: string; role: NamespaceRole }): Promise<NamespaceMember> {
-  return namespaceApi.updateMemberRole(params.slug, params.userId, params.role)
+async function updateNamespaceMemberRole(params: { slug: string; userId: string; role: NamespaceRole; canEdit?: boolean; canDownload?: boolean }): Promise<NamespaceMember> {
+  return namespaceApi.updateMemberRole(params.slug, params.userId, params.role, { canEdit: params.canEdit, canDownload: params.canDownload })
 }
 
 async function removeNamespaceMember(params: { slug: string; userId: string }): Promise<void> {
@@ -78,10 +77,11 @@ function invalidateNamespaceQueries(queryClient: ReturnType<typeof useQueryClien
   queryClient.invalidateQueries({ queryKey: ['reviews'] })
 }
 
-export function useMyNamespaces() {
+export function useMyNamespaces(enabled = true) {
   return useQuery({
     queryKey: ['namespaces', 'my'],
     queryFn: getMyNamespaces,
+    enabled,
   })
 }
 
@@ -162,7 +162,7 @@ export function useUpdateNamespaceMemberRole() {
     onSuccess: (member, variables) => {
       queryClient.setQueriesData<PagedResponse<NamespaceMember>>(
         { queryKey: ['namespaces', variables.slug, 'members'] },
-        (currentPage) => replaceNamespaceMemberRole(currentPage, variables.userId, member.role),
+        (currentPage) => currentPage ? { ...currentPage, items: currentPage.items.map((item) => item.userId === member.userId ? member : item) } : currentPage,
       )
       invalidateNamespaceQueries(queryClient, variables.slug)
     },

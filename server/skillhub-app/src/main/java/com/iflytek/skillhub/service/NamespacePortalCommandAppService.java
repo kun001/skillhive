@@ -206,10 +206,12 @@ public class NamespacePortalCommandAppService {
                                            UpdateMemberRoleRequest request,
                                            String operatorUserId) {
         Namespace namespace = namespaceService.getNamespaceBySlug(slug);
-        NamespaceMember member = namespaceMemberService.updateMemberRole(
+        NamespaceMember member = namespaceMemberService.updateMemberPermissions(
                 namespace.getId(),
                 userId,
                 request.role(),
+                request.canEdit(),
+                request.canDownload(),
                 operatorUserId
         );
         return MemberResponse.from(member, userAccountRepository.findById(userId).orElse(null));

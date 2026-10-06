@@ -81,7 +81,7 @@ export function PublishPage() {
   }
 
   const publishSkill = async (confirmWarnings = false) => {
-    if (!selectedFile || !namespaceSlug) {
+    if (!selectedFile || !namespaceSlug || selectedNamespace?.canEdit === false) {
       toast.error(t('publish.selectRequired'))
       return
     }
@@ -197,7 +197,7 @@ export function PublishPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={EMPTY_NAMESPACE_VALUE}>{t('publish.selectNamespace')}</SelectItem>
-                {namespaces?.map((ns) => (
+                {namespaces?.filter((ns) => ns.canEdit !== false).map((ns) => (
                   <SelectItem key={ns.id} value={ns.slug}>
                     {ns.displayName} (@{ns.slug})
                   </SelectItem>
@@ -214,7 +214,6 @@ export function PublishPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="PUBLIC">{t('publish.visibilityOptions.public')}</SelectItem>
               <SelectItem value="NAMESPACE_ONLY">{namespaceOnlyLabel}</SelectItem>
               <SelectItem value="PRIVATE">{t('publish.visibilityOptions.private')}</SelectItem>
             </SelectContent>
@@ -255,7 +254,7 @@ export function PublishPage() {
           className="w-full text-primary-foreground disabled:text-primary-foreground"
           size="lg"
           onClick={handlePublish}
-          disabled={!selectedFile || !namespaceSlug || publishMutation.isPending}
+          disabled={!selectedFile || !namespaceSlug || selectedNamespace?.canEdit === false || publishMutation.isPending}
         >
           {publishMutation.isPending ? t('publish.publishing') : t('publish.confirm')}
         </Button>

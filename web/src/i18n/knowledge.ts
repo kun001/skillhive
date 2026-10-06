@@ -1,7 +1,7 @@
 // Copy for the knowledge file hub. Russian falls back to English.
 export const knowledgeZh = {
   title: '知识库',
-  subtitle: '团队文件的聚合中心：组员可以在这里上传、查看和下载共享文件。',
+  subtitle: '团队文件中心，集中管理、预览与共享团队资料。',
   searchBases: '搜索知识库…',
   createBase: '新建知识库',
   fileCount: '{{count}} 个文件',
@@ -180,7 +180,7 @@ export const knowledgeZh = {
     loading: '正在加载预览…',
     generating: '正在生成预览，首次打开可能需要一些时间…',
     downloadOriginal: '下载原文件',
-    officeLimit: '图片预览最多展示前 {{count}} 页，完整内容请下载原文件。',
+    officeLimit: '图片预览最多展示前 {{count}} 页。',
     officeFailed: '暂时无法生成预览，请下载原文件查看。',
     retry: '重新加载预览',
     page: '第 {{count}} 页',
@@ -378,7 +378,7 @@ export const knowledgeEn: typeof knowledgeZh = {
     loading: 'Loading preview…',
     generating: 'Generating preview. The first view may take a moment…',
     downloadOriginal: 'Download original',
-    officeLimit: 'Image preview shows up to the first {{count}} pages. Download the original for all content.',
+    officeLimit: 'Image preview shows up to the first {{count}} pages.',
     officeFailed: 'Preview is unavailable. Download the original to view this file.',
     retry: 'Reload preview',
     page: 'Page {{count}}',

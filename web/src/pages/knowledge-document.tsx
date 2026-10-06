@@ -96,10 +96,10 @@ export function KnowledgeDocumentPage() {
               <History className="mr-1.5 h-4 w-4" aria-hidden />
               {t('knowledge.actions.versions')}
             </Button>
-            <a href={knowledgeApi.contentUrl(document.id)} download className={buttonVariants({ variant: 'default' })}>
+            {document.canDownload ? <a href={knowledgeApi.contentUrl(document.id)} download className={buttonVariants({ variant: 'default' })}>
               <Download className="mr-1.5 h-4 w-4" aria-hidden />
               {t('knowledge.actions.download')}
-            </a>
+            </a> : null}
             {knowledgeBase.canContribute ? (
               <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>

@@ -40,6 +40,7 @@ public class ReviewPortalAppService {
     private final ReviewProgressQueryRepository reviewProgressQueryRepository;
     private final RbacService rbacService;
     private final AuditLogService auditLogService;
+    private final MemberResourceAccessService memberAccess;
     private final RequestIdAccessor requestIdAccessor;
 
     public ReviewPortalAppService(ReviewService reviewService,
@@ -49,7 +50,8 @@ public class ReviewPortalAppService {
                                   ReviewProgressQueryRepository reviewProgressQueryRepository,
                                   RbacService rbacService,
                                   AuditLogService auditLogService,
-                                  RequestIdAccessor requestIdAccessor) {
+                                  RequestIdAccessor requestIdAccessor, MemberResourceAccessService memberAccess) {
+        this.memberAccess = memberAccess;
         this.reviewService = reviewService;
         this.reviewTaskRepository = reviewTaskRepository;
         this.namespaceRepository = namespaceRepository;
@@ -65,6 +67,7 @@ public class ReviewPortalAppService {
                                            String userId,
                                            Map<Long, NamespaceRole> userNsRoles,
                                            AuditRequestContext auditContext) {
+        memberAccess.check(Map.of("skillVersionId", skillVersionId.toString()), userId, platformRoles(userId), true, false);
         ReviewTask task = reviewService.submitReview(
                 skillVersionId,
                 userId,
@@ -117,6 +120,7 @@ public class ReviewPortalAppService {
                                Map<Long, NamespaceRole> userNsRoles,
                                AuditRequestContext auditContext) {
         ReviewTask task = findReview(reviewTaskId);
+        memberAccess.check(Map.of("skillVersionId", task.getSkillVersionId().toString()), userId, platformRoles(userId), true, false);
         reviewService.withdrawReview(task.getSkillVersionId(), userId);
         recordAudit(
                 "REVIEW_WITHDRAW",

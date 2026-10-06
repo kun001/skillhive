@@ -206,7 +206,7 @@ export function SkillDetailPage() {
   const securityAuditVersion = ownerPreviewVersion?.status === 'SCAN_FAILED'
     ? ownerPreviewVersion
     : selectedVersionEntry
-  const isVersionDownloadable = selectedVersionEntry?.status === 'PUBLISHED' && (selectedVersionEntry?.downloadAvailable ?? false)
+  const isVersionDownloadable = skill?.canDownload && selectedVersionEntry?.status === 'PUBLISHED' && (selectedVersionEntry?.downloadAvailable ?? false)
 
   useEffect(() => {
     // Recompute collapse rules whenever rendered documentation height changes so the page can keep
@@ -360,12 +360,11 @@ export function SkillDetailPage() {
 
   // Download a single file from the skill version
   const handleDownloadFile = () => {
-    const isAnonymousAllowed = namespace === 'global' && skill?.visibility === 'PUBLIC'
-    if (!user && !isAnonymousAllowed) {
+    if (!user) {
       requireLogin()
       return
     }
-    if (!previewNode || !selectedVersion) return
+    if (!skill?.canDownload || !previewNode || !selectedVersion) return
     const cleanNamespace = namespace.startsWith('@') ? namespace.slice(1) : namespace
     const url = buildApiUrl(
       `${WEB_API_PREFIX}/skills/${cleanNamespace}/${encodeURIComponent(slug)}/versions/${encodeURIComponent(selectedVersion)}/file?path=${encodeURIComponent(previewNode.path)}`
@@ -380,8 +379,7 @@ export function SkillDetailPage() {
   }
 
   const handleDownload = async () => {
-    const isAnonymousAllowed = namespace === 'global' && skill?.visibility === 'PUBLIC'
-    if (!user && !isAnonymousAllowed) {
+    if (!user) {
       requireLogin()
       return
     }
@@ -645,7 +643,7 @@ export function SkillDetailPage() {
       return
     }
     try {
-      await submitForReviewMutation.mutateAsync({ namespace, slug, version: submitReviewTarget, targetVisibility: 'PUBLIC' })
+      await submitForReviewMutation.mutateAsync({ namespace, slug, version: submitReviewTarget, targetVisibility: 'NAMESPACE_ONLY' })
       toast.success(
         t('skillDetail.submitReviewSuccessTitle'),
         t('skillDetail.submitReviewSuccessDescription', { version: submitReviewTarget }),
@@ -829,7 +827,7 @@ export function SkillDetailPage() {
                 {skill.visibility === 'PUBLIC' && <Globe className="h-3 w-3" />}
                 {skill.visibility === 'PRIVATE' && <Lock className="h-3 w-3" />}
                 {skill.visibility === 'NAMESPACE_ONLY' && <Users className="h-3 w-3" />}
-                {skill.visibility === 'PUBLIC' && t('publish.visibilityOptions.public')}
+                {skill.visibility === 'PUBLIC' && t('publish.visibilityOptions.namespaceOnly')}
                 {skill.visibility === 'PRIVATE' && t('publish.visibilityOptions.private')}
                 {skill.visibility === 'NAMESPACE_ONLY' && t('publish.visibilityOptions.namespaceOnly')}
               </span>
@@ -1659,6 +1657,7 @@ export function SkillDetailPage() {
         content={previewContent || null}
         isLoading={isLoadingPreview}
         error={previewError}
+        canDownload={!!skill?.canDownload}
         onDownload={handleDownloadFile}
         onLinkClick={handlePreviewLinkClick}
       />

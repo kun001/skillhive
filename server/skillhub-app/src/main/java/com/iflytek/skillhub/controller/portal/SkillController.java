@@ -51,6 +51,7 @@ import java.util.stream.Collectors;
 @RequestMapping({"/api/v1/skills", "/api/web/skills"})
 public class SkillController extends BaseApiController {
 
+    private final com.iflytek.skillhub.service.MemberResourceAccessService memberAccess;
     private final SkillQueryService skillQueryService;
     private final SkillDownloadService skillDownloadService;
     private final SkillLabelAppService skillLabelAppService;
@@ -63,8 +64,10 @@ public class SkillController extends BaseApiController {
             SkillLabelAppService skillLabelAppService,
             ComplianceSnapshotProjectionService complianceSnapshotProjectionService,
             SkillHubMetrics metrics,
-            ApiResponseFactory responseFactory) {
+            ApiResponseFactory responseFactory,
+            com.iflytek.skillhub.service.MemberResourceAccessService memberAccess) {
         super(responseFactory);
+        this.memberAccess = memberAccess;
         this.skillQueryService = skillQueryService;
         this.skillDownloadService = skillDownloadService;
         this.skillLabelAppService = skillLabelAppService;
@@ -107,15 +110,16 @@ public class SkillController extends BaseApiController {
                 detail.hidden(),
                 namespace,
                 skillLabelAppService.listSkillLabelsBySkillId(detail.id()),
-                detail.canManageLifecycle(),
-                detail.canSubmitPromotion(),
+                detail.canManageLifecycle() && memberAccess.canEdit(namespace, userId, platformRoles),
+                detail.canSubmitPromotion() && memberAccess.canEdit(namespace, userId, platformRoles),
                 detail.canInteract(),
                 detail.canReport(),
                 toLifecycleVersion(detail.headlineVersion()),
                 toLifecycleVersion(detail.publishedVersion()),
                 toLifecycleVersion(detail.ownerPreviewVersion()),
                 detail.ownerPreviewReviewComment(),
-                detail.resolutionMode()
+                detail.resolutionMode(),
+                memberAccess.canDownload(namespace, userId, platformRoles)
         );
 
         return ok("response.success.read", response);
@@ -149,7 +153,7 @@ public class SkillController extends BaseApiController {
                 v.getFileCount(),
                 v.getTotalSize(),
                 v.getPublishedAt(),
-                skillQueryService.isDownloadAvailable(v),
+                skillQueryService.isDownloadAvailable(v) && memberAccess.canDownload(namespace, userId, Set.of()),
                 complianceSnapshotProjectionService.fromParsedMetadataJson(v.getParsedMetadataJson())
         )));
 
@@ -284,6 +288,7 @@ public class SkillController extends BaseApiController {
             @PathVariable String slug,
             @PathVariable String version,
             @RequestParam("path") String path,
+            @RequestParam(defaultValue = "attachment") String disposition,
             @RequestAttribute(value = "userId", required = false) String userId,
             @RequestAttribute(value = "userNsRoles", required = false) Map<Long, NamespaceRole> userNsRoles) {
 
@@ -297,6 +302,8 @@ public class SkillController extends BaseApiController {
         );
 
         return ResponseEntity.ok()
+                .header("Cache-Control", "private, no-store")
+                .header("X-Content-Type-Options", "nosniff")
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .body(new InputStreamResource(content));
     }
@@ -307,6 +314,7 @@ public class SkillController extends BaseApiController {
             @PathVariable String slug,
             @PathVariable String tagName,
             @RequestParam("path") String path,
+            @RequestParam(defaultValue = "attachment") String disposition,
             @RequestAttribute(value = "userId", required = false) String userId,
             @RequestAttribute(value = "userNsRoles", required = false) Map<Long, NamespaceRole> userNsRoles) {
 
@@ -320,6 +328,8 @@ public class SkillController extends BaseApiController {
         );
 
         return ResponseEntity.ok()
+                .header("Cache-Control", "private, no-store")
+                .header("X-Content-Type-Options", "nosniff")
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .body(new InputStreamResource(content));
     }

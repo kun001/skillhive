@@ -51,7 +51,7 @@ class SkillSubscriptionServiceTest {
         Namespace namespace = new Namespace("demo", "Demo", "owner");
         when(namespaceRepository.findById(skill.getNamespaceId())).thenReturn(Optional.of(namespace));
         when(namespaceMemberRepository.findByNamespaceIdAndUserId(skill.getNamespaceId(), "user-1"))
-                .thenReturn(Optional.empty());
+                .thenReturn(Optional.of(new NamespaceMember(skill.getNamespaceId(), "user-1", NamespaceRole.MEMBER)));
     }
 
     @BeforeEach
@@ -223,7 +223,7 @@ class SkillSubscriptionServiceTest {
         when(userAccountRepository.findById("user-1"))
                 .thenReturn(Optional.of(new UserAccount("user-1", "User", null, null)));
         when(namespaceRepository.findById(5L)).thenReturn(Optional.of(new Namespace("team", "Team", "owner")));
-        when(namespaceMemberRepository.findByNamespaceIdAndUserId(5L, "user-1")).thenReturn(Optional.empty());
+        when(namespaceMemberRepository.findByNamespaceIdAndUserId(5L, "user-1")).thenReturn(Optional.of(new NamespaceMember(5L, "user-1", NamespaceRole.MEMBER)));
         when(subscriptionRepository.findBySkillIdAndUserId(1L, "user-1")).thenReturn(Optional.empty());
 
         service.subscribe(1L, "user-1");

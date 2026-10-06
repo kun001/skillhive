@@ -16,6 +16,7 @@ import com.iflytek.skillhub.service.SkillDeleteAppService;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
+import com.iflytek.skillhub.service.MemberResourceAccessService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -31,6 +32,9 @@ import org.springframework.test.web.servlet.MockMvc;
 @ActiveProfiles("test")
 @Import(TestRedisConfig.class)
 class SkillLifecycleDeleteControllerTest {
+
+    @org.springframework.boot.test.mock.mockito.MockBean
+    private MemberResourceAccessService memberResourceAccessService;
 
     @Autowired
     private MockMvc mockMvc;

@@ -17,6 +17,7 @@ interface FilePreviewDialogProps {
   content: string | null
   isLoading: boolean
   error: Error | null
+  canDownload?: boolean
   onDownload: () => void
   onLinkClick?: (href: string, event: MouseEvent<HTMLAnchorElement>) => void
 }
@@ -33,6 +34,7 @@ export function FilePreviewDialog({
   content,
   isLoading,
   error,
+  canDownload = true,
   onDownload,
   onLinkClick,
 }: FilePreviewDialogProps) {
@@ -105,6 +107,7 @@ export function FilePreviewDialog({
               variant="ghost"
               size="icon"
               className="h-8 w-8 rounded-lg opacity-60 hover:opacity-100 hover:bg-accent transition-all duration-200 hover:scale-110 active:scale-95"
+              disabled={!canDownload}
               onClick={onDownload}
               title={t('filePreview.downloadHint', { name: node.name })}
             >

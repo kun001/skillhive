@@ -764,7 +764,7 @@ export const namespaceApi = {
     })
   },
 
-  async updateMemberRole(slug: string, userId: string, role: string): Promise<NamespaceMember> {
+  async updateMemberRole(slug: string, userId: string, role: string, permissions?: { canEdit?: boolean; canDownload?: boolean }): Promise<NamespaceMember> {
     return fetchJson<NamespaceMember>(
       `${WEB_API_PREFIX}/namespaces/${normalizeNamespaceSlug(slug)}/members/${encodeURIComponent(userId)}/role`,
       {
@@ -772,7 +772,7 @@ export const namespaceApi = {
         headers: await ensureCsrfHeaders({
           'Content-Type': 'application/json',
         }),
-        body: JSON.stringify({ role }),
+        body: JSON.stringify({ role, ...permissions }),
       },
     )
   },
@@ -1242,7 +1242,7 @@ export const adminApi = {
     })
   },
 
-  async updateNamespaceMemberRole(slug: string, userId: string, role: string): Promise<NamespaceMember> {
+  async updateNamespaceMemberRole(slug: string, userId: string, role: string, permissions?: { canEdit?: boolean; canDownload?: boolean }): Promise<NamespaceMember> {
     return fetchJson<NamespaceMember>(
       `/api/v1/admin/namespaces/${normalizeNamespaceSlug(slug)}/members/${encodeURIComponent(userId)}/role`,
       {
@@ -1250,7 +1250,7 @@ export const adminApi = {
         headers: await ensureCsrfHeaders({
           'Content-Type': 'application/json',
         }),
-        body: JSON.stringify({ role }),
+        body: JSON.stringify({ role, ...permissions }),
       },
     )
   },
