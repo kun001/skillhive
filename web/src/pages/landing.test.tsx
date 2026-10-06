@@ -60,10 +60,6 @@ vi.mock('@/shared/hooks/use-in-view', () => ({
   useInView: () => ({ ref: vi.fn(), inView: true }),
 }))
 
-vi.mock('@/shared/lib/search-query', () => ({
-  normalizeSearchQuery: (q: string) => q.trim(),
-}))
-
 vi.mock('@/shared/ui/button', () => ({
   Button: ({ children }: { children: unknown }) => children,
 }))
@@ -86,5 +82,12 @@ describe('LandingPage', () => {
     expect(html).toContain('hiveLanding.knowledgeCta')
     expect(html).toContain('hiveLanding.libraryTitle')
     expect(html).not.toContain('Skill 已收录 24 个')
+  })
+
+  it('keeps the hero free of the registry search box and skill count', () => {
+    const html = renderToStaticMarkup(<LandingPage />)
+
+    expect(html).not.toContain('role="search"')
+    expect(html).not.toContain('hiveLanding.skillTotal')
   })
 })

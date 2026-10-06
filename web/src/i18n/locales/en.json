@@ -740,7 +740,14 @@
     "notFound": "Namespace not found",
     "skillList": "Skills",
     "emptyTitle": "No skills",
-    "emptyDescription": "No skills have been published in this namespace yet"
+    "emptyDescription": "No skills have been published in this namespace yet",
+    "tabSkills": "Skills",
+    "tabKnowledge": "Knowledge bases",
+    "knowledgeSearch": "Search files in this space's knowledge bases…",
+    "knowledgeEmptyTitle": "No knowledge bases",
+    "knowledgeEmptyDescription": "This namespace has no knowledge bases yet",
+    "knowledgeMembersOnly": "Knowledge bases are for space members",
+    "knowledgeMembersOnlyDescription": "Join this team space to see its knowledge bases and files"
   },
   "skillDetail": {
     "back": "Back",

@@ -80,7 +80,11 @@ public class JpaKnowledgeDocumentRepositoryAdapter implements KnowledgeDocumentR
     static Specification<KnowledgeDocument> toSpecification(KnowledgeDocumentSearch search) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
-            predicates.add(cb.equal(root.get("knowledgeBaseId"), search.knowledgeBaseId()));
+            if (search.knowledgeBaseIds() == null || search.knowledgeBaseIds().isEmpty()) {
+                predicates.add(cb.disjunction());
+            } else {
+                predicates.add(root.get("knowledgeBaseId").in(search.knowledgeBaseIds()));
+            }
             predicates.add(cb.equal(root.get("status"), KnowledgeDocumentStatus.ACTIVE));
             predicates.add(cb.isFalse(root.get("hidden")));
             if (search.folderIds() != null) {

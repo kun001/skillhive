@@ -19,7 +19,9 @@ import com.iflytek.skillhub.domain.knowledge.KnowledgeMarkdownPolicy;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeBase;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeBaseRepository;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeDocument;
+import com.iflytek.skillhub.domain.knowledge.KnowledgeBaseStatus;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeDocumentRepository;
+import com.iflytek.skillhub.domain.knowledge.KnowledgeDocumentSearch;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeDocumentStatus;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeDocumentVersion;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeDocumentVersionRepository;
@@ -49,6 +51,8 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 class KnowledgeAppServiceTest {
 
@@ -249,6 +253,39 @@ class KnowledgeAppServiceTest {
             assertThat(service.openContent(21L, 1, member("alice")).previewKind()).isEqualTo(KnowledgePreviewKind.NONE);
         }
         verify(storageService, never()).getObject(anyString());
+    }
+
+    @Test
+    void searchCoversOnlyVisibleBasesAndReportsWhereEachFileLives() throws Exception {
+        KnowledgeDocument document = withId(new KnowledgeDocument(11L, null, "leave", "年假制度", null, "alice"), 21L);
+        KnowledgeDocumentVersion version = withId(new KnowledgeDocumentVersion(21L, 1, "key", "application/pdf", "leave.pdf", 1, "sha", null, "alice"), 31L);
+        version.publishDirectly("alice");
+        document.publish(version, "pdf");
+        when(baseRepository.findByNamespaceIdInAndStatus(any(), eq(KnowledgeBaseStatus.ACTIVE))).thenReturn(List.of(base));
+        when(namespaceRepository.findByIdIn(any())).thenReturn(List.of(namespace));
+        when(documentRepository.search(any(), any())).thenReturn(new PageImpl<>(List.of(document), PageRequest.of(0, 20), 1));
+        when(versionRepository.findByIdIn(any())).thenReturn(List.of(version));
+
+        var page = service.searchDocuments(" 年假 ", null, 0, 20, member("alice"));
+
+        ArgumentCaptor<KnowledgeDocumentSearch> search = ArgumentCaptor.forClass(KnowledgeDocumentSearch.class);
+        verify(documentRepository).search(search.capture(), any());
+        assertThat(search.getValue().knowledgeBaseIds()).containsExactly(11L);
+        assertThat(search.getValue().keyword()).isEqualTo("年假");
+        assertThat(page.total()).isEqualTo(1);
+        assertThat(page.items()).singleElement().satisfies(hit -> {
+            assertThat(hit.document().id()).isEqualTo(21L);
+            assertThat(hit.namespace()).isEqualTo("team-a");
+            assertThat(hit.namespaceDisplayName()).isEqualTo("Team A");
+            assertThat(hit.knowledgeBaseSlug()).isEqualTo("handbook");
+            assertThat(hit.knowledgeBaseDisplayName()).isEqualTo("Handbook");
+        });
+
+        org.mockito.Mockito.clearInvocations(documentRepository);
+        assertThat(service.searchDocuments("   ", null, 0, 20, member("alice")).items()).isEmpty();
+        assertThat(service.searchDocuments("年假", "other-team", 0, 20, member("alice")).items()).isEmpty();
+        assertThat(service.searchDocuments("年假", null, 0, 20, new KnowledgeAppService.Caller("mallory", Map.of(), Set.of())).items()).isEmpty();
+        verify(documentRepository, never()).search(any(), any());
     }
 
     private static KnowledgeAppService.Caller member(String userId) {

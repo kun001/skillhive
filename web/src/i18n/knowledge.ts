@@ -2,7 +2,15 @@
 export const knowledgeZh = {
   title: '知识库',
   subtitle: '团队文件中心，集中管理、预览与共享团队资料。',
-  searchBases: '搜索知识库…',
+  searchBases: '搜索知识库名称、文件标题或描述…',
+  allNamespaces: '全部团队空间',
+  search: {
+    basesHeading: '知识库',
+    filesHeading: '文件',
+    noResults: '没有找到与「{{q}}」相关的知识库或文件',
+    noFiles: '没有匹配的文件',
+    failed: '文件搜索失败，请稍后重试',
+  },
   createBase: '新建知识库',
   fileCount: '{{count}} 个文件',
   updatedAt: '更新于 {{time}}',
@@ -200,7 +208,15 @@ export const knowledgeZh = {
 export const knowledgeEn: typeof knowledgeZh = {
   title: 'Knowledge base',
   subtitle: 'Your team\'s file hub: members upload, view and download shared files here.',
-  searchBases: 'Search knowledge bases…',
+  searchBases: 'Search knowledge bases, file titles or descriptions…',
+  allNamespaces: 'All team spaces',
+  search: {
+    basesHeading: 'Knowledge bases',
+    filesHeading: 'Files',
+    noResults: 'No knowledge bases or files match “{{q}}”',
+    noFiles: 'No matching files',
+    failed: 'File search failed. Please try again later.',
+  },
   createBase: 'New knowledge base',
   fileCount: '{{count}} files',
   updatedAt: 'Updated {{time}}',

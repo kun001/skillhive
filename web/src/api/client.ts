@@ -58,6 +58,8 @@ import type {
   KnowledgeDocumentDetail,
   KnowledgeDocumentPage,
   KnowledgeDocumentQuery,
+  KnowledgeDocumentSearchPage,
+  KnowledgeDocumentSearchQuery,
   KnowledgeDocumentVersion,
   KnowledgeFolder,
   UpdateKnowledgeBaseRequest,
@@ -1657,6 +1659,14 @@ export const knowledgeApi = {
     params.set('page', String(query.page ?? 0))
     params.set('size', String(query.size ?? 20))
     return fetchJson<KnowledgeDocumentPage>(`${knowledgeBasePath(namespace, base)}/documents?${params.toString()}`)
+  },
+
+  searchDocuments(query: KnowledgeDocumentSearchQuery): Promise<KnowledgeDocumentSearchPage> {
+    const params = new URLSearchParams({ q: query.q.trim() })
+    if (query.namespace) params.set('namespace', query.namespace)
+    params.set('page', String(query.page ?? 0))
+    params.set('size', String(query.size ?? 20))
+    return fetchJson<KnowledgeDocumentSearchPage>(`${KNOWLEDGE_PREFIX}/documents/search?${params.toString()}`)
   },
 
   uploadDocument(

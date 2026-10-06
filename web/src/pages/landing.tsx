@@ -1,10 +1,9 @@
-import { useState, type FormEvent } from 'react'
-import { Link, useNavigate } from '@tanstack/react-router'
+import { useState } from 'react'
+import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { ArrowRight, BookOpen, Download, Eye, FileText, FolderOpen, History, Layers3, Search, ShieldCheck } from 'lucide-react'
 import type { SkillSummary } from '@/api/types'
 import { useSearchSkills } from '@/shared/hooks/use-skill-queries'
-import { normalizeSearchQuery } from '@/shared/lib/search-query'
 import './landing.css'
 
 function SkillPreviewCard({ skill }: { skill: SkillSummary }) {
@@ -20,29 +19,16 @@ function SkillPreviewCard({ skill }: { skill: SkillSummary }) {
 
 export function LandingPage() {
   const { t } = useTranslation()
-  const navigate = useNavigate()
-  const [query, setQuery] = useState('')
   const [sort, setSort] = useState<'downloads' | 'newest'>('downloads')
   const popular = useSearchSkills({ sort: 'downloads', size: 6 })
   const recent = useSearchSkills({ sort: 'newest', size: 6 })
   const active = sort === 'downloads' ? popular : recent
-  const submitSearch = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    const normalized = normalizeSearchQuery(query)
-    void navigate({ to: '/search', search: { q: normalized, sort: 'relevance', page: 0, starredOnly: false } })
-  }
 
   return <div className="hive-landing">
     <section className="hive-section hive-hero" id="hero"><div className="hive-container hive-hero-inner">
       <p className="hive-eyebrow">{t('hiveLanding.heroEyebrow')}</p>
       <h1><span>{t('hiveLanding.heroTitleFirst')}</span><span>{t('hiveLanding.heroTitleSecond')}</span></h1>
       <p className="hive-lead">{t('hiveLanding.heroDescription')}</p>
-      {popular.data && <p className="hive-trust">{t('hiveLanding.skillTotal', { count: popular.data.total })}</p>}
-      <form className="hive-search" role="search" onSubmit={submitSearch}>
-        <div className="hive-search-scope"><span>Skill</span></div>
-        <label className="hive-search-input" htmlFor="hive-search-input"><Search size={19} aria-hidden="true" /><input id="hive-search-input" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t('hiveLanding.searchPlaceholder')} aria-label={t('hiveLanding.searchSkill')} /></label>
-        <button className="hive-button hive-button-primary" type="submit">{t('hiveLanding.search')}</button>
-      </form>
     </div></section>
 
     <section className="hive-section hive-capabilities" id="capabilities"><div className="hive-container">

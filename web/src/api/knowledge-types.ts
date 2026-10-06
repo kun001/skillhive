@@ -78,3 +78,28 @@ export interface KnowledgeDocumentPage {
   page: number
   size: number
 }
+
+/** A file found across knowledge bases, with where it lives. */
+export type KnowledgeDocumentSearchHit = Omit<
+  Populated<
+    Schemas['KnowledgeDocumentSearchHitResponse'],
+    'namespace' | 'namespaceDisplayName' | 'knowledgeBaseSlug' | 'knowledgeBaseDisplayName'
+  >,
+  'document'
+> & {
+  document: KnowledgeDocument
+}
+
+export interface KnowledgeDocumentSearchQuery {
+  q: string
+  namespace?: string
+  page?: number
+  size?: number
+}
+
+export interface KnowledgeDocumentSearchPage {
+  items: KnowledgeDocumentSearchHit[]
+  total: number
+  page: number
+  size: number
+}

@@ -139,7 +139,12 @@ export function KnowledgeBasePage() {
         <KnowledgeBreadcrumb
           items={[
             { label: t('knowledge.breadcrumbRoot'), to: '/knowledge' },
-            { label: knowledgeBase?.namespaceDisplayName ?? namespace },
+            {
+              label: knowledgeBase?.namespaceDisplayName ?? namespace,
+              to: '/space/$namespace',
+              params: { namespace },
+              search: { tab: 'knowledge' },
+            },
             { label: knowledgeBase?.displayName ?? base },
           ]}
         />

@@ -3406,6 +3406,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/knowledge/documents/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search file titles and descriptions across the knowledge bases visible to the caller */
+        get: operations["searchKnowledgeDocuments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/web/knowledge/documents/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search file titles and descriptions across the knowledge bases visible to the caller */
+        get: operations["searchKnowledgeDocuments_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/web/governance/summary": {
         parameters: {
             query?: never;
@@ -5465,6 +5499,31 @@ export interface components {
             /** Format: int64 */
             id?: number;
             name?: string;
+        };
+        ApiResponsePageResponseKnowledgeDocumentSearchHitResponse: {
+            /** Format: int32 */
+            code?: number;
+            msg?: string;
+            data?: components["schemas"]["PageResponseKnowledgeDocumentSearchHitResponse"];
+            /** Format: date-time */
+            timestamp?: string;
+            requestId?: string;
+        };
+        KnowledgeDocumentSearchHitResponse: {
+            document?: components["schemas"]["KnowledgeDocumentResponse"];
+            namespace?: string;
+            namespaceDisplayName?: string;
+            knowledgeBaseSlug?: string;
+            knowledgeBaseDisplayName?: string;
+        };
+        PageResponseKnowledgeDocumentSearchHitResponse: {
+            items?: components["schemas"]["KnowledgeDocumentSearchHitResponse"][];
+            /** Format: int64 */
+            total?: number;
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            size?: number;
         };
         ApiResponseListKnowledgeFolderResponse: {
             /** Format: int32 */
@@ -12524,6 +12583,56 @@ export interface operations {
                 };
                 content: {
                     "*/*": string;
+                };
+            };
+        };
+    };
+    searchKnowledgeDocuments: {
+        parameters: {
+            query?: {
+                q?: string;
+                namespace?: string;
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePageResponseKnowledgeDocumentSearchHitResponse"];
+                };
+            };
+        };
+    };
+    searchKnowledgeDocuments_1: {
+        parameters: {
+            query?: {
+                q?: string;
+                namespace?: string;
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePageResponseKnowledgeDocumentSearchHitResponse"];
                 };
             };
         };

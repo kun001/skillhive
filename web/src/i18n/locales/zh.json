@@ -740,7 +740,14 @@
     "notFound": "命名空间不存在",
     "skillList": "技能列表",
     "emptyTitle": "暂无技能",
-    "emptyDescription": "该命名空间下还没有发布任何技能"
+    "emptyDescription": "该命名空间下还没有发布任何技能",
+    "tabSkills": "技能",
+    "tabKnowledge": "知识库",
+    "knowledgeSearch": "在本空间的知识库中搜索文件…",
+    "knowledgeEmptyTitle": "暂无知识库",
+    "knowledgeEmptyDescription": "该命名空间下还没有知识库",
+    "knowledgeMembersOnly": "知识库仅对空间成员开放",
+    "knowledgeMembersOnlyDescription": "加入该团队空间后，即可查看其中的知识库和文件"
   },
   "skillDetail": {
     "back": "返回上一页",

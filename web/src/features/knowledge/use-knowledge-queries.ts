@@ -5,6 +5,7 @@ import type {
   CreateKnowledgeBaseRequest,
   CreateKnowledgeFolderRequest,
   KnowledgeDocumentQuery,
+  KnowledgeDocumentSearchQuery,
   UpdateKnowledgeBaseRequest,
   UpdateKnowledgeDocumentRequest,
   UpdateKnowledgeFolderRequest,
@@ -19,6 +20,7 @@ export const knowledgeKeys = {
     query
       ? ([...knowledgeKeys.all, 'documents', namespace, base, query] as const)
       : ([...knowledgeKeys.all, 'documents', namespace, base] as const),
+  search: (query: KnowledgeDocumentSearchQuery) => [...knowledgeKeys.all, 'search', query] as const,
   document: (documentId: number) => [...knowledgeKeys.all, 'document', documentId] as const,
   versions: (documentId: number) => [...knowledgeKeys.all, 'versions', documentId] as const,
 }
@@ -54,6 +56,19 @@ export function useKnowledgeDocuments(namespace: string, base: string, query: Kn
     enabled: !isLoading,
     retry: false,
     queryFn: () => knowledgeApi.listDocuments(namespace, base, query),
+    placeholderData: (previous, query) => query?.queryKey.at(-1) === scope ? previous : undefined,
+  })
+}
+
+/** File search across every visible knowledge base; idle until there is a keyword. */
+export function useKnowledgeDocumentSearch(query: KnowledgeDocumentSearchQuery) {
+  const { user, isLoading } = useAuth()
+  const scope = user?.userId ?? 'guest'
+  return useQuery({
+    queryKey: [...knowledgeKeys.search(query), scope],
+    enabled: !isLoading && query.q.trim().length > 0,
+    retry: false,
+    queryFn: () => knowledgeApi.searchDocuments(query),
     placeholderData: (previous, query) => query?.queryKey.at(-1) === scope ? previous : undefined,
   })
 }

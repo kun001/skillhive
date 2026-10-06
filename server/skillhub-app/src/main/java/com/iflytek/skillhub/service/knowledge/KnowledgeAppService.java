@@ -37,6 +37,7 @@ import com.iflytek.skillhub.dto.knowledge.CreateKnowledgeFolderRequest;
 import com.iflytek.skillhub.dto.knowledge.KnowledgeBaseResponse;
 import com.iflytek.skillhub.dto.knowledge.KnowledgeDocumentDetailResponse;
 import com.iflytek.skillhub.dto.knowledge.KnowledgeDocumentResponse;
+import com.iflytek.skillhub.dto.knowledge.KnowledgeDocumentSearchHitResponse;
 import com.iflytek.skillhub.dto.knowledge.KnowledgeDocumentVersionResponse;
 import com.iflytek.skillhub.dto.knowledge.KnowledgeFolderPathItem;
 import com.iflytek.skillhub.dto.knowledge.KnowledgeFolderResponse;
@@ -93,6 +94,7 @@ public class KnowledgeAppService {
     static final String TARGET_DOCUMENT = "KNOWLEDGE_DOCUMENT";
     private static final int MAX_PAGE_SIZE = 100;
     private static final int MAX_DISPLAY_NAME_LENGTH = 128;
+    private static final int MAX_SEARCH_KEYWORD_LENGTH = 100;
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private final com.iflytek.skillhub.domain.namespace.MemberResourcePolicy memberPolicy;
@@ -198,24 +200,13 @@ public class KnowledgeAppService {
 
     @Transactional(readOnly = true)
     public List<KnowledgeBaseResponse> listBases(Caller caller) {
-        List<KnowledgeBase> bases = caller.platformRoles().contains("SUPER_ADMIN")
-                ? baseRepository.findByStatus(KnowledgeBaseStatus.ACTIVE)
-                : caller.namespaceRoles().isEmpty()
-                        ? List.of()
-                        : baseRepository.findByNamespaceIdInAndStatus(caller.namespaceRoles().keySet(), KnowledgeBaseStatus.ACTIVE);
-        if (bases.isEmpty()) {
+        List<BaseContext> contexts = visibleBases(caller);
+        if (contexts.isEmpty()) {
             return List.of();
         }
-        Map<Long, Namespace> namespaces = namespaceRepository
-                .findByIdIn(bases.stream().map(KnowledgeBase::getNamespaceId).distinct().toList()).stream()
-                .collect(Collectors.toMap(Namespace::getId, Function.identity()));
-        Map<Long, KnowledgeBaseStats> stats = statsFor(bases.stream().map(KnowledgeBase::getId).toList());
-        return bases.stream()
-                .filter(base -> namespaces.containsKey(base.getNamespaceId()))
-                .map(base -> {
-                    Namespace namespace = namespaces.get(base.getNamespaceId());
-                    return toBaseResponse(new BaseContext(namespace, base, caller.roleIn(namespace)), stats.get(base.getId()), caller);
-                })
+        Map<Long, KnowledgeBaseStats> stats = statsFor(contexts.stream().map(context -> context.base().getId()).toList());
+        return contexts.stream()
+                .map(context -> toBaseResponse(context, stats.get(context.base().getId()), caller))
                 .sorted(Comparator.comparing(KnowledgeBaseResponse::namespaceDisplayName, String.CASE_INSENSITIVE_ORDER)
                         .thenComparing(KnowledgeBaseResponse::displayName, String.CASE_INSENSITIVE_ORDER))
                 .toList();
@@ -364,13 +355,53 @@ public class KnowledgeAppService {
                 .distinct()
                 .toList();
         KnowledgeDocumentSearch search = new KnowledgeDocumentSearch(
-                context.base().getId(), folderIds, filter.keyword(), extensions, filter.ownerId(),
+                List.of(context.base().getId()), folderIds, filter.keyword(), extensions, filter.ownerId(),
                 filter.updatedFrom(), filter.updatedTo());
         int size = Math.min(Math.max(filter.size(), 1), MAX_PAGE_SIZE);
         PageRequest pageable = PageRequest.of(Math.max(filter.page(), 0), size, sortFor(filter.sort()));
         Page<KnowledgeDocument> page = documentRepository.search(search, pageable);
-        List<KnowledgeDocumentResponse> items = toDocumentResponses(context, page.getContent(), caller);
+        List<KnowledgeDocumentResponse> items = toDocumentResponses(
+                Map.of(context.base().getId(), context), page.getContent(), caller);
         return new PageResponse<>(items, page.getTotalElements(), page.getNumber(), page.getSize());
+    }
+
+    /**
+     * Searches file titles and descriptions across every knowledge base the caller can read,
+     * optionally limited to one namespace. A blank keyword returns an empty page.
+     */
+    @Transactional(readOnly = true)
+    public PageResponse<KnowledgeDocumentSearchHitResponse> searchDocuments(String keyword,
+                                                                           String namespaceSlug,
+                                                                           int page,
+                                                                           int size,
+                                                                           Caller caller) {
+        int pageSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
+        int pageNumber = Math.max(page, 0);
+        String normalizedKeyword = keyword == null ? "" : keyword.strip();
+        if (normalizedKeyword.length() > MAX_SEARCH_KEYWORD_LENGTH) {
+            normalizedKeyword = normalizedKeyword.substring(0, MAX_SEARCH_KEYWORD_LENGTH);
+        }
+        String namespaceFilter = namespaceSlug == null || namespaceSlug.isBlank()
+                ? null
+                : namespaceSlug.strip().replaceFirst("^@", "");
+        Map<Long, BaseContext> contexts = visibleBases(caller).stream()
+                .filter(context -> namespaceFilter == null || context.namespace().getSlug().equals(namespaceFilter))
+                .collect(Collectors.toMap(context -> context.base().getId(), Function.identity()));
+        if (normalizedKeyword.isEmpty() || contexts.isEmpty()) {
+            return new PageResponse<>(List.of(), 0, pageNumber, pageSize);
+        }
+        KnowledgeDocumentSearch search = new KnowledgeDocumentSearch(
+                contexts.keySet(), null, normalizedKeyword, null, null, null, null);
+        Page<KnowledgeDocument> result = documentRepository.search(search, PageRequest.of(pageNumber, pageSize, sortFor("updated")));
+        List<KnowledgeDocumentSearchHitResponse> items = toDocumentResponses(contexts, result.getContent(), caller).stream()
+                .map(document -> {
+                    BaseContext context = contexts.get(document.knowledgeBaseId());
+                    return new KnowledgeDocumentSearchHitResponse(document,
+                            context.namespace().getSlug(), context.namespace().getDisplayName(),
+                            context.base().getSlug(), context.base().getDisplayName());
+                })
+                .toList();
+        return new PageResponse<>(items, result.getTotalElements(), result.getNumber(), result.getSize());
     }
 
     @Transactional
@@ -674,6 +705,28 @@ public class KnowledgeAppService {
 
     // ---------------------------------------------------------------- resolution
 
+    /** Active knowledge bases the caller can read: all of them for super admins, otherwise those in their namespaces. */
+    private List<BaseContext> visibleBases(Caller caller) {
+        List<KnowledgeBase> bases = caller.platformRoles().contains("SUPER_ADMIN")
+                ? baseRepository.findByStatus(KnowledgeBaseStatus.ACTIVE)
+                : caller.namespaceRoles().isEmpty()
+                        ? List.of()
+                        : baseRepository.findByNamespaceIdInAndStatus(caller.namespaceRoles().keySet(), KnowledgeBaseStatus.ACTIVE);
+        if (bases.isEmpty()) {
+            return List.of();
+        }
+        Map<Long, Namespace> namespaces = namespaceRepository
+                .findByIdIn(bases.stream().map(KnowledgeBase::getNamespaceId).distinct().toList()).stream()
+                .collect(Collectors.toMap(Namespace::getId, Function.identity()));
+        return bases.stream()
+                .filter(base -> namespaces.containsKey(base.getNamespaceId()))
+                .map(base -> {
+                    Namespace namespace = namespaces.get(base.getNamespaceId());
+                    return new BaseContext(namespace, base, caller.roleIn(namespace));
+                })
+                .toList();
+    }
+
     private BaseContext resolveBase(String namespaceSlug, String baseSlug, Caller caller) {
         Namespace namespace = findNamespace(namespaceSlug);
         NamespaceRole role = caller.roleIn(namespace);
@@ -920,7 +973,10 @@ public class KnowledgeAppService {
                         context.role(), caller.platformRoles()));
     }
 
-    private List<KnowledgeDocumentResponse> toDocumentResponses(BaseContext context, List<KnowledgeDocument> documents, Caller caller) {
+    /** Maps files with the context of the knowledge base each belongs to; files outside {@code contexts} are skipped. */
+    private List<KnowledgeDocumentResponse> toDocumentResponses(Map<Long, BaseContext> contexts,
+                                                                List<KnowledgeDocument> documents,
+                                                                Caller caller) {
         if (documents.isEmpty()) {
             return List.of();
         }
@@ -933,7 +989,8 @@ public class KnowledgeAppService {
         List<KnowledgeDocumentResponse> result = new ArrayList<>();
         for (KnowledgeDocument document : documents) {
             KnowledgeDocumentVersion version = versions.get(document.getPublishedVersionId());
-            if (version != null) {
+            BaseContext context = contexts.get(document.getKnowledgeBaseId());
+            if (version != null && context != null) {
                 result.add(toDocumentResponse(context, document, version, names, caller));
             }
         }
