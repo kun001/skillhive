@@ -11,6 +11,17 @@ import org.junit.jupiter.api.Test;
 
 class KnowledgeAccessPolicyTest {
 
+    @Test
+    void globalKnowledgeIsOnlyVisibleToPlatformAdmins() {
+        Namespace global = new Namespace("global", "Global", "system");
+        global.setType(NamespaceType.GLOBAL);
+        assertThat(policy.canRead(global, NamespaceRole.MEMBER, Set.of())).isFalse();
+        assertThat(policy.canRead(global, NamespaceRole.OWNER, Set.of())).isFalse();
+        assertThat(policy.canRead(global, null, Set.of("SUPER_ADMIN"))).isTrue();
+        assertThat(policy.canRead(global, NamespaceRole.MEMBER, Set.of("SKILL_ADMIN"))).isTrue();
+        assertThat(policy.canRead(global, NamespaceRole.MEMBER, Set.of("USER_ADMIN"))).isTrue();
+    }
+
     private final KnowledgeAccessPolicy policy = new KnowledgeAccessPolicy();
     private final KnowledgeBase base = new KnowledgeBase(1L, "handbook", "Handbook", null, "owner");
 

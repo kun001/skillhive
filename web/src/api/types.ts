@@ -392,6 +392,7 @@ export interface SkillTag {
 
 // Search and pagination
 export interface SearchParams {
+  library?: 'public' | 'team'
   q?: string
   namespace?: string
   label?: string

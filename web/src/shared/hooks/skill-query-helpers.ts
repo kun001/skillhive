@@ -4,6 +4,7 @@ import { normalizeSearchQuery } from '@/shared/lib/search-query'
 
 export function buildSkillSearchUrl(params: SearchParams) {
   const queryParams = new URLSearchParams()
+  if (params.library) queryParams.append('library', params.library)
   const normalizedQuery = normalizeSearchQuery(params.q ?? '')
 
   if (params.q !== undefined) {

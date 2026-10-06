@@ -25,6 +25,10 @@ public class MemberResourceAccessService {
     }
 
     public void check(Map<String, String> coordinates, String userId, Set<String> roles, boolean edit, boolean download) {
+        check(coordinates, userId, roles, edit, download, false);
+    }
+
+    public void check(Map<String, String> coordinates, String userId, Set<String> roles, boolean edit, boolean download, boolean skillResource) {
         Long namespaceId = null;
         if (coordinates.containsKey("namespace")) namespaceId = namespaceId(coordinates.get("namespace"));
         else if (coordinates.containsKey("documentId")) namespaceId = bases.findById(documents.findById(Long.valueOf(coordinates.get("documentId")))
@@ -37,13 +41,25 @@ public class MemberResourceAccessService {
             namespaceId = skills.findById(skillId).orElseThrow(() -> new DomainNotFoundException("skill.not_found", skillId)).getNamespaceId();
         }
         if (namespaceId == null) return; // Lists apply membership scoping in their query services.
+        if (skillResource && edit && isGlobal(namespaceId)
+                && !com.iflytek.skillhub.domain.namespace.NamespaceAccessPolicy.canViewGlobal(roles)) {
+            throw new com.iflytek.skillhub.domain.shared.exception.DomainForbiddenException("error.member.edit.denied");
+        }
+        // Public skill reads still enforce visibility and version eligibility in the domain service.
+        if (skillResource && !edit && isGlobal(namespaceId)) return;
         policy.assertRead(namespaceId, userId, roles);
         if (edit) policy.assertEdit(namespaceId, userId, roles);
         if (download) policy.assertDownload(namespaceId, userId, roles);
     }
 
     public boolean canEdit(String namespace, String userId, Set<String> roles) { return policy.canEdit(namespaceId(namespace), userId, roles); }
-    public boolean canDownload(String namespace, String userId, Set<String> roles) { return policy.canDownload(namespaceId(namespace), userId, roles); }
+    public boolean canDownload(String namespace, String userId, Set<String> roles) {
+        Long id = namespaceId(namespace);
+        return isGlobal(id) || policy.canDownload(id, userId, roles);
+    }
+    private boolean isGlobal(Long id) {
+        return namespaces.findById(id).map(namespace -> namespace.getType() == com.iflytek.skillhub.domain.namespace.NamespaceType.GLOBAL).orElse(false);
+    }
     private Long namespaceId(String slug) {
         return namespaces.findBySlug(slug.startsWith("@") ? slug.substring(1) : slug)
                 .orElseThrow(() -> new DomainNotFoundException("error.namespace.notFound", slug)).getId();

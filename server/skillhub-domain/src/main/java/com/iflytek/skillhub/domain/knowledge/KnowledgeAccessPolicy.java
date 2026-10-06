@@ -25,6 +25,12 @@ public class KnowledgeAccessPolicy {
         return role != null || isSuperAdmin(platformRoles);
     }
 
+    public boolean canRead(Namespace namespace, NamespaceRole role, Set<String> platformRoles) {
+        return namespace.getType() == NamespaceType.GLOBAL
+                ? com.iflytek.skillhub.domain.namespace.NamespaceAccessPolicy.canViewGlobal(platformRoles)
+                : canRead(role, platformRoles);
+    }
+
     public boolean canCreateBase(Namespace namespace, NamespaceRole role, Set<String> platformRoles) {
         return namespace.getType() == NamespaceType.TEAM
                 && namespace.getStatus() == NamespaceStatus.ACTIVE

@@ -13,6 +13,20 @@ import org.springframework.mock.web.MockHttpServletRequest;
 
 class RouteSecurityPolicyRegistryTest {
 
+    @Test
+    void skillBrowseAndDownloadReachResourcePermissionsWithoutLogin() {
+        for (String prefix : List.of("/api/v1", "/api/web")) {
+            for (String suffix : List.of("/skills/global/demo", "/skills/global/demo/versions",
+                    "/skills/global/demo/versions/1.0.0/download", "/skills/global/demo/versions/1.0.0/file")) {
+                assertEquals(RouteSecurityPolicyRegistry.AccessLevel.PERMIT_ALL, registry.accessLevel("GET", prefix + suffix));
+            }
+            assertEquals(RouteSecurityPolicyRegistry.AccessLevel.AUTHENTICATED,
+                    registry.accessLevel("POST", prefix + "/skills/global/publish"));
+            assertEquals(RouteSecurityPolicyRegistry.AccessLevel.AUTHENTICATED,
+                    registry.accessLevel("GET", prefix + "/skills/10/subscription"));
+        }
+    }
+
     private static final Set<String> ALL_SCOPES =
             Set.of("skill:read", "skill:publish", "skill:delete", "token:manage");
 
@@ -34,7 +48,7 @@ class RouteSecurityPolicyRegistryTest {
 
     @Test
     void accessLevel_respectsMethodSpecificPublicRoutesAndProtectedFallback() {
-        assertEquals(RouteSecurityPolicyRegistry.AccessLevel.AUTHENTICATED,
+        assertEquals(RouteSecurityPolicyRegistry.AccessLevel.PERMIT_ALL,
                 registry.accessLevel("GET", "/api/web/skills"));
         assertEquals(RouteSecurityPolicyRegistry.AccessLevel.AUTHENTICATED,
                 registry.accessLevel("POST", "/api/web/skills"));

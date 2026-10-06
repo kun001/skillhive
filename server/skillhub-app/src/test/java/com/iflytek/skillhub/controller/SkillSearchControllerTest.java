@@ -51,8 +51,7 @@ class SkillSearchControllerTest {
                 eq(0),
                 eq(20),
                 eq(null),
-                any(),
-                any()))
+                any(), any(), eq(null)))
                 .thenReturn(new SkillSearchAppService.SearchResponse(List.of(), 0, 0, 20));
 
         mockMvc.perform(get("/api/web/skills")
@@ -75,8 +74,7 @@ class SkillSearchControllerTest {
                 eq(0),
                 eq(12),
                 eq(null),
-                any(),
-                any()))
+                any(), any(), eq(null)))
                 .thenReturn(new SkillSearchAppService.SearchResponse(List.of(), 0, 0, 12));
 
         mockMvc.perform(get("/api/web/skills")
@@ -97,8 +95,7 @@ class SkillSearchControllerTest {
                 eq(0),
                 eq(20),
                 eq(List.of("code-generation", "official")),
-                any(),
-                any()))
+                any(), any(), eq(null)))
                 .thenReturn(new SkillSearchAppService.SearchResponse(List.of(), 0, 0, 20));
 
         mockMvc.perform(get("/api/web/skills")
@@ -118,8 +115,7 @@ class SkillSearchControllerTest {
                 eq(0),
                 eq(20),
                 eq(null),
-                any(),
-                any()))
+                any(), any(), eq(null)))
                 .thenReturn(new SkillSearchAppService.SearchResponse(List.of(), 0, 0, 20));
 
         mockMvc.perform(get("/api/web/skills")
@@ -140,8 +136,7 @@ class SkillSearchControllerTest {
                 eq(0),
                 eq(20),
                 eq(null),
-                any(),
-                any()))
+                any(), any(), eq(null)))
                 .thenReturn(new SkillSearchAppService.SearchResponse(List.of(), 0, 0, 20));
 
         mockMvc.perform(get("/api/web/skills")
@@ -155,7 +150,7 @@ class SkillSearchControllerTest {
     @Test
     void searchShouldOmitLabelsUnlessRequested() throws Exception {
         when(skillSearchAppService.search(
-                eq(null), eq(null), eq("newest"), eq(0), eq(20), eq(null), any(), any()))
+                eq(null), eq(null), eq("newest"), eq(0), eq(20), eq(null), any(), any(), eq(null)))
                 .thenReturn(new SkillSearchAppService.SearchResponse(List.of(summary(7L)), 1, 0, 20));
 
         mockMvc.perform(get("/api/web/skills"))
@@ -169,7 +164,7 @@ class SkillSearchControllerTest {
     @Test
     void searchShouldReturnLabelsWhenRequested() throws Exception {
         when(skillSearchAppService.search(
-                eq(null), eq(null), eq("newest"), eq(0), eq(20), eq(null), any(), any()))
+                eq(null), eq(null), eq("newest"), eq(0), eq(20), eq(null), any(), any(), eq(null)))
                 .thenReturn(new SkillSearchAppService.SearchResponse(List.of(summary(7L)), 1, 0, 20));
         when(skillLabelProjectionService.labelsBySkillIds(List.of(7L)))
                 .thenReturn(Map.of(7L, List.of(new SkillLabelDto("automation", "TOPIC", "Automation"))));
@@ -184,7 +179,7 @@ class SkillSearchControllerTest {
     @Test
     void searchShouldReturnEmptyLabelArrayForSkillsWithoutLabels() throws Exception {
         when(skillSearchAppService.search(
-                eq(null), eq(null), eq("newest"), eq(0), eq(20), eq(null), any(), any()))
+                eq(null), eq(null), eq("newest"), eq(0), eq(20), eq(null), any(), any(), eq(null)))
                 .thenReturn(new SkillSearchAppService.SearchResponse(List.of(summary(7L)), 1, 0, 20));
         when(skillLabelProjectionService.labelsBySkillIds(List.of(7L))).thenReturn(Map.of());
 
