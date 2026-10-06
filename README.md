@@ -14,7 +14,7 @@
 ![Web](https://img.shields.io/badge/使用-Web-6b4f3a)
 ![Docker](https://img.shields.io/badge/部署-Docker%20Compose-2496ed)
 
-[了解产品](#方法与资料各归其位) · [产品演示](#产品演示) · [主要功能](#主要功能) · [部署说明](#部署说明) · [开发与文档](#开发与文档)
+[了解产品](#方法与资料各归其位) · [在线体验](#在线体验) · [产品演示](#产品演示) · [主要功能](#主要功能) · [部署说明](#部署说明) · [开发与文档](#开发与文档)
 
 ## 方法与资料，各归其位
 
@@ -27,6 +27,19 @@
 例如，团队把“会议纪要整理”技能放入技能库，把会议模板和项目资料放入知识库。新成员从同一个网站找到方法和资料，下载后交给自己使用的 AI 工具完成工作。
 
 **SkillHive 管理资源，成员使用自己的 AI 工具执行任务。**
+
+## 在线体验
+
+演示地址：**[https://skillhive.team](https://skillhive.team)**
+
+使用以下账号，在[登录页面](https://skillhive.team/login)选择「账号密码」登录。它们均为普通成员，登录后可查看各自有权限的团队资源。
+
+| 用户名 | 密码 | 上传的技能 |
+| --- | --- | --- |
+| `curator_ui` | `Sh!7VoU_FOwrzDZFdcvPQiwuVzxOzyPcUsux` | `web-design-guidelines` |
+| `curator_database` | `Sh!78xMg-9z_LvslyHrCWazr1zB30gCtwi2W` | `supabase-postgres-best-practices` |
+| `curator_content` | `Sh!7jspLLunXXasAgMlo-vXz1pc9ANLeeaTx` | `baoyu-markdown-to-html` |
+| `curator_ai` | `Sh!7x0hZiBWJ_8teeVCdT1NMMEEAtUFVa73u` | `huggingface-gradio` |
 
 ## 产品演示
 

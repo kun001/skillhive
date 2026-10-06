@@ -14,7 +14,7 @@ Keep useful methods and the materials they need within your team.
 ![Web](https://img.shields.io/badge/Interface-Web-6b4f3a)
 ![Docker](https://img.shields.io/badge/Deploy-Docker%20Compose-2496ed)
 
-[Overview](#methods-and-materials-each-in-their-place) · [Product demos](#product-demos) · [Features](#features) · [Deployment](#deployment) · [Development](#development-and-documentation)
+[Overview](#methods-and-materials-each-in-their-place) · [Live demo](#live-demo) · [Product demos](#product-demos) · [Features](#features) · [Deployment](#deployment) · [Development](#development-and-documentation)
 
 ## Methods and materials, each in their place
 
@@ -27,6 +27,19 @@ Keep useful methods and the materials they need within your team.
 For example, a team can keep a meeting-notes skill in the skill library and its templates and project documents in a knowledge library. A new member finds both in the same website, downloads them, and uses them with their preferred AI tool.
 
 **SkillHive manages resources; your AI tools execute the tasks.**
+
+## Live demo
+
+Demo: **[https://skillhive.team](https://skillhive.team)**
+
+On the [login page](https://skillhive.team/login), select the username/password tab and sign in with one of the accounts below. Each is a regular member with access to its permitted team resources.
+
+| Username | Password | Uploaded skill |
+| --- | --- | --- |
+| `curator_ui` | `Sh!7VoU_FOwrzDZFdcvPQiwuVzxOzyPcUsux` | `web-design-guidelines` |
+| `curator_database` | `Sh!78xMg-9z_LvslyHrCWazr1zB30gCtwi2W` | `supabase-postgres-best-practices` |
+| `curator_content` | `Sh!7jspLLunXXasAgMlo-vXz1pc9ANLeeaTx` | `baoyu-markdown-to-html` |
+| `curator_ai` | `Sh!7x0hZiBWJ_8teeVCdT1NMMEEAtUFVa73u` | `huggingface-gradio` |
 
 ## Product demos
 
