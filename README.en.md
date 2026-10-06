@@ -83,7 +83,7 @@ For example, a team publishes a meeting-notes skill to the skill library and kee
 
 Demo site: **[https://skillhive.team](https://skillhive.team)**
 
-On the [sign-in page](https://skillhive.team/login), choose “Username & password” and use any account below. They are ordinary members and only see the team resources they have access to.
+On the [sign-in page](https://skillhive.team/login), use any account below. They are ordinary members and only see the team resources they have access to.
 
 | Username | Password | Uploaded skill |
 | --- | --- | --- |
