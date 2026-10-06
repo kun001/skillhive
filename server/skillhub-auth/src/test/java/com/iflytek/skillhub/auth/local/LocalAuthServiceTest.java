@@ -93,6 +93,35 @@ class LocalAuthServiceTest {
     }
 
     @Test
+    void register_acceptsChineseUsernameAndAssignsRandomUserId() {
+        given(credentialRepository.existsByUsernameIgnoreCase("王伦")).willReturn(false);
+        given(userAccountRepository.findByEmailIgnoreCase("wanglun@example.com")).willReturn(Optional.empty());
+        given(passwordEncoder.encode("Abcd123!")).willReturn("encoded");
+        given(userAccountRepository.save(any(UserAccount.class))).willAnswer(invocation -> invocation.getArgument(0));
+        given(userRoleBindingRepository.findByUserId(any())).willReturn(List.of());
+
+        var principal = service.register(" 王伦 ", "Abcd123!", "wanglun@example.com");
+
+        ArgumentCaptor<UserAccount> userCaptor = ArgumentCaptor.forClass(UserAccount.class);
+        verify(userAccountRepository).save(userCaptor.capture());
+        assertThat(userCaptor.getValue().getId()).matches("usr_[0-9a-f-]{36}");
+        assertThat(principal.displayName()).isEqualTo("王伦");
+        ArgumentCaptor<LocalCredential> credentialCaptor = ArgumentCaptor.forClass(LocalCredential.class);
+        verify(credentialRepository).save(credentialCaptor.capture());
+        assertThat(credentialCaptor.getValue().getUsername()).isEqualTo("王伦");
+        assertThat(credentialCaptor.getValue().getUserId()).isEqualTo(userCaptor.getValue().getId());
+    }
+
+    @Test
+    void register_rejectsUsernamesOutsideTheAllowedCharacters() {
+        for (String username : List.of("王", "王 伦", "wang-lun", "王伦!")) {
+            assertThatThrownBy(() -> service.register(username, "Abcd123!", "wanglun@example.com"))
+                .isInstanceOf(AuthFlowException.class)
+                .hasMessageContaining("error.auth.local.username.invalid");
+        }
+    }
+
+    @Test
     void register_publishesActivationWithTheNormalizedUsername() {
         given(credentialRepository.existsByUsernameIgnoreCase("alice")).willReturn(false);
         given(userAccountRepository.findByEmailIgnoreCase("alice@example.com")).willReturn(Optional.empty());

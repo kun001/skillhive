@@ -30,7 +30,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class LocalAuthService {
 
-    private static final Pattern USERNAME_PATTERN = Pattern.compile("^[A-Za-z0-9_]{3,64}$");
+    // Letters from any script (so Chinese names work), digits, or underscores. The username is only
+    // a login handle and display name; the user id stays a random "usr_" + UUID.
+    private static final Pattern USERNAME_PATTERN = Pattern.compile("^[\\p{L}\\p{N}_]{2,64}$");
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
     private static final int MAX_FAILED_ATTEMPTS = 5;
     private static final Duration LOCK_DURATION = Duration.ofMinutes(15);

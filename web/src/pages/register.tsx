@@ -2,14 +2,13 @@ import { Link, useNavigate, useSearch } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ApiError } from '@/api/client'
-import { LoginButton } from '@/features/auth/login-button'
 import { useLocalRegister } from '@/features/auth/use-local-auth'
 import { Button } from '@/shared/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Input } from '@/shared/ui/input'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 
-const USERNAME_PATTERN = /^[A-Za-z0-9_]{3,64}$/
+// Letters from any script (including Chinese), digits, or underscores; mirrors LocalAuthService.
+const USERNAME_PATTERN = /^[\p{L}\p{N}_]{2,64}$/u
 const EMAIL_PATTERN = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
 
 type RegisterFieldErrors = {
@@ -48,7 +47,7 @@ function isDuplicateEmailError(errorKey: string) {
 }
 
 /**
- * Registration page for local accounts with an alternate OAuth-based entry path.
+ * Registration page for local username-and-password accounts.
  */
 export function RegisterPage() {
   const { t } = useTranslation()
@@ -171,111 +170,94 @@ export function RegisterPage() {
       <Card className="w-full border-border bg-card/95 shadow-xl">
         <CardHeader className="space-y-3 text-center">
           <CardTitle>{t('register.title')}</CardTitle>
-          <CardDescription>{t('register.subtitle')}</CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="local" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="local">{t('register.tabLocal')}</TabsTrigger>
-              <TabsTrigger value="oauth">{t('register.tabOAuth')}</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="local">
-              <form className="space-y-4" onSubmit={handleSubmit}>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium" htmlFor="register-username">{t('register.username')}</label>
-                  <Input
-                    id="register-username"
-                    autoComplete="username"
-                    value={username}
-                    onChange={(event) => {
-                      setUsername(event.target.value)
-                      if (fieldErrors.username || formError) {
-                        setFieldErrors((current) => ({ ...current, username: undefined }))
-                        setFormError(null)
-                        registerMutation.reset()
-                      }
-                    }}
-                    placeholder={t('register.usernamePlaceholder')}
-                    aria-invalid={fieldErrors.username ? 'true' : 'false'}
-                    onBlur={() => {
-                      setFieldErrors((current) => ({ ...current, username: validateUsername(username) }))
-                    }}
-                  />
-                  {fieldErrors.username ? <p className="text-sm text-red-600">{fieldErrors.username}</p> : null}
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium" htmlFor="register-email">{t('register.email')}</label>
-                  <Input
-                    id="register-email"
-                    type="email"
-                    autoComplete="email"
-                    value={email}
-                    onChange={(event) => {
-                      setEmail(event.target.value)
-                      if (fieldErrors.email || formError) {
-                        setFieldErrors((current) => ({ ...current, email: undefined }))
-                        setFormError(null)
-                        registerMutation.reset()
-                      }
-                    }}
-                    placeholder={t('register.emailPlaceholder')}
-                    required
-                    aria-invalid={fieldErrors.email ? 'true' : 'false'}
-                    onBlur={() => {
-                      setFieldErrors((current) => ({ ...current, email: validateEmail(email) }))
-                    }}
-                  />
-                  {fieldErrors.email ? <p className="text-sm text-red-600">{fieldErrors.email}</p> : null}
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium" htmlFor="register-password">{t('register.password')}</label>
-                  <Input
-                    id="register-password"
-                    type="password"
-                    autoComplete="new-password"
-                    value={password}
-                    onChange={(event) => {
-                      setPassword(event.target.value)
-                      if (fieldErrors.password || formError) {
-                        setFieldErrors((current) => ({ ...current, password: undefined }))
-                        setFormError(null)
-                        registerMutation.reset()
-                      }
-                    }}
-                    placeholder={t('register.passwordPlaceholder')}
-                    aria-invalid={fieldErrors.password ? 'true' : 'false'}
-                    onBlur={() => {
-                      setFieldErrors((current) => ({ ...current, password: validatePassword(password) }))
-                    }}
-                  />
-                  {fieldErrors.password ? <p className="text-sm text-red-600">{fieldErrors.password}</p> : null}
-                </div>
-                {formError ? <p className="text-sm text-red-600">{formError}</p> : null}
-                <Button className="w-full" disabled={registerMutation.isPending} type="submit">
-                  {registerMutation.isPending ? t('register.submitting') : t('register.submit')}
-                </Button>
-                <p className="text-center text-sm text-muted-foreground">
-                  {t('register.hasAccount')}
-                  {' '}
-                  <Link
-                    to="/login"
-                    search={{ returnTo }}
-                    className="font-medium text-primary hover:underline"
-                  >
-                    {t('register.login')}
-                  </Link>
-                </p>
-              </form>
-            </TabsContent>
-
-            <TabsContent value="oauth" className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                {t('register.oauthHint')}
-              </p>
-              <LoginButton returnTo={returnTo} />
-            </TabsContent>
-          </Tabs>
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            <div className="space-y-2">
+              <label className="text-sm font-medium" htmlFor="register-username">{t('register.username')}</label>
+              <Input
+                id="register-username"
+                autoComplete="username"
+                value={username}
+                onChange={(event) => {
+                  setUsername(event.target.value)
+                  if (fieldErrors.username || formError) {
+                    setFieldErrors((current) => ({ ...current, username: undefined }))
+                    setFormError(null)
+                    registerMutation.reset()
+                  }
+                }}
+                placeholder={t('register.usernamePlaceholder')}
+                aria-invalid={fieldErrors.username ? 'true' : 'false'}
+                onBlur={() => {
+                  setFieldErrors((current) => ({ ...current, username: validateUsername(username) }))
+                }}
+              />
+              {fieldErrors.username ? <p className="text-sm text-red-600">{fieldErrors.username}</p> : null}
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium" htmlFor="register-email">{t('register.email')}</label>
+              <Input
+                id="register-email"
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(event) => {
+                  setEmail(event.target.value)
+                  if (fieldErrors.email || formError) {
+                    setFieldErrors((current) => ({ ...current, email: undefined }))
+                    setFormError(null)
+                    registerMutation.reset()
+                  }
+                }}
+                placeholder={t('register.emailPlaceholder')}
+                required
+                aria-invalid={fieldErrors.email ? 'true' : 'false'}
+                onBlur={() => {
+                  setFieldErrors((current) => ({ ...current, email: validateEmail(email) }))
+                }}
+              />
+              {fieldErrors.email ? <p className="text-sm text-red-600">{fieldErrors.email}</p> : null}
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium" htmlFor="register-password">{t('register.password')}</label>
+              <Input
+                id="register-password"
+                type="password"
+                autoComplete="new-password"
+                value={password}
+                onChange={(event) => {
+                  setPassword(event.target.value)
+                  if (fieldErrors.password || formError) {
+                    setFieldErrors((current) => ({ ...current, password: undefined }))
+                    setFormError(null)
+                    registerMutation.reset()
+                  }
+                }}
+                placeholder={t('register.passwordPlaceholder')}
+                aria-invalid={fieldErrors.password ? 'true' : 'false'}
+                onBlur={() => {
+                  setFieldErrors((current) => ({ ...current, password: validatePassword(password) }))
+                }}
+              />
+              {fieldErrors.password ? <p className="text-sm text-red-600">{fieldErrors.password}</p> : null}
+            </div>
+            {formError ? <p className="text-sm text-red-600">{formError}</p> : null}
+            <Button className="w-full" disabled={registerMutation.isPending} type="submit">
+              {registerMutation.isPending ? t('register.submitting') : t('register.submit')}
+            </Button>
+            <p className="text-center text-sm text-muted-foreground">
+              {t('register.hasAccount')}
+              {' '}
+              <Link
+                to="/login"
+                search={{ returnTo }}
+                className="font-medium text-primary hover:underline"
+              >
+                {t('register.login')}
+              </Link>
+            </p>
+          </form>
         </CardContent>
       </Card>
     </div>
