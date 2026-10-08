@@ -14,6 +14,18 @@ export interface ReleaseNote {
 // Confirm the date and image tag when deploying; Git submission is not deployment.
 export const releases: ReleaseNote[] = [
   {
+    id: '20261008-browser-office-preview',
+    version: 'cloud-20261008-browser-preview',
+    date: '2026-10-08',
+    title: { zh: 'Word 和 PPT 直接在浏览器中预览', en: 'Word and PowerPoint previews in the browser' },
+    summary: { zh: '知识库中的 .docx 和 .pptx 文件直接在浏览器内渲染预览，无需等待服务器转换。', en: 'Knowledge base .docx and .pptx files now render directly in the browser, without waiting for a server-side conversion.' },
+    changes: [
+      { zh: '.docx 文档和 .pptx 演示文稿在浏览器中完整预览，打开更快。', en: '.docx documents and .pptx presentations get full previews in the browser and open faster.' },
+      { zh: '旧版 .doc 和 .ppt 文件仍可上传和下载，但不再提供在线预览。', en: 'Legacy .doc and .ppt files can still be uploaded and downloaded, but no longer have online previews.' },
+      { zh: '移除服务器端的 Office 转换服务，部署更轻量。', en: 'Removed the server-side Office conversion service for a lighter deployment.' },
+    ],
+  },
+  {
     id: '20261006-public-team-skills',
     version: 'cloud-20261006-public-team-skills',
     date: '2026-10-06',
