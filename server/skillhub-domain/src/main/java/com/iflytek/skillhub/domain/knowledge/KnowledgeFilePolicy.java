@@ -39,7 +39,7 @@ public class KnowledgeFilePolicy {
             Map.entry("txt", new FileType("text/plain", KnowledgePreviewKind.TEXT)),
             Map.entry("csv", new FileType("text/csv", KnowledgePreviewKind.NONE)),
             Map.entry("json", new FileType("application/json", KnowledgePreviewKind.NONE)),
-            Map.entry("doc", new FileType("application/msword", KnowledgePreviewKind.OFFICE)),
+            Map.entry("doc", new FileType("application/msword", KnowledgePreviewKind.NONE)),
             Map.entry("docx", new FileType(
                     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                     KnowledgePreviewKind.OFFICE)),
@@ -47,7 +47,7 @@ public class KnowledgeFilePolicy {
             Map.entry("xlsx", new FileType(
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     KnowledgePreviewKind.NONE)),
-            Map.entry("ppt", new FileType("application/vnd.ms-powerpoint", KnowledgePreviewKind.OFFICE)),
+            Map.entry("ppt", new FileType("application/vnd.ms-powerpoint", KnowledgePreviewKind.NONE)),
             Map.entry("pptx", new FileType(
                     "application/vnd.openxmlformats-officedocument.presentationml.presentation",
                     KnowledgePreviewKind.OFFICE)),

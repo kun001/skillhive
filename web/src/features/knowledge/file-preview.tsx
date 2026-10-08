@@ -10,7 +10,7 @@ import { buttonVariants } from '@/shared/ui/button'
 import { KnowledgeFileIcon } from './file-icon'
 import { knowledgeKeys } from './use-knowledge-queries'
 import { resolveImagePath } from './markdown-images'
-import { KnowledgeOfficeFilePreview } from './office-preview'
+import { KnowledgeBrowserOfficePreview } from './browser-office-preview'
 
 /** Text previews beyond this size are offered as downloads instead of rendering in the page. */
 export const MAX_TEXT_PREVIEW_BYTES = 2 * 1024 * 1024
@@ -82,7 +82,7 @@ export function KnowledgeFilePreview({ document }: { document: KnowledgeDocument
     return () => URL.revokeObjectURL(objectUrl)
   }, [kind, content.data])
 
-  if (kind === 'NONE') {
+  if (kind === 'NONE' || (kind === 'OFFICE' && !['docx', 'pptx'].includes(document.fileExtension?.toLowerCase() ?? ''))) {
     return (
       <PreviewMessage
         document={document}
@@ -92,7 +92,7 @@ export function KnowledgeFilePreview({ document }: { document: KnowledgeDocument
     )
   }
   if (kind === 'OFFICE') {
-    return <KnowledgeOfficeFilePreview key={`${document.id}:${document.currentVersion}`} document={document} />
+    return <KnowledgeBrowserOfficePreview key={`${document.id}:${document.currentVersion}`} document={document} />
   }
   if (textTooLarge) {
     return <PreviewMessage document={document} title={t('knowledge.preview.tooLarge')} />

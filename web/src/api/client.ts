@@ -1740,17 +1740,13 @@ export const knowledgeApi = {
     return buildApiUrl(`${KNOWLEDGE_PREFIX}/documents/${documentId}/images/${imageId}/content?version=${version}`)
   },
 
-  async officePreview(documentId: number, version: number): Promise<import('./knowledge-types').KnowledgeOfficePreview> {
-    const { data, error } = await client.GET('/api/web/knowledge/documents/{documentId}/preview', {
-      params: { path: { documentId }, query: { version } },
-      credentials: 'include', headers: withRequestHeaders(),
+  async officeContent(documentId: number, version: number, signal?: AbortSignal): Promise<Blob> {
+    const { data, error, response } = await client.GET('/api/web/knowledge/documents/{documentId}/content', {
+      params: { path: { documentId }, query: { version, disposition: 'inline' } },
+      credentials: 'include', headers: withRequestHeaders(), parseAs: 'blob', signal,
     })
-    if (error || !data?.data) throw new Error('Failed to load Office preview')
-    return data.data as import('./knowledge-types').KnowledgeOfficePreview
-  },
-
-  previewPageUrl(documentId: number, version: number, page: number): string {
-    return buildApiUrl(`${KNOWLEDGE_PREFIX}/documents/${documentId}/preview/pages/${page}?version=${version}`)
+    if (error || !response.ok || !data) throw new Error('Failed to load Office preview')
+    return data
   },
 
   contentUrl(documentId: number, options?: { version?: number; inline?: boolean }): string {

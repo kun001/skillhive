@@ -326,8 +326,8 @@ public class KnowledgeController extends BaseApiController {
     }
 
     /**
-     * Streams a file. {@code disposition=inline} is honoured only for PDF, raster images and
-     * plain text; text is always served as {@code text/plain} so it can never execute.
+     * Streams a file. {@code disposition=inline} allows PDF, raster images, plain text,
+     * DOCX and PPTX previews. Text is served as {@code text/plain} so it cannot execute.
      */
     @GetMapping("/documents/{documentId}/content")
     @Operation(operationId = "downloadKnowledgeDocument", summary = "Download or preview a file version")
@@ -369,7 +369,7 @@ public class KnowledgeController extends BaseApiController {
 
     private static ResponseEntity<InputStreamResource> streamContent(KnowledgeAppService.FileContent content, String disposition) throws IOException {
         boolean inline = "inline".equalsIgnoreCase(disposition) && Set.of(KnowledgePreviewKind.PDF, KnowledgePreviewKind.IMAGE,
-                KnowledgePreviewKind.MARKDOWN, KnowledgePreviewKind.TEXT).contains(content.previewKind());
+                KnowledgePreviewKind.MARKDOWN, KnowledgePreviewKind.TEXT, KnowledgePreviewKind.OFFICE).contains(content.previewKind());
         MediaType mediaType = switch (content.previewKind()) {
             case MARKDOWN, TEXT -> new MediaType(MediaType.TEXT_PLAIN, StandardCharsets.UTF_8);
             default -> MediaType.parseMediaType(content.contentType());

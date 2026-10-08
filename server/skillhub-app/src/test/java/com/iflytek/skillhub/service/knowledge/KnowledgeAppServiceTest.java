@@ -34,7 +34,6 @@ import com.iflytek.skillhub.domain.namespace.NamespaceRole;
 import com.iflytek.skillhub.domain.namespace.NamespaceStatus;
 import com.iflytek.skillhub.domain.namespace.NamespaceType;
 import com.iflytek.skillhub.domain.shared.exception.DomainForbiddenException;
-import com.iflytek.skillhub.domain.shared.exception.DomainBadRequestException;
 import com.iflytek.skillhub.domain.shared.exception.DomainNotFoundException;
 import com.iflytek.skillhub.domain.user.UserAccountRepository;
 import com.iflytek.skillhub.dto.knowledge.KnowledgeDocumentResponse;
@@ -214,7 +213,7 @@ class KnowledgeAppServiceTest {
     }
 
     @Test
-    void officeSourcesRequireMembershipPublishedVersionsAndSeparateCacheKeys() throws Exception {
+    void browserOfficePreviewsRequireMembershipAndPublishedVersionsWhileDownloadsStayRestricted() throws Exception {
         KnowledgeDocument document = withId(new KnowledgeDocument(11L, null, "office", "Office", null, "alice"), 21L);
         KnowledgeDocumentVersion first = withId(new KnowledgeDocumentVersion(21L, 1, "original", "application/msword", "a.docx", 1, "sha", null, "alice"), 31L);
         KnowledgeDocumentVersion second = withId(new KnowledgeDocumentVersion(21L, 2, "changed", "application/msword", "a.docx", 1, "other-sha", null, "alice"), 32L);
@@ -227,19 +226,28 @@ class KnowledgeAppServiceTest {
         when(versionRepository.findByDocumentIdAndVersionNumber(21L, 1)).thenReturn(Optional.of(first));
         when(versionRepository.findByDocumentIdAndVersionNumber(21L, 2)).thenReturn(Optional.of(second));
         when(versionRepository.findByDocumentIdAndVersionNumber(21L, 3)).thenReturn(Optional.of(draft));
-        var source = service.officePreviewSource(21L, 1, member("alice"));
-        assertThat(source.key()).matches("[a-f0-9]{64}");
-        assertThat(service.officePreviewSource(21L, null, member("alice")).key()).isEqualTo(source.key());
-        assertThat(service.officePreviewSource(21L, 2, member("alice")).key()).isNotEqualTo(source.key());
-        assertThatThrownBy(() -> service.officePreviewSource(21L, 3, member("alice"))).isInstanceOf(DomainNotFoundException.class);
-        assertThatThrownBy(() -> service.officePreviewSource(21L, 1, new KnowledgeAppService.Caller("outsider", Map.of(), Set.of())))
+        var readOnly = new com.iflytek.skillhub.domain.namespace.NamespaceMember(NAMESPACE_ID, "alice", NamespaceRole.MEMBER);
+        readOnly.setCanDownload(false);
+        when(members.findByNamespaceIdAndUserId(NAMESPACE_ID, "alice")).thenReturn(Optional.of(readOnly));
+        assertThat(service.openContent(21L, 1, member("alice"), true).filename()).isEqualTo("a.docx");
+        assertThat(service.openContent(21L, null, member("alice"), true).previewKind()).isEqualTo(KnowledgePreviewKind.OFFICE);
+        assertThat(service.openContent(21L, 2, member("alice"), true).filename()).isEqualTo("a.docx");
+        assertThatThrownBy(() -> service.openContent(21L, 1, member("alice"), false)).isInstanceOf(DomainForbiddenException.class);
+        assertThatThrownBy(() -> service.openContent(21L, 3, member("alice"), true)).isInstanceOf(DomainNotFoundException.class);
+        assertThatThrownBy(() -> service.openContent(21L, 1, new KnowledgeAppService.Caller("outsider", Map.of(), Set.of()), true))
                 .isInstanceOf(DomainNotFoundException.class);
+        var pptx = withId(new KnowledgeDocumentVersion(21L, 4, "slides", "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                "a.pptx", 1, "pptx-sha", null, "alice"), 34L);
+        pptx.publishDirectly("alice");
+        when(versionRepository.findByDocumentIdAndVersionNumber(21L, 4)).thenReturn(Optional.of(pptx));
+        assertThat(service.openContent(21L, 4, member("alice"), true).previewKind()).isEqualTo(KnowledgePreviewKind.OFFICE);
+        assertThatThrownBy(() -> service.openContent(21L, 4, member("alice"), false)).isInstanceOf(DomainForbiddenException.class);
         verify(storageService, never()).getObject(anyString());
     }
 
     @Test
-    void excelPreviewIsUnsupportedWhileOriginalRemainsDownloadable() throws Exception {
-        for (String extension : List.of("xls", "xlsx")) {
+    void legacyOfficeAndExcelAreDownloadOnly() throws Exception {
+        for (String extension : List.of("doc", "ppt", "xls", "xlsx")) {
             KnowledgeDocument document = withId(new KnowledgeDocument(11L, null, "excel", "Excel", null, "alice"), 21L);
             KnowledgeDocumentVersion version = withId(new KnowledgeDocumentVersion(21L, 1, "original", "application/octet-stream",
                     "a." + extension, 1, "sha", null, "alice"), 31L);
@@ -248,9 +256,12 @@ class KnowledgeAppServiceTest {
             when(documentRepository.findById(21L)).thenReturn(Optional.of(document));
             when(versionRepository.findById(31L)).thenReturn(Optional.of(version));
             when(versionRepository.findByDocumentIdAndVersionNumber(21L, 1)).thenReturn(Optional.of(version));
-            assertThatThrownBy(() -> service.officePreviewSource(21L, 1, member("alice")))
-                    .isInstanceOf(DomainBadRequestException.class);
             assertThat(service.openContent(21L, 1, member("alice")).previewKind()).isEqualTo(KnowledgePreviewKind.NONE);
+            var readOnly = new com.iflytek.skillhub.domain.namespace.NamespaceMember(NAMESPACE_ID, "bob", NamespaceRole.MEMBER);
+            readOnly.setCanDownload(false);
+            when(members.findByNamespaceIdAndUserId(NAMESPACE_ID, "bob")).thenReturn(Optional.of(readOnly));
+            assertThatThrownBy(() -> service.openContent(21L, 1, member("bob"), true)).isInstanceOf(DomainForbiddenException.class);
+
         }
         verify(storageService, never()).getObject(anyString());
     }
