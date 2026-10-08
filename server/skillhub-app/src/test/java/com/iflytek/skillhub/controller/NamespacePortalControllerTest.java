@@ -95,7 +95,7 @@ class NamespacePortalControllerTest {
     @Test
     void listMyNamespacesPage_limitsResultsAndReturnsTotal() throws Exception {
         Namespace namespace = namespace(1L, "team-a", NamespaceStatus.ACTIVE, NamespaceType.TEAM);
-        given(namespaceRepository.findByIdIn(eq(List.of(1L)), any(org.springframework.data.domain.Pageable.class)))
+        given(namespaceRepository.findByIdInAndTypeNot(eq(List.of(1L)), eq(NamespaceType.GLOBAL), any(org.springframework.data.domain.Pageable.class)))
                 .willReturn(new org.springframework.data.domain.PageImpl<>(List.of(namespace), PageRequest.of(0, 10), 1));
         given(namespaceMemberRepository.findByUserId("owner-1"))
                 .willReturn(List.of(new NamespaceMember(1L, "owner-1", NamespaceRole.OWNER)));

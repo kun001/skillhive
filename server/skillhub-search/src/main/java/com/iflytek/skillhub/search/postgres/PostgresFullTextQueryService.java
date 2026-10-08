@@ -113,11 +113,18 @@ public class PostgresFullTextQueryService implements SearchQueryService {
         sql.append("WHERE 1=1 ");
 
         // Visibility filtering
-        sql.append("AND (FALSE ");
+        sql.append("AND ((n.type = 'GLOBAL' AND d.visibility = 'PUBLIC') ");
         if (query.visibilityScope().userId() != null) {
             sql.append("OR (d.visibility IN ('PUBLIC', 'NAMESPACE_ONLY') AND d.namespace_id IN :memberNamespaceIds) ");
         }
         sql.append(") ");
+
+        // Apply library scope before pagination and counting.
+        if ("public".equals(query.library())) {
+            sql.append("AND n.type = 'GLOBAL' AND d.visibility = 'PUBLIC' ");
+        } else if ("team".equals(query.library())) {
+            sql.append("AND n.type = 'TEAM' ");
+        }
 
         // Status filtering
         sql.append("AND d.status = 'ACTIVE' ");

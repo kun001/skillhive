@@ -38,7 +38,7 @@ public class DomainBeanConfig {
     }
 
     @Bean
-    public VisibilityChecker visibilityChecker() {
-        return new VisibilityChecker();
+    public VisibilityChecker visibilityChecker(com.iflytek.skillhub.domain.namespace.NamespaceRepository namespaces) {
+        return new VisibilityChecker(namespaces);
     }
 }

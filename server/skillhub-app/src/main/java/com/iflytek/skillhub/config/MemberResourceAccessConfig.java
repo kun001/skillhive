@@ -32,7 +32,7 @@ public class MemberResourceAccessConfig implements WebMvcConfigurer {
                 boolean reaction = pattern.endsWith("/star") || pattern.endsWith("/subscription") || pattern.endsWith("/rating")
                         || pattern.contains("/reviews") || pattern.endsWith("/reports");
                 access.check(coordinates == null ? Map.of() : coordinates, (String) request.getAttribute("userId"),
-                        roles == null ? Set.of() : roles, !read && !reaction, pattern.endsWith("/download") || (pattern.endsWith("/file") && !"inline".equalsIgnoreCase(request.getParameter("disposition"))));
+                        roles == null ? Set.of() : roles, !read && !reaction, pattern.endsWith("/download") || (pattern.endsWith("/file") && !"inline".equalsIgnoreCase(request.getParameter("disposition"))), pattern.contains("/skills/"));
                 return true;
             }
         }).addPathPatterns("/api/v1/skills/**", "/api/web/skills/**", "/api/v1/knowledge/**", "/api/web/knowledge/**");

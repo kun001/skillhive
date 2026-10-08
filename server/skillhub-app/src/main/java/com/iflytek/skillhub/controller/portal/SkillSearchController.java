@@ -46,6 +46,8 @@ public class SkillSearchController extends BaseApiController {
     public ApiResponse<SkillSearchAppService.SearchResponse> search(
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String namespace,
+            @Parameter(description = "Skill library: public or team", schema = @Schema(allowableValues = {"public", "team"}))
+            @RequestParam(required = false) String library,
             @RequestParam(name = "label", required = false) java.util.List<String> labels,
             @Parameter(description = "Optional response expansions. Supported value: labels")
             @RequestParam(name = "include", required = false) List<String> include,
@@ -67,7 +69,8 @@ public class SkillSearchController extends BaseApiController {
                 parsePositiveInt(size, DEFAULT_SIZE),
                 labels,
                 userId,
-                userNsRoles
+                userNsRoles,
+                library
         );
 
         return ok("response.success.read", includeLabels ? withLabels(response) : response);

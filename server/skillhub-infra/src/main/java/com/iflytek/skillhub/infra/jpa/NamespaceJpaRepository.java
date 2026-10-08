@@ -20,6 +20,7 @@ public interface NamespaceJpaRepository
     List<Namespace> findByIdIn(List<Long> ids);
     List<Namespace> findBySlugIn(List<String> slugs);
     Page<Namespace> findByIdIn(List<Long> ids, Pageable pageable);
+    Page<Namespace> findByIdInAndTypeNot(List<Long> ids, com.iflytek.skillhub.domain.namespace.NamespaceType type, Pageable pageable);
     Optional<Namespace> findBySlug(String slug);
     Page<Namespace> findByStatus(NamespaceStatus status, Pageable pageable);
 }
