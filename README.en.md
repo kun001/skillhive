@@ -170,11 +170,12 @@ Files are organized as **team space → knowledge base → folder → file**, up
 | PDF | `.pdf` | Preview online, download the original. |
 | Images | `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp` | Preview online, download the original. |
 | Markdown / text | `.md`, `.markdown`, `.txt` | Read online; Markdown can be uploaded and shown with its local images. |
-| Word / PowerPoint | `.doc`, `.docx`, `.ppt`, `.pptx` | View the first five pages when the Office preview service is enabled, or download the original. |
+| Word / PowerPoint | `.docx`, `.pptx` | Full document preview in the browser; original download. |
+| Legacy Word / PowerPoint | `.doc`, `.ppt` | Upload, download and version management; no online preview. |
 | Spreadsheets / data | `.xls`, `.xlsx`, `.csv`, `.json` | Upload, download and version management. |
 | Archives | `.zip`, `.rar`, `.7z` | Upload, download and version management. |
 
-Uploaded files are available to authorized members immediately and are not open to anonymous visitors by default. Office previews are page images, so layout may differ slightly from Microsoft Office; if the service is disabled or a preview fails, download the original. See the [Office preview guide](office-preview/README.md).
+Uploaded files are available to authorized members immediately and are not open to anonymous visitors by default. DOCX and PPTX render in the browser; layout may differ from Microsoft Office. Members with download permission can download originals if preview fails. Browser previews require file bytes: download permission controls download actions and the regular download endpoint, but cannot prevent extracting preview data from the browser.
 
 </details>
 
@@ -190,7 +191,6 @@ SkillHive is built for teams that deploy it in their own environment. Every serv
 | Skill scanner | Security scanning of skill packages |
 | PostgreSQL, Redis | Data and cache |
 | File storage | Local disk, S3 or MinIO |
-| Office preview (optional) | Word / PowerPoint page previews |
 
 The live demo runs all services on a single 2-core, 4 GB server, with a memory limit on each service. This setup has not been load-tested, so size larger teams on their actual workload.
 
@@ -199,7 +199,6 @@ The live demo runs all services on a single 2-core, 4 GB server, with a memory l
 | [Deployment configuration](skillhub-docs/09-deployment.md) | Authentication, database, storage and environment variables. |
 | [.env.release.example](.env.release.example) | Runtime template; copy it to `.env.release` and edit it. |
 | [compose.release.yml](compose.release.yml) | Containers for the frontend, backend, scanner, database and Redis. |
-| [compose.office-preview.yml](compose.office-preview.yml) | Optional Word / PowerPoint preview service. |
 
 Replace the default image addresses in the deployment configuration with images built from this repository; the default images are not SkillHive releases. Configure images, accounts, storage and secrets, then start the services as described in the deployment guide.
 
@@ -215,13 +214,12 @@ flowchart TB
     API --> Knowledge[Files · folders / preview / versions]
     API --> Governance[Team spaces / permissions / notifications / audit]
     Skill --> Scanner[Skill scanner]
-    Knowledge --> Preview[Office preview service]
     API --> DB[(PostgreSQL)]
     API --> Redis[(Redis)]
     API --> Storage[File storage · local / S3 / MinIO]
 ```
 
-The frontend uses **React 19, TypeScript, Vite and TanStack Query**; the backend uses **Java 21, Spring Boot and Maven modules**. The skill scanner uses Python, and the Office preview service uses LibreOffice, Poppler and Python.
+The frontend uses **React 19, TypeScript, Vite and TanStack Query**; the backend uses **Java 21, Spring Boot and Maven modules**. The skill scanner uses Python. DOCX and PPTX previews run in the browser, with no separate Office conversion service.
 
 Skills and knowledge files have separate domain models and share users, team spaces, object storage and governance. The backend separates controllers, application services and domain services, and the frontend keeps the API in sync through generated OpenAPI types.
 

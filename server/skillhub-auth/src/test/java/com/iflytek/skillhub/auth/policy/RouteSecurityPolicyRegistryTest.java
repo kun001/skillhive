@@ -21,7 +21,7 @@ class RouteSecurityPolicyRegistryTest {
     @Test
     void knowledgeReadsAndWritesRequireLogin() {
         for (String path : List.of("/api/web/knowledge/bases", "/api/web/knowledge/documents/10/content",
-                "/api/web/knowledge/documents/10/preview/pages/1", "/api/web/knowledge/documents/10/images/2/content")) {
+                "/api/web/knowledge/documents/10/images/2/content")) {
             assertEquals(RouteSecurityPolicyRegistry.AccessLevel.AUTHENTICATED, registry.accessLevel("GET", path));
             for (String method : List.of("POST", "PUT", "DELETE")) {
                 assertEquals(RouteSecurityPolicyRegistry.AccessLevel.AUTHENTICATED, registry.accessLevel(method, path));

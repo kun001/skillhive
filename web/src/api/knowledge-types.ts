@@ -7,7 +7,6 @@ type Populated<T, K extends keyof T> = Omit<T, K> & { [P in K]-?: NonNullable<T[
 
 export type KnowledgePreviewKind = 'PDF' | 'IMAGE' | 'MARKDOWN' | 'TEXT' | 'OFFICE' | 'NONE'
 
-export type KnowledgeOfficePreview = Populated<Schemas['KnowledgeOfficePreview'], 'status' | 'pageCount' | 'pageLimit'>
 
 export type KnowledgeMarkdownImages = Omit<Populated<Schemas['KnowledgeMarkdownImagesResponse'], 'sourcePath' | 'images'>, 'images'> & {
   images: Populated<Schemas['Image'], 'id' | 'path'>[]

@@ -170,11 +170,12 @@ description: 整理会议记录，提取讨论结论与后续待办。
 | PDF | `.pdf` | 在线预览、下载原文件。 |
 | 图片 | `.png`、`.jpg`、`.jpeg`、`.gif`、`.webp` | 在线预览、下载原文件。 |
 | Markdown / 文本 | `.md`、`.markdown`、`.txt` | 在线阅读；Markdown 支持连同本地图片上传与展示。 |
-| Word / PowerPoint | `.doc`、`.docx`、`.ppt`、`.pptx` | 启用 Office 预览服务后查看前五页，或下载原文件。 |
+| Word / PowerPoint | `.docx`、`.pptx` | 网页端全文预览、下载原文件。 |
+| 旧版 Word / PowerPoint | `.doc`、`.ppt` | 上传、下载与版本管理，不支持在线预览。 |
 | 表格 / 数据 | `.xls`、`.xlsx`、`.csv`、`.json` | 上传、下载与版本管理。 |
 | 压缩包 | `.zip`、`.rar`、`.7z` | 上传、下载与版本管理。 |
 
-知识文件上传成功即可供有权限的成员访问，默认不向匿名用户开放。Office 预览以页面图片展示，排版可能与 Microsoft Office 略有差异；服务未启用或生成失败时可下载原文件。配置见 [Office 预览说明](office-preview/README.md)。
+知识文件上传成功即可供有权限的成员访问，默认不向匿名用户开放。DOCX、PPTX 由浏览器渲染，排版可能与 Microsoft Office 略有差异；预览失败时，有下载权限的成员可下载原文件。预览成员需要获取文件数据，因此下载权限控制的是下载入口与普通下载接口，无法阻止从浏览器提取预览数据。
 
 </details>
 
@@ -190,7 +191,6 @@ SkillHive 面向在自己环境中部署的团队。所有服务都以容器运�
 | 技能扫描服务 | 技能包安全扫描 |
 | PostgreSQL、Redis | 数据与缓存 |
 | 文件存储 | 本地磁盘、S3 或 MinIO |
-| Office 预览服务（可选） | Word / PowerPoint 页面预览 |
 
 线上演示站在一台 2 核 4 GB 的服务器上运行全部服务，各服务设置了内存上限。这一配置尚未做并发容量测试，团队人数较多时请按实际负载评估。
 
@@ -199,7 +199,6 @@ SkillHive 面向在自己环境中部署的团队。所有服务都以容器运�
 | [部署配置](skillhub-docs/09-deployment.md) | 认证、数据库、存储与环境变量配置。 |
 | [.env.release.example](.env.release.example) | 运行参数模板，部署时复制为 `.env.release` 并修改。 |
 | [compose.release.yml](compose.release.yml) | 前端、后端、扫描器、数据库与 Redis 的容器编排。 |
-| [compose.office-preview.yml](compose.office-preview.yml) | 按需加入 Word / PowerPoint 预览服务。 |
 
 部署配置中的默认镜像地址需要替换为由本仓库源码构建的镜像，默认镜像并不是 SkillHive 的发布版本。完成镜像、账户、存储和密钥配置后，再按部署文档启动服务。
 
@@ -215,13 +214,12 @@ flowchart TB
     API --> Knowledge[资料 · 文件夹 / 预览 / 版本]
     API --> Governance[团队空间 / 权限 / 通知 / 审计]
     Skill --> Scanner[技能扫描服务]
-    Knowledge --> Preview[Office 预览服务]
     API --> DB[(PostgreSQL)]
     API --> Redis[(Redis)]
     API --> Storage[文件存储 · 本地 / S3 / MinIO]
 ```
 
-前端使用 **React 19、TypeScript、Vite 与 TanStack Query**，后端使用 **Java 21、Spring Boot 与 Maven 多模块**。技能扫描服务使用 Python，Office 预览服务使用 LibreOffice、Poppler 与 Python。
+前端使用 **React 19、TypeScript、Vite 与 TanStack Query**，后端使用 **Java 21、Spring Boot 与 Maven 多模块**。技能扫描服务使用 Python；DOCX、PPTX 预览在浏览器中完成，无需独立 Office 转换服务。
 
 技能与知识文件拥有独立的领域模型，共享用户、团队空间、对象存储和治理设施。后端按控制器、应用服务与领域服务划分职责，前端通过生成的 OpenAPI 类型保持接口一致。
 
