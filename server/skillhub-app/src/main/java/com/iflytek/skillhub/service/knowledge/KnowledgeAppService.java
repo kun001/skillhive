@@ -222,7 +222,7 @@ public class KnowledgeAppService {
     public KnowledgeBaseResponse createBase(CreateKnowledgeBaseRequest request, Caller caller, AuditRequestContext audit) {
         Namespace namespace = findNamespace(request.namespace());
         NamespaceRole role = caller.roleIn(namespace);
-        if (!accessPolicy.canRead(role, caller.platformRoles())) {
+        if (!accessPolicy.canRead(namespace, role, caller.platformRoles())) {
             throw new DomainNotFoundException("error.namespace.slug.notFound", request.namespace());
         }
         if (!accessPolicy.canCreateBase(namespace, role, caller.platformRoles())) {
@@ -702,13 +702,14 @@ public class KnowledgeAppService {
                     Namespace namespace = namespaces.get(base.getNamespaceId());
                     return new BaseContext(namespace, base, caller.roleIn(namespace));
                 })
+                .filter(context -> accessPolicy.canRead(context.namespace(), context.role(), caller.platformRoles()))
                 .toList();
     }
 
     private BaseContext resolveBase(String namespaceSlug, String baseSlug, Caller caller) {
         Namespace namespace = findNamespace(namespaceSlug);
         NamespaceRole role = caller.roleIn(namespace);
-        if (!accessPolicy.canRead(role, caller.platformRoles())) {
+        if (!accessPolicy.canRead(namespace, role, caller.platformRoles())) {
             throw new DomainNotFoundException("error.knowledge.base.notFound", baseSlug);
         }
         KnowledgeBase base = baseRepository.findByNamespaceIdAndSlug(namespace.getId(), baseSlug)
@@ -728,7 +729,7 @@ public class KnowledgeAppService {
         Namespace namespace = namespaceRepository.findById(base.getNamespaceId())
                 .orElseThrow(() -> new DomainNotFoundException("error.knowledge.document.notFound", documentId));
         NamespaceRole role = caller.roleIn(namespace);
-        if (!accessPolicy.canRead(role, caller.platformRoles())) {
+        if (!accessPolicy.canRead(namespace, role, caller.platformRoles())) {
             throw new DomainNotFoundException("error.knowledge.document.notFound", documentId);
         }
         return new DocumentContext(new BaseContext(namespace, base, role), document);

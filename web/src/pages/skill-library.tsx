@@ -7,6 +7,7 @@ import { APP_SHELL_PAGE_CLASS_NAME } from '@/app/page-shell-style'
 import { useVisibleLabels } from '@/shared/hooks/use-label-queries'
 import { useSearchSkills } from '@/shared/hooks/use-skill-queries'
 import { useMyNamespaces } from '@/features/namespace/use-my-namespaces'
+import { useAuth } from '@/features/auth/use-auth'
 import { normalizeSearchQuery } from '@/shared/lib/search-query'
 import { formatCompactCount } from '@/shared/lib/number-format'
 import { EmptyState } from '@/shared/components/empty-state'
@@ -55,19 +56,22 @@ export function SkillLibraryPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const returnTo = useRouterState({ select: (state) => state.location.href })
-  const { q, label, sort, page, view } = useSearch({ from: '/skills' })
+  const { q, label, sort, page, view, library = 'public' } = useSearch({ from: '/skills' })
+  const { isAuthenticated, hasRole } = useAuth()
   const [queryInput, setQueryInput] = useState(q)
   const labels = useVisibleLabels()
-  const skills = useSearchSkills({ q, label, sort: sort === 'all' ? 'relevance' : sort, page, size: PAGE_SIZE })
-  const namespaces = useMyNamespaces()
-  const canPublish = namespaces.data?.some((namespace) => namespace.status === 'ACTIVE' && namespace.canEdit !== false)
+  const skills = useSearchSkills({ q, label, library, sort: sort === 'all' ? 'relevance' : sort, page, size: PAGE_SIZE }, library === 'public' || isAuthenticated)
+  const namespaces = useMyNamespaces(isAuthenticated)
+  const canPublish = library === 'public'
+    ? hasRole('SUPER_ADMIN') || hasRole('SKILL_ADMIN')
+    : namespaces.data?.some((namespace) => namespace.type === 'TEAM' && namespace.status === 'ACTIVE' && namespace.canEdit !== false)
   const total = skills.data?.total ?? 0
   const totalPages = Math.ceil(total / PAGE_SIZE)
 
   useEffect(() => setQueryInput(q), [q])
 
-  const update = (patch: Partial<{ q: string; label?: string; sort: LibrarySort; page: number; view: 'list' | 'grid' }>) => {
-    void navigate({ to: '/skills', search: { q, label, sort, page, view, ...patch } })
+  const update = (patch: Partial<{ q: string; label?: string; library: 'public' | 'team'; sort: LibrarySort; page: number; view: 'list' | 'grid' }>) => {
+    void navigate({ to: '/skills', search: { q, label, library, sort, page, view, ...patch } })
   }
 
   const submitSearch = (event: FormEvent<HTMLFormElement>) => {
@@ -80,10 +84,11 @@ export function SkillLibraryPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 flex-wrap items-baseline gap-x-4 gap-y-2">
           <h1 className="text-3xl font-semibold text-foreground">{t('skillLibrary.title')}</h1>
-          <p className="text-sm text-muted-foreground">{t('skillLibrary.subtitle')}{skills.data ? ` · ${t('skillLibrary.count', { count: total })}` : ''}</p>
+          <p className="text-sm text-muted-foreground">{t(`skillLibrary.${library}Description`)}{skills.data && (library === 'public' || isAuthenticated) ? ` · ${t('skillLibrary.count', { count: total })}` : ''}</p>
         </div>
         {canPublish ? <Link
           to="/dashboard/publish"
+          search={library === 'public' ? { namespace: 'global', visibility: 'PUBLIC' } : {}}
           className={buttonVariants({ className: 'shrink-0 self-start sm:self-auto' })}
         >
           <Plus className="h-4 w-4" aria-hidden="true" />
@@ -92,6 +97,15 @@ export function SkillLibraryPage() {
       </div>
 
       <section aria-label={t('skillLibrary.title')} className="space-y-4">
+        <div role="group" aria-label={t('skillLibrary.libraryLabel')} className="flex flex-wrap gap-2">
+          {(['public', 'team'] as const).map((option) => (
+            <button key={option} type="button" aria-pressed={library === option}
+              onClick={() => update({ library: option, page: 0 })}
+              className={buttonVariants({ variant: library === option ? 'default' : 'outline' })}>
+              {t(`skillLibrary.${option}Library`)}
+            </button>
+          ))}
+        </div>
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
           <div className="flex flex-wrap items-center gap-1" role="group" aria-label={t('skillLibrary.sortLabel')}>
             {(['all', 'downloads', 'newest'] as const).map((option) => (
@@ -136,7 +150,11 @@ export function SkillLibraryPage() {
           <button type="submit" className="text-sm font-medium text-primary hover:underline">{t('skillLibrary.search')}</button>
         </form>
 
-        {skills.isLoading ? (
+        {library === 'team' && !isAuthenticated ? (
+          <EmptyState title={t('skillLibrary.teamLoginTitle')} description={t('skillLibrary.teamLoginDescription')} action={
+            <Link to="/login" search={{ returnTo }} className={buttonVariants()}>{t('skillLibrary.login')}</Link>
+          } />
+        ) : skills.isLoading ? (
           <SkeletonList count={6} />
         ) : skills.isError ? (
           <EmptyState title={t('skillLibrary.loadFailed')} />

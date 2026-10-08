@@ -27,6 +27,7 @@ import com.iflytek.skillhub.dto.PageResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
@@ -34,6 +35,33 @@ import java.util.Map;
 import java.util.Set;
 
 class NamespacePortalQueryAppServiceTest {
+
+    @Test
+    void globalIsHiddenFromMembersButVisibleToPlatformAdmins() {
+        Namespace global = namespace(1L, "global");
+        global.setType(NamespaceType.GLOBAL);
+        Namespace team = namespace(2L, "team-a");
+        when(namespaceRepository.findByIdIn(anyList())).thenReturn(List.of(global, team));
+        Map<Long, NamespaceRole> roles = Map.of(1L, NamespaceRole.MEMBER, 2L, NamespaceRole.MEMBER);
+        assertThat(service.listMyNamespaces(roles, Set.of())).extracting("slug").containsExactly("team-a");
+        assertThat(service.listMyNamespaces(roles, Set.of("SKILL_ADMIN"))).extracting("slug").containsExactly("global", "team-a");
+        assertThat(service.listNamespaces(PageRequest.of(0, 10), roles, Set.of()).items())
+                .extracting("slug").containsExactly("team-a");
+        when(namespaceService.getNamespaceBySlugForRead("global", "user-1", roles)).thenReturn(global);
+        assertThatThrownBy(() -> service.getNamespace("global", "user-1", roles, Set.of()))
+                .isInstanceOf(DomainForbiddenException.class);
+    }
+
+    @Test
+    void memberNamespacePageFiltersGlobalBeforeCounting() {
+        Namespace team = namespace(2L, "team-a");
+        when(namespaceRepository.findByIdInAndTypeNot(anyList(), eq(NamespaceType.GLOBAL), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(team), PageRequest.of(0, 10), 1));
+        var result = service.listMyNamespacesPage(PageRequest.of(0, 10),
+                Map.of(1L, NamespaceRole.MEMBER, 2L, NamespaceRole.MEMBER), Set.of());
+        assertThat(result.total()).isEqualTo(1);
+        assertThat(result.items()).extracting("slug").containsExactly("team-a");
+    }
 
     private final NamespaceRepository namespaceRepository = mock(NamespaceRepository.class);
     private final NamespaceService namespaceService = mock(NamespaceService.class);

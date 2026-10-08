@@ -2,6 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { normalizePublishPrefill } from './publish-prefill'
 
 describe('normalizePublishPrefill', () => {
+  it('allows public publishing only in the global space', () => {
+    expect(normalizePublishPrefill({ namespace: 'global', visibility: 'PUBLIC' }).visibility).toBe('PUBLIC')
+    expect(normalizePublishPrefill({ namespace: 'team-a', visibility: 'PUBLIC' }).visibility).toBe('NAMESPACE_ONLY')
+  })
   it('keeps namespace and normalizes visibility for valid route search params', () => {
     expect(normalizePublishPrefill({
       namespace: 'team-ai',

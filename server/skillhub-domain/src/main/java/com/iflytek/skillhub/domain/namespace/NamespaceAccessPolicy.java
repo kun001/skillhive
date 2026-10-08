@@ -9,6 +9,11 @@ import org.springframework.stereotype.Component;
 @Component
 public class NamespaceAccessPolicy {
 
+    public static boolean canViewGlobal(java.util.Set<String> platformRoles) {
+        return platformRoles != null && platformRoles.stream()
+                .anyMatch(role -> java.util.Set.of("SUPER_ADMIN", "SKILL_ADMIN", "USER_ADMIN").contains(role));
+    }
+
     public boolean isImmutable(Namespace namespace) {
         return namespace.getType() == NamespaceType.GLOBAL;
     }

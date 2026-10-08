@@ -24,6 +24,26 @@ import static org.mockito.Mockito.when;
 class PostgresFullTextQueryServiceTest {
 
     @Test
+    void libraryScopeAppliesToBothPageAndCountQueries() {
+        for (String library : List.of("public", "team")) {
+            EntityManager entityManager = mock(EntityManager.class);
+            Query page = mock(Query.class);
+            Query count = mock(Query.class);
+            when(entityManager.createNativeQuery(anyString())).thenReturn(page, count);
+            when(page.getResultList()).thenReturn(List.of());
+            when(count.getSingleResult()).thenReturn(0L);
+            new PostgresFullTextQueryService(entityManager).search(new SearchQuery(
+                    null, null, SearchVisibilityScope.anonymous(), "newest", 2, 12, List.of(), false, library));
+            ArgumentCaptor<String> sql = ArgumentCaptor.forClass(String.class);
+            verify(entityManager, org.mockito.Mockito.times(2)).createNativeQuery(sql.capture());
+            for (String statement : sql.getAllValues()) {
+                assertThat(statement).contains("AND n.type = '" + (library.equals("public") ? "GLOBAL" : "TEAM") + "'");
+            }
+            assertThat(sql.getAllValues().getFirst()).contains("LIMIT :limit OFFSET :offset");
+        }
+    }
+
+    @Test
     void shortKeywordsShouldUsePrefixTsQuery() {
         EntityManager entityManager = mock(EntityManager.class);
         Query nativeQuery = mock(Query.class);
@@ -390,7 +410,7 @@ class PostgresFullTextQueryServiceTest {
         ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
         verify(entityManager, org.mockito.Mockito.times(2)).createNativeQuery(sqlCaptor.capture());
         assertThat(sqlCaptor.getAllValues().getFirst())
-                .contains("AND (FALSE )")
+                .contains("AND ((n.type = 'GLOBAL' AND d.visibility = 'PUBLIC') )")
                 .contains("AND d.status = 'ACTIVE'")
                 .contains("AND s.status = 'ACTIVE'")
                 .contains("AND s.hidden = FALSE")

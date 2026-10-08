@@ -75,6 +75,7 @@ public class NamespacePortalQueryAppService {
 
         List<Namespace> scopedNamespaces = namespaceRepository.findByIdIn(namespaceRoles.keySet().stream().toList()).stream()
                 .filter(namespace -> namespace.getStatus() == NamespaceStatus.ACTIVE)
+                .filter(namespace -> namespace.getType() != NamespaceType.GLOBAL || NamespaceAccessPolicy.canViewGlobal(platformRoles))
                 .sorted(Comparator.comparing(Namespace::getSlug))
                 .toList();
         int fromIndex = Math.min((int) pageable.getOffset(), scopedNamespaces.size());
@@ -115,6 +116,7 @@ public class NamespacePortalQueryAppService {
         }
 
         return namespaceRepository.findByIdIn(namespaceRoles.keySet().stream().toList()).stream()
+                .filter(namespace -> namespace.getType() != NamespaceType.GLOBAL || NamespaceAccessPolicy.canViewGlobal(platformRoles))
                 .sorted(Comparator.comparing(Namespace::getSlug))
                 .map(namespace -> toMyNamespaceResponse(namespace, namespaceRoles.get(namespace.getId())))
                 .toList();
@@ -134,8 +136,11 @@ public class NamespacePortalQueryAppService {
                 ? PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
                         org.springframework.data.domain.Sort.by("slug").ascending())
                 : PageRequest.of(0, 10, org.springframework.data.domain.Sort.by("slug").ascending());
-        Page<MyNamespaceResponse> page = namespaceRepository
-                .findByIdIn(namespaceRoles.keySet().stream().toList(), sortedPageable)
+        List<Long> ids = namespaceRoles.keySet().stream().toList();
+        Page<Namespace> visiblePage = NamespaceAccessPolicy.canViewGlobal(platformRoles)
+                ? namespaceRepository.findByIdIn(ids, sortedPageable)
+                : namespaceRepository.findByIdInAndTypeNot(ids, NamespaceType.GLOBAL, sortedPageable);
+        Page<MyNamespaceResponse> page = visiblePage
                 .map(namespace -> toMyNamespaceResponse(namespace, namespaceRoles.get(namespace.getId())));
         return PageResponse.from(page);
     }
@@ -154,6 +159,9 @@ public class NamespacePortalQueryAppService {
                 slug,
                 userId,
                 namespaceRoles);
+        if (namespace.getType() == NamespaceType.GLOBAL && !NamespaceAccessPolicy.canViewGlobal(platformRoles)) {
+            throw new DomainForbiddenException("error.namespace.membership.required");
+        }
         if (!namespaceRoles.containsKey(namespace.getId())) {
             throw new DomainForbiddenException("error.namespace.membership.required");
         }

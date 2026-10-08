@@ -1,6 +1,8 @@
 package com.iflytek.skillhub.domain.skill;
 
 import com.iflytek.skillhub.domain.namespace.NamespaceRole;
+import com.iflytek.skillhub.domain.namespace.NamespaceRepository;
+import com.iflytek.skillhub.domain.namespace.NamespaceType;
 
 import java.util.Map;
 import java.util.Set;
@@ -11,6 +13,16 @@ import java.util.Set;
  */
 public class VisibilityChecker {
 
+    private final NamespaceRepository namespaces;
+
+    public VisibilityChecker() {
+        this(null);
+    }
+
+    public VisibilityChecker(NamespaceRepository namespaces) {
+        this.namespaces = namespaces;
+    }
+
     public boolean canAccess(Skill skill, String currentUserId, Map<Long, NamespaceRole> userNamespaceRoles) {
         return canAccess(skill, currentUserId, userNamespaceRoles, Set.of());
     }
@@ -18,6 +30,12 @@ public class VisibilityChecker {
     public boolean canAccess(Skill skill, String currentUserId, Map<Long, NamespaceRole> userNamespaceRoles, Set<String> platformRoles) {
         Map<Long, NamespaceRole> roles = userNamespaceRoles != null ? userNamespaceRoles : Map.of();
         if (isSuperAdmin(platformRoles)) {
+            return true;
+        }
+        if (!skill.isHidden() && skill.getLatestVersionId() != null
+                && skill.getStatus() == SkillStatus.ACTIVE && skill.getVisibility() == SkillVisibility.PUBLIC
+                && namespaces != null && namespaces.findById(skill.getNamespaceId())
+                        .map(namespace -> namespace.getType() == NamespaceType.GLOBAL).orElse(false)) {
             return true;
         }
         if (currentUserId == null || !roles.containsKey(skill.getNamespaceId())) return false;
