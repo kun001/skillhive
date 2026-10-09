@@ -30,7 +30,6 @@ function createDetail(): ReviewSkillDetail {
       status: 'ACTIVE',
       downloadCount: 3,
       starCount: 1,
-      ratingCount: 0,
       hidden: false,
       namespace: 'team-a',
       canDownload: true,

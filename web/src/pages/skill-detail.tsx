@@ -2,8 +2,9 @@ import { startTransition, useCallback, useEffect, useRef, useState, type MouseEv
 import { useTranslation } from 'react-i18next'
 import { Link, useParams, useNavigate, useRouterState, useSearch } from '@tanstack/react-router'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, ArrowUpCircle, ChevronDown, ChevronUp, Clock, Globe, Lock, RefreshCw, ShieldCheck, User, Users } from 'lucide-react'
+import { ArrowLeft, ArrowUpCircle, ChevronDown, ChevronUp, Clock, Lock, RefreshCw, ShieldCheck, User } from 'lucide-react'
 import { MarkdownRenderer } from '@/features/skill/markdown-renderer'
+import { getSkillIntroduction, SkillIntroduction } from '@/features/skill/skill-introduction'
 import { resolvePackageRelativeLink } from '@/features/skill/package-relative-link'
 import { FileTree } from '@/features/skill/file-tree'
 import { FilePreviewDialog } from '@/features/skill/file-preview-dialog'
@@ -22,10 +23,8 @@ import { resolveSkillActionErrorTitle } from '@/features/skill/skill-action-erro
 import { isPrecheckConfirmationMessage, extractPrecheckWarnings } from '@/features/publish/publish-error-utils'
 import { clearDeletedSkillQueries, isDeleteSlugConfirmationValid, resolveDeletedSkillReturnTo } from '@/features/skill/skill-delete-flow'
 import { isSkillDetailQueriesEnabled } from './skill-detail-query'
-import { RatingInput } from '@/features/social/rating-input'
 import { StarButton } from '@/features/social/star-button'
 import { SubscribeButton } from '@/features/social/subscribe-button'
-import { SkillReviews } from '@/features/social/skill-reviews'
 import { useAuth } from '@/features/auth/use-auth'
 import { adminApi, ApiError, buildApiUrl, WEB_API_PREFIX } from '@/api/client'
 import { useSubmitSkillReport } from '@/features/report/use-skill-reports'
@@ -169,6 +168,11 @@ export function SkillDetailPage() {
     ? requestedVersion
     : headlineVersion?.version ?? versions?.[0]?.version
   const selectedVersionEntry = versions?.find((version) => version.version === selectedVersion) ?? versions?.[0]
+  const { data: selectedVersionDetail } = useSkillVersionDetail(qns, qslug, selectedVersion, skillReady)
+  const introduction = getSkillIntroduction(selectedVersionDetail?.introduction, i18n.resolvedLanguage || i18n.language)
+  const selectedMetadata = parseMetadataJson(selectedVersionDetail?.parsedMetadataJson)
+  const versionSummary = typeof selectedMetadata.description === 'string' ? selectedMetadata.description : skill?.summary
+  const introductionStatus = selectedVersionDetail?.introduction?.status
   const { data: files } = useSkillFiles(qns, qslug, selectedVersion, skillReady)
   const documentationPath = resolveDocumentationFilePath(files)
   const { data: readme, error: readmeError } = useSkillReadme(qns, qslug, selectedVersion, documentationPath, skillReady)
@@ -817,19 +821,10 @@ export function SkillDetailPage() {
                 {resolveSkillStatusLabel(skill.status)}
               </span>
             )}
-            {skill.visibility && (
-              <span className={cn(
-                'badge-soft inline-flex items-center gap-1',
-                skill.visibility === 'PUBLIC' && 'badge-soft-green',
-                skill.visibility === 'PRIVATE' && 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
-                skill.visibility === 'NAMESPACE_ONLY' && 'badge-soft-blue',
-              )}>
-                {skill.visibility === 'PUBLIC' && <Globe className="h-3 w-3" />}
-                {skill.visibility === 'PRIVATE' && <Lock className="h-3 w-3" />}
-                {skill.visibility === 'NAMESPACE_ONLY' && <Users className="h-3 w-3" />}
-                {skill.visibility === 'PUBLIC' && t('publish.visibilityOptions.namespaceOnly')}
-                {skill.visibility === 'PRIVATE' && t('publish.visibilityOptions.private')}
-                {skill.visibility === 'NAMESPACE_ONLY' && t('publish.visibilityOptions.namespaceOnly')}
+            {skill.visibility === 'PRIVATE' && (
+              <span className="badge-soft inline-flex items-center gap-1 bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                <Lock className="h-3 w-3" />
+                {t('publish.visibilityOptions.private')}
               </span>
             )}
             {isReviewFlowPending && (
@@ -854,9 +849,16 @@ export function SkillDetailPage() {
               </div>
             </div>
           )}
-          {skill.summary && (
-            <p className="text-lg text-muted-foreground leading-relaxed">{skill.summary}</p>
-          )}
+          {introduction ? (
+            <SkillIntroduction copy={introduction} />
+          ) : versionSummary ? (
+            <p className="text-lg leading-relaxed text-muted-foreground">{versionSummary}</p>
+          ) : null}
+          {introductionStatus === 'PENDING' || introductionStatus === 'RUNNING' ? (
+            <p role="status" className="text-sm text-muted-foreground">{t('skillDetail.introductionPending')}</p>
+          ) : introductionStatus === 'FAILED' ? (
+            <p className="text-sm text-muted-foreground">{t('skillDetail.introductionFailed')}</p>
+          ) : null}
           {(skill.labels?.length ?? 0) > 0 && (
             <div className="flex flex-wrap gap-2">
               {skill.labels!.map((label) => (
@@ -922,6 +924,11 @@ export function SkillDetailPage() {
                     style={!isOverviewExpanded && isOverviewCollapsible ? { maxHeight: `${overviewMaxHeight}px` } : undefined}
                   >
                     <div ref={overviewContentRef}>
+                      {introduction && versionSummary ? (
+                        <section className="mb-6 border-b border-border/60 pb-6">
+                          <p className="whitespace-pre-wrap text-base leading-7 text-muted-foreground">{versionSummary}</p>
+                        </section>
+                      ) : null}
                       <MarkdownRenderer content={readme} onLinkClick={handleOverviewLinkClick} />
                     </div>
                     {!isOverviewExpanded && isOverviewCollapsible ? (
@@ -947,6 +954,11 @@ export function SkillDetailPage() {
               </Card>
             ) : readmeError ? (
               <Card className="p-8 text-center">
+                {introduction && versionSummary ? (
+                  <section className="mb-6 text-left">
+                    <p className="whitespace-pre-wrap text-base leading-7 text-muted-foreground">{versionSummary}</p>
+                  </section>
+                ) : null}
                 <div className="text-base font-semibold text-foreground">{t('skillDetail.documentationUnavailableTitle')}</div>
                 <p className="mt-2 text-sm text-muted-foreground">{t('skillDetail.documentationUnavailable')}</p>
               </Card>
@@ -956,12 +968,14 @@ export function SkillDetailPage() {
                   <div className="text-base font-semibold text-foreground">{t('skillDetail.noDocumentationTitle')}</div>
                   <p className="mt-2 text-sm text-muted-foreground">{t('skillDetail.noDocumentationDescription')}</p>
                 </div>
-                {skill.summary ? (
+                {versionSummary ? (
                   <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
-                    <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                      {t('skillDetail.summaryLabel')}
-                    </div>
-                    <p className="mt-2 text-sm leading-6 text-foreground">{skill.summary}</p>
+                    {!introduction ? (
+                      <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                        {t('skillDetail.summaryLabel')}
+                      </div>
+                    ) : null}
+                    <p className={cn('text-sm leading-6 text-foreground', !introduction && 'mt-2')}>{versionSummary}</p>
                   </div>
                 ) : null}
                 <div className="text-sm text-muted-foreground">
@@ -1084,7 +1098,6 @@ export function SkillDetailPage() {
           </TabsContent>
         </Tabs>
 
-        <SkillReviews skillId={skill.id} canInteract={canInteract} onRequireLogin={requireLogin} />
       </div>
 
       {/* Sidebar */}
@@ -1107,15 +1120,6 @@ export function SkillDetailPage() {
           <div className="h-px bg-border/40" />
 
           <div className="flex items-center justify-between">
-            <div className="text-sm text-muted-foreground">{t('skillDetail.rating')}</div>
-            <div className="font-semibold text-foreground">
-              {skill.ratingCount > 0 && skill.ratingAvg !== undefined ? `${skill.ratingAvg.toFixed(1)} / 5` : t('skillDetail.ratingNone')}
-            </div>
-          </div>
-
-          <div className="h-px bg-border/40" />
-
-          <div className="flex items-center justify-between">
             <div className="text-sm text-muted-foreground">{t('skillDetail.namespaceLabel')}</div>
             <NamespaceBadge type="GLOBAL" name={namespace} />
           </div>
@@ -1130,7 +1134,6 @@ export function SkillDetailPage() {
                     <StarButton skillId={skill.id} starCount={skill.starCount} onRequireLogin={requireLogin} />
                     <div className="h-px bg-border/40" />
                     <SubscribeButton skillId={skill.id} subscriptionCount={(skill as { subscriptionCount?: number }).subscriptionCount ?? 0} onRequireLogin={requireLogin} />
-                    <RatingInput skillId={skill.id} onRequireLogin={requireLogin} />
                   </>
                 ) : null}
                 {canReport ? (
@@ -1145,9 +1148,6 @@ export function SkillDetailPage() {
                   ? t('skillDetail.rejectedPreviewInteractionHint')
                   : t('skillDetail.pendingPreviewInteractionHint')}
               </p>
-            )}
-            {!user && canInteract && (
-              <p className="text-xs text-muted-foreground">{t('skillDetail.loginToRate')}</p>
             )}
           </div>
         </Card>

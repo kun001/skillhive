@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import java.time.Clock;
 import java.time.Instant;
 
+/** Historical ratings retained for existing data and skill deletion; no rating API is exposed. */
 @Entity
 @Table(name = "skill_rating",
     uniqueConstraints = @UniqueConstraint(columnNames = {"skill_id", "user_id"}))

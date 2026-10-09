@@ -140,7 +140,7 @@ describe('SearchPage', () => {
     })
     useSearchSkillsMock.mockReturnValue({
       data: {
-        items: [{ id: 1, displayName: 'Demo Skill', summary: 'summary', namespace: 'global', slug: 'demo', downloadCount: 1, starCount: 1, ratingCount: 0, updatedAt: '2026-03-20T00:00:00Z', canSubmitPromotion: false }],
+        items: [{ id: 1, displayName: 'Demo Skill', summary: 'summary', namespace: 'global', slug: 'demo', downloadCount: 1, starCount: 1, updatedAt: '2026-03-20T00:00:00Z', canSubmitPromotion: false }],
         total: 24,
         page: 1,
         size: 12,
@@ -279,7 +279,7 @@ describe('SearchPage', () => {
     })
     useSearchSkillsMock.mockReturnValue({
       data: {
-        items: [{ id: 1, displayName: 'Demo Skill', summary: 'summary', namespace: 'global', slug: 'demo', downloadCount: 1, starCount: 1, ratingCount: 0, updatedAt: '2026-03-20T00:00:00Z', canSubmitPromotion: false }],
+        items: [{ id: 1, displayName: 'Demo Skill', summary: 'summary', namespace: 'global', slug: 'demo', downloadCount: 1, starCount: 1, updatedAt: '2026-03-20T00:00:00Z', canSubmitPromotion: false }],
         total: 1,
         page: 0,
         size: 12,

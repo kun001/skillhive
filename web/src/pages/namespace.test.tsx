@@ -76,7 +76,6 @@ vi.mock('@/shared/hooks/use-skill-queries', () => ({
           slug: 'demo',
           downloadCount: 1,
           starCount: 1,
-          ratingCount: 0,
           updatedAt: '2026-03-20T00:00:00Z',
           canSubmitPromotion: false,
           publishedVersion: { id: 10, version: '1.0.0', status: 'PUBLISHED' },

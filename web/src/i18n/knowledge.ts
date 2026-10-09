@@ -1,4 +1,4 @@
-// Copy for the knowledge file hub. Russian falls back to English.
+// Chinese and English copy for the knowledge file hub.
 export const knowledgeZh = {
   title: '知识库',
   subtitle: '团队文件中心，集中管理、预览与共享团队资料。',

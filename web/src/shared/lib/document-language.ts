@@ -8,7 +8,7 @@ export function syncDocumentLanguage(language: string) {
   }
 
   const primary = language.split('-')[0]?.toLowerCase() || 'en'
-  const lang = primary === 'zh' ? 'zh-CN' : primary
+  const lang = primary === 'zh' ? 'zh-CN' : 'en'
   const html = document.documentElement
 
   if (html.lang !== lang) {

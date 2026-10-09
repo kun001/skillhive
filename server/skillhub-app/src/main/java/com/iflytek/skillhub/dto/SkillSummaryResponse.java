@@ -1,7 +1,6 @@
 package com.iflytek.skillhub.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 
@@ -14,8 +13,6 @@ public record SkillSummaryResponse(
         String status,
         Long downloadCount,
         Integer starCount,
-        BigDecimal ratingAvg,
-        Integer ratingCount,
         String namespace,
         Instant updatedAt,
         String ownerId,
@@ -47,8 +44,6 @@ public record SkillSummaryResponse(
             String status,
             Long downloadCount,
             Integer starCount,
-            BigDecimal ratingAvg,
-            Integer ratingCount,
             String namespace,
             Instant updatedAt,
             boolean canSubmitPromotion,
@@ -57,8 +52,7 @@ public record SkillSummaryResponse(
             SkillLifecycleVersionResponse ownerPreviewVersion,
             String resolutionMode,
             ComplianceSnapshotResponse complianceSnapshot) {
-        this(id, slug, displayName, summary, visibility, status, downloadCount, starCount, ratingAvg,
-                ratingCount, namespace, updatedAt, null, null, canSubmitPromotion, headlineVersion, publishedVersion,
+        this(id, slug, displayName, summary, visibility, status, downloadCount, starCount, namespace, updatedAt, null, null, canSubmitPromotion, headlineVersion, publishedVersion,
                 ownerPreviewVersion, resolutionMode, complianceSnapshot, null);
     }
 
@@ -72,8 +66,6 @@ public record SkillSummaryResponse(
             String status,
             Long downloadCount,
             Integer starCount,
-            BigDecimal ratingAvg,
-            Integer ratingCount,
             String namespace,
             Instant updatedAt,
             String ownerId,
@@ -84,14 +76,13 @@ public record SkillSummaryResponse(
             SkillLifecycleVersionResponse ownerPreviewVersion,
             String resolutionMode,
             ComplianceSnapshotResponse complianceSnapshot) {
-        this(id, slug, displayName, summary, visibility, status, downloadCount, starCount, ratingAvg,
-                ratingCount, namespace, updatedAt, ownerId, ownerDisplayName, canSubmitPromotion,
+        this(id, slug, displayName, summary, visibility, status, downloadCount, starCount, namespace, updatedAt, ownerId, ownerDisplayName, canSubmitPromotion,
                 headlineVersion, publishedVersion, ownerPreviewVersion, resolutionMode, complianceSnapshot, null);
     }
 
     public SkillSummaryResponse withLabels(List<SkillLabelDto> labels) {
         return new SkillSummaryResponse(id, slug, displayName, summary, visibility, status, downloadCount,
-                starCount, ratingAvg, ratingCount, namespace, updatedAt, ownerId, ownerDisplayName,
+                starCount, namespace, updatedAt, ownerId, ownerDisplayName,
                 canSubmitPromotion, headlineVersion,
                 publishedVersion, ownerPreviewVersion, resolutionMode, complianceSnapshot, labels);
     }

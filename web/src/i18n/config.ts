@@ -2,7 +2,6 @@ import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
 import LanguageDetector from 'i18next-browser-languagedetector'
 import en from './locales/en.json'
-import ru from './locales/ru.json'
 import zh from './locales/zh.json'
 import { hiveLandingEn, hiveLandingZh } from './hive-landing'
 import { knowledgeEn, knowledgeZh } from './knowledge'
@@ -20,10 +19,11 @@ i18n
   .init({
     resources: {
       en: { translation: { ...en, hiveLanding: hiveLandingEn, knowledge: knowledgeEn, skillLibrary: skillLibraryEn, changelog: changelogEn } },
-      ru: { translation: ru },
       zh: { translation: { ...zh, hiveLanding: hiveLandingZh, knowledge: knowledgeZh, skillLibrary: skillLibraryZh, changelog: changelogZh } },
     },
     fallbackLng: 'en',
+    supportedLngs: ['en', 'zh'],
+    nonExplicitSupportedLngs: true,
     interpolation: {
       escapeValue: false,
     },

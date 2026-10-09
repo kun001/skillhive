@@ -63,26 +63,6 @@ class RouteSecurityPolicyRegistryTest {
     }
 
     @Test
-    void reviewRoutesRequireLogin() {
-        assertEquals(RouteSecurityPolicyRegistry.AccessLevel.AUTHENTICATED,
-                registry.accessLevel("GET", "/api/v1/skills/10/reviews"));
-        assertEquals(RouteSecurityPolicyRegistry.AccessLevel.AUTHENTICATED,
-                registry.accessLevel("GET", "/api/v1/skills/10/reviews/me"));
-        assertEquals(RouteSecurityPolicyRegistry.AccessLevel.AUTHENTICATED,
-                registry.accessLevel("PUT", "/api/v1/skills/10/reviews/me"));
-        assertEquals(RouteSecurityPolicyRegistry.AccessLevel.AUTHENTICATED,
-                registry.accessLevel("DELETE", "/api/v1/skills/10/reviews/me"));
-    }
-
-    @Test
-    void apiTokenPolicyAllowsCurrentUserReviewMutations() {
-        assertTrue(registry.authorizeApiToken(
-                "PUT", "/api/v1/skills/10/reviews/me", Set.of()).allowed());
-        assertTrue(registry.authorizeApiToken(
-                "DELETE", "/api/v1/skills/10/reviews/me", Set.of()).allowed());
-    }
-
-    @Test
     void authorizeApiToken_requiresPublishScopeForPublishEndpoints() {
         var denied = registry.authorizeApiToken("POST", "/api/web/skills/global/publish", Set.of("skill:read"));
         var allowed = registry.authorizeApiToken("POST", "/api/web/skills/global/publish", Set.of("skill:publish"));
@@ -279,7 +259,8 @@ class RouteSecurityPolicyRegistryTest {
     void authorizeApiToken_allowsStarAndRatingWritesWithoutSkillDeleteScope() {
         assertTrue(registry.authorizeApiToken("PUT", "/api/v1/skills/42/star", Set.of("skill:read")).allowed());
         assertTrue(registry.authorizeApiToken("DELETE", "/api/v1/skills/42/star", Set.of("skill:read")).allowed());
-        assertTrue(registry.authorizeApiToken("PUT", "/api/v1/skills/42/rating", Set.of("skill:read")).allowed());
+        assertFalse(registry.authorizeApiToken("PUT", "/api/v1/skills/42/rating", Set.of("skill:read")).allowed());
+        assertFalse(registry.authorizeApiToken("PUT", "/api/web/skills/42/reviews/me", Set.of("skill:read")).allowed());
     }
 
     @Test

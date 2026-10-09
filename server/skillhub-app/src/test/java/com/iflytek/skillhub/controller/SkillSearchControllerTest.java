@@ -201,6 +201,6 @@ class SkillSearchControllerTest {
     private static SkillSummaryResponse summary(Long id) {
         return new SkillSummaryResponse(
                 id, "demo-skill", "Demo Skill", "A demo", "PUBLIC", "PUBLISHED",
-                0L, 0, null, 0, "global", null, false, null, null, null, null, null);
+                0L, 0, "global", null, false, null, null, null, null, null);
     }
 }

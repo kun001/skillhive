@@ -12,7 +12,7 @@
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache--2.0-blue.svg" alt="License: Apache-2.0" /></a>
   <img src="https://img.shields.io/badge/部署-私有化%20·%20Docker%20Compose-2496ed" alt="私有化部署 Docker Compose" />
-  <img src="https://img.shields.io/badge/界面-中文%20·%20English%20·%20Русский-6b4f3a" alt="中文 English Русский" />
+  <img src="https://img.shields.io/badge/界面-中文%20·%20English-6b4f3a" alt="中文 English" />
 </p>
 
 <p align="center">
@@ -128,7 +128,7 @@ flowchart LR
 | **知识库** | 多层文件夹；批量上传、进度查看与失败重试；Markdown 可连同本地图片或整个文件夹上传；在线预览；版本历史、指定版本下载与恢复；按标题和描述搜索，可跨知识库。 |
 | **团队空间** | 一个页面同时展示空间内的技能和知识库；成员管理，按成员设置只读、可编辑和下载权限，调整即时生效。 |
 | **治理** | 平台角色与空间角色；业务通知；关键操作审计日志。 |
-| **界面** | 中文、English、Русский；浅色 / 深色主题；适配手机和窄屏。 |
+| **界面** | 中文、English；浅色 / 深色主题；适配手机和窄屏。 |
 
 <details>
 <summary><strong>技能包格式</strong></summary>

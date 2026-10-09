@@ -126,6 +126,10 @@ export function useSkillVersionDetail(namespace: string, slug: string, version?:
     queryKey: ['skills', namespace, slug, 'versions', version, 'detail'],
     queryFn: () => getSkillVersionDetail(namespace, slug, version!),
     enabled: enabled && !!namespace && !!slug && !!version,
+    refetchInterval: (query) => {
+      const status = query.state.data?.introduction?.status
+      return status === 'PENDING' || status === 'RUNNING' ? 5000 : false
+    },
   })
 }
 

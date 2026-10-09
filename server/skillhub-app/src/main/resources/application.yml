@@ -220,6 +220,20 @@ skillhub:
       anonymous-cookie-name: ${SKILLHUB_DOWNLOAD_ANON_COOKIE_NAME:skillhub_anon_dl}
       anonymous-cookie-max-age: ${SKILLHUB_DOWNLOAD_ANON_COOKIE_MAX_AGE:P30D}
       anonymous-cookie-secret: ${SKILLHUB_DOWNLOAD_ANON_COOKIE_SECRET:}
+  introduction:
+    enabled: ${SKILLHUB_INTRODUCTION_ENABLED:false}
+    base-url: ${SKILLHUB_INTRODUCTION_BASE_URL:}
+    api-key: ${SKILLHUB_INTRODUCTION_API_KEY:}
+    model: ${SKILLHUB_INTRODUCTION_MODEL:}
+    connect-timeout: ${SKILLHUB_INTRODUCTION_CONNECT_TIMEOUT:PT5S}
+    read-timeout: ${SKILLHUB_INTRODUCTION_READ_TIMEOUT:PT120S}
+    temperature: ${SKILLHUB_INTRODUCTION_TEMPERATURE:0.2}
+    max-tokens: ${SKILLHUB_INTRODUCTION_MAX_TOKENS:2048}
+    max-input-chars: ${SKILLHUB_INTRODUCTION_MAX_INPUT_CHARS:16000}
+    max-attempts: ${SKILLHUB_INTRODUCTION_MAX_ATTEMPTS:3}
+    retry-delay: ${SKILLHUB_INTRODUCTION_RETRY_DELAY:PT30S}
+    response-format: ${SKILLHUB_INTRODUCTION_RESPONSE_FORMAT:json_schema}
+    poll-interval-ms: ${SKILLHUB_INTRODUCTION_POLL_INTERVAL_MS:5000}
   publish:
     max-file-count: 100
     max-single-file-size: 10485760 # 10MB

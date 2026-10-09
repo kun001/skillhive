@@ -24,11 +24,10 @@ export function LanguageSwitcher({ className }: LanguageSwitcherProps) {
   const languages = [
     { code: 'zh', name: '中文' },
     { code: 'en', name: 'English' },
-    { code: 'ru', name: 'Русский' },
   ]
 
   const fallbackLanguage = languages.find((lang) => lang.code === 'en') ?? languages[0]
-  // Primary language code only (strip region, e.g. ru-RU → ru).
+  // Primary language code only (strip region, e.g. en-US → en).
   const currentLangCode = (i18n.resolvedLanguage || i18n.language || fallbackLanguage.code).split('-')[0]
   const currentLanguage = languages.find((lang) => lang.code === currentLangCode) || fallbackLanguage
 
