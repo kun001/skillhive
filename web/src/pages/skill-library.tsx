@@ -1,3 +1,4 @@
+import { getSkillSummaryDescription } from '@/features/skill/skill-summary-description'
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useRouterState, useSearch } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
@@ -19,7 +20,8 @@ const PAGE_SIZE = 20
 type LibrarySort = 'all' | 'downloads' | 'newest'
 
 function SkillLibraryItem({ skill, view, returnTo }: { skill: SkillSummary; view: 'list' | 'grid'; returnTo: string }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const description = getSkillSummaryDescription(skill, i18n.resolvedLanguage || i18n.language)
   const namespace = skill.namespace.replace(/^@/, '')
   const isGrid = view === 'grid'
 
@@ -39,8 +41,8 @@ function SkillLibraryItem({ skill, view, returnTo }: { skill: SkillSummary; view
           <strong className="min-w-0 break-words text-base font-semibold text-foreground">{skill.displayName}</strong>
           <span className="rounded-full border border-border px-2 py-0.5 text-[11px] text-muted-foreground">@{namespace}</span>
         </span>
-        <span className="mt-1 block truncate text-sm text-muted-foreground" title={skill.summary || undefined}>
-          {skill.summary || t('skillLibrary.noSummary')}
+        <span className="mt-1 block truncate text-sm text-muted-foreground" title={description || undefined}>
+          {description || t('skillLibrary.noSummary')}
         </span>
       </span>
       <span className={`flex shrink-0 items-center gap-4 text-xs text-muted-foreground ${isGrid ? 'w-full border-t border-border/60 pt-3' : 'hidden sm:flex'}`}>

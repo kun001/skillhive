@@ -10,10 +10,12 @@ vi.mock('@/features/auth/use-auth', () => ({
   }),
 }))
 
+const locale = vi.hoisted(() => ({ language: 'en' }))
+
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => key,
-    i18n: { language: 'en' },
+    i18n: locale,
   }),
 }))
 
@@ -68,6 +70,22 @@ describe('skill-card module exports', () => {
     expect(html).toContain('skill-card-summary')
     expect(html).toContain(`title="${summary}"`)
     expect(html).toContain('[overflow-wrap:anywhere]')
+  })
+
+  it('changes generated description and tooltip with the selected language', () => {
+    const skill = {
+      id: 1, slug: 'gradio', displayName: 'Gradio', summary: 'Original description',
+      functionDescription: { zh: '生成功能说明', en: 'Generated function description' },
+      downloadCount: 0, starCount: 0, namespace: 'global', updatedAt: '', canSubmitPromotion: false,
+    }
+    locale.language = 'zh'
+    const chinese = renderToStaticMarkup(createElement(SkillCard, { skill }))
+    expect(chinese).toContain('title="生成功能说明"')
+    expect(chinese).not.toContain('Original description')
+    locale.language = 'en'
+    const english = renderToStaticMarkup(createElement(SkillCard, { skill }))
+    expect(english).toContain('title="Generated function description"')
+    expect(english).not.toContain('生成功能说明')
   })
 
   it('renders compliance badges from the skill summary snapshot', () => {

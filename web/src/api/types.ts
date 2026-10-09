@@ -200,6 +200,7 @@ export interface BatchMemberResponse {
 
 // Skill types
 export interface SkillSummary {
+  functionDescription?: components['schemas']['SkillFunctionDescriptionResponse']
   id: number
   slug: string
   displayName: string

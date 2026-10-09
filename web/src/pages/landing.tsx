@@ -1,3 +1,4 @@
+import { getSkillSummaryDescription } from '@/features/skill/skill-summary-description'
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
@@ -7,12 +8,12 @@ import { useSearchSkills } from '@/shared/hooks/use-skill-queries'
 import './landing.css'
 
 function SkillPreviewCard({ skill }: { skill: SkillSummary }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const version = skill.publishedVersion?.version ?? skill.headlineVersion?.version
 
   return <Link to="/space/$namespace/$slug" params={{ namespace: skill.namespace.replace(/^@/, ''), slug: skill.slug }} className="hive-skill-card" aria-label={`${skill.displayName} · @${skill.namespace.replace(/^@/, '')}/${skill.slug}`}>
     <span className="hive-skill-card-top"><span className="hive-skill-icon" aria-hidden="true">{skill.displayName.charAt(0).toUpperCase()}</span><ArrowRight size={18} aria-hidden="true" /></span>
-    <span className="hive-skill-card-main"><strong>{skill.displayName}</strong><small>@{skill.namespace.replace(/^@/, '')}/{skill.slug}</small><span className="hive-skill-description">{skill.summary || t('hiveLanding.skillNoDescription')}</span></span>
+    <span className="hive-skill-card-main"><strong>{skill.displayName}</strong><small>@{skill.namespace.replace(/^@/, '')}/{skill.slug}</small><span className="hive-skill-description">{getSkillSummaryDescription(skill, i18n.resolvedLanguage || i18n.language) || t('hiveLanding.skillNoDescription')}</span></span>
     <span className="hive-skill-meta"><span>{version ? `v${version}` : t('hiveLanding.versionPending')}</span><span>{t('hiveLanding.downloads', { count: skill.downloadCount })}</span></span>
   </Link>
 }

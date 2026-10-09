@@ -29,7 +29,9 @@ public record SkillSummaryResponse(
          * that do not opt in.
          */
         @JsonInclude(JsonInclude.Include.NON_NULL)
-        List<SkillLabelDto> labels
+        List<SkillLabelDto> labels,
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        SkillFunctionDescriptionResponse functionDescription
 ) {
 
     /**
@@ -84,6 +86,34 @@ public record SkillSummaryResponse(
         return new SkillSummaryResponse(id, slug, displayName, summary, visibility, status, downloadCount,
                 starCount, namespace, updatedAt, ownerId, ownerDisplayName,
                 canSubmitPromotion, headlineVersion,
-                publishedVersion, ownerPreviewVersion, resolutionMode, complianceSnapshot, labels);
+                publishedVersion, ownerPreviewVersion, resolutionMode, complianceSnapshot, labels, functionDescription);
+    }
+
+    /** Summary without an optional generated function description. */
+    public SkillSummaryResponse(
+            Long id,
+            String slug,
+            String displayName,
+            String summary,
+            String visibility,
+            String status,
+            Long downloadCount,
+            Integer starCount,
+            String namespace,
+            Instant updatedAt,
+            String ownerId,
+            String ownerDisplayName,
+            boolean canSubmitPromotion,
+            SkillLifecycleVersionResponse headlineVersion,
+            SkillLifecycleVersionResponse publishedVersion,
+            SkillLifecycleVersionResponse ownerPreviewVersion,
+            String resolutionMode,
+            ComplianceSnapshotResponse complianceSnapshot,
+            List<SkillLabelDto> labels) {
+        this(id, slug, displayName, summary, visibility, status, downloadCount, starCount, namespace, updatedAt, ownerId, ownerDisplayName, canSubmitPromotion, headlineVersion, publishedVersion, ownerPreviewVersion, resolutionMode, complianceSnapshot, labels, null);
+    }
+
+    public SkillSummaryResponse withFunctionDescription(SkillFunctionDescriptionResponse description) {
+        return new SkillSummaryResponse(id, slug, displayName, summary, visibility, status, downloadCount, starCount, namespace, updatedAt, ownerId, ownerDisplayName, canSubmitPromotion, headlineVersion, publishedVersion, ownerPreviewVersion, resolutionMode, complianceSnapshot, labels, description);
     }
 }

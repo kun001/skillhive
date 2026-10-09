@@ -1,3 +1,4 @@
+import { getSkillSummaryDescription } from '@/features/skill/skill-summary-description'
 import { useCallback, useEffect, useState } from 'react'
 import { useLocation, useNavigate, useSearch } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
@@ -44,7 +45,7 @@ export function MySkillsPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const search = useSearch({ from: '/dashboard/skills' })
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { hasRole } = useAuth()
 
   // The URL is the source of truth for page / filter / namespace / keyword so the
@@ -384,8 +385,8 @@ export function MySkillsPage() {
                         <h3 className="font-semibold font-heading text-lg mb-1 group-hover:text-primary transition-colors">
                           {skill.displayName}
                         </h3>
-                        {skill.summary && (
-                          <p className="text-sm text-muted-foreground mb-3 leading-relaxed">{skill.summary}</p>
+                        {getSkillSummaryDescription(skill, i18n.resolvedLanguage || i18n.language) && (
+                          <p className="text-sm text-muted-foreground mb-3 leading-relaxed">{getSkillSummaryDescription(skill, i18n.resolvedLanguage || i18n.language)}</p>
                         )}
                         <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                           <span className="handle-tag">@{skill.namespace}</span>

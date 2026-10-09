@@ -1,3 +1,4 @@
+import { getSkillSummaryDescription } from '@/features/skill/skill-summary-description'
 import type { SkillSummary } from '@/api/types'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/features/auth/use-auth'
@@ -23,6 +24,7 @@ export function SkillCard({ skill, onClick, highlightStarred = true }: SkillCard
   // Batch highlight via shared ['skills','stars'] — never N× useStar per grid row.
   const { starredIds } = useStarredIdSet(highlightStarred && isAuthenticated)
   const showStarredHighlight = highlightStarred && isAuthenticated && starredIds.has(skill.id)
+  const description = getSkillSummaryDescription(skill, i18n.resolvedLanguage || i18n.language)
   const headlineVersion = getHeadlineVersion(skill)
   const isInteractive = typeof onClick === 'function'
   const complianceItems = skill.complianceSnapshot?.items?.filter((item) => item.standard || item.controlId) ?? []
@@ -54,12 +56,12 @@ export function SkillCard({ skill, onClick, highlightStarred = true }: SkillCard
         <h3 className="font-sans text-lg font-semibold text-foreground [overflow-wrap:anywhere]">{skill.displayName}</h3>
         <p className="mb-2 text-xs text-muted-foreground">@{skill.namespace.replace(/^@/, '')}/{skill.slug}</p>
 
-        {skill.summary && (
+        {description && (
           <p
             className="skill-card-summary mb-4 text-sm leading-[1.45] text-muted-foreground [overflow-wrap:anywhere]"
-            title={skill.summary}
+            title={description}
           >
-            {skill.summary}
+            {description}
           </p>
         )}
 
