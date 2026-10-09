@@ -4596,6 +4596,10 @@ export interface components {
             /** Format: int32 */
             size?: number;
         };
+        SkillFunctionDescriptionResponse: {
+            zh?: string;
+            en?: string;
+        };
         SkillLifecycleVersionResponse: {
             /** Format: int64 */
             id?: number;
@@ -4626,6 +4630,7 @@ export interface components {
             resolutionMode?: string;
             complianceSnapshot?: components["schemas"]["ComplianceSnapshotResponse"];
             labels?: components["schemas"]["SkillLabelDto"][];
+            functionDescription?: components["schemas"]["SkillFunctionDescriptionResponse"];
         };
         ApiResponseBoolean: {
             /** Format: int32 */

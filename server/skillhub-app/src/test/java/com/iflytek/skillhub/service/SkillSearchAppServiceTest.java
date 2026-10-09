@@ -76,7 +76,10 @@ class SkillSearchAppServiceTest {
                 new SkillLifecycleProjectionService(skillVersionRepository),
                 new ComplianceSnapshotProjectionService(new com.fasterxml.jackson.databind.ObjectMapper()),
                 rbacService,
-                userAccountRepository
+                userAccountRepository,
+                new SkillIntroductionService(
+                        org.mockito.Mockito.mock(com.iflytek.skillhub.domain.skill.SkillIntroductionRepository.class),
+                        null, java.time.Clock.systemUTC())
         );
     }
 

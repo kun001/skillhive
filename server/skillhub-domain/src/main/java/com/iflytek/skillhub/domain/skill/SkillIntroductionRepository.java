@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 
 public interface SkillIntroductionRepository {
     Optional<SkillIntroduction> findById(Long id);
+    List<SkillIntroduction> findByVersionIdIn(java.util.Collection<Long> versionIds);
     SkillIntroduction save(SkillIntroduction job);
     List<SkillIntroduction> findReady(Instant now, int maxAttempts, Pageable page);
     int claim(Long id, String token, Instant now, Instant lease, int maxAttempts);

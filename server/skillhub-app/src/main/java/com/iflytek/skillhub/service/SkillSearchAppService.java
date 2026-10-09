@@ -42,25 +42,7 @@ public class SkillSearchAppService {
     private final ComplianceSnapshotProjectionService complianceSnapshotProjectionService;
     private final RbacService rbacService;
     private final UserAccountRepository userAccountRepository;
-
-    public SkillSearchAppService(
-            SearchQueryService searchQueryService,
-            SkillRepository skillRepository,
-            NamespaceRepository namespaceRepository,
-            NamespaceService namespaceService,
-            SkillLifecycleProjectionService skillLifecycleProjectionService,
-            RbacService rbacService) {
-        this(
-                searchQueryService,
-                skillRepository,
-                namespaceRepository,
-                namespaceService,
-                skillLifecycleProjectionService,
-                new ComplianceSnapshotProjectionService(new com.fasterxml.jackson.databind.ObjectMapper()),
-                rbacService,
-                null
-        );
-    }
+    private final SkillIntroductionService skillIntroductionService;
 
     @Autowired
     public SkillSearchAppService(
@@ -71,7 +53,8 @@ public class SkillSearchAppService {
             SkillLifecycleProjectionService skillLifecycleProjectionService,
             ComplianceSnapshotProjectionService complianceSnapshotProjectionService,
             RbacService rbacService,
-            UserAccountRepository userAccountRepository) {
+            UserAccountRepository userAccountRepository,
+            SkillIntroductionService skillIntroductionService) {
         this.searchQueryService = searchQueryService;
         this.skillRepository = skillRepository;
         this.namespaceRepository = namespaceRepository;
@@ -80,6 +63,7 @@ public class SkillSearchAppService {
         this.complianceSnapshotProjectionService = complianceSnapshotProjectionService;
         this.rbacService = rbacService;
         this.userAccountRepository = userAccountRepository;
+        this.skillIntroductionService = skillIntroductionService;
     }
 
     public record SearchResponse(
@@ -200,7 +184,7 @@ public class SkillSearchAppService {
                 library
         ));
         List<SkillSummaryResponse> pageItems = mapVisibleSkillSummaries(result.skillIds());
-        return new SearchResponse(pageItems, result.total(), page, size);
+        return new SearchResponse(skillIntroductionService.enrichSummaries(pageItems), result.total(), page, size);
     }
 
     private List<String> normalizeLabelSlugs(List<String> labelSlugs) {

@@ -81,7 +81,10 @@ class MySkillAppServiceTest {
                 mySkillQueryRepository,
                 hiddenSkillQueryRepository,
                 skillLifecycleProjectionService,
-                namespaceRepository
+                namespaceRepository,
+                new SkillIntroductionService(
+                        org.mockito.Mockito.mock(com.iflytek.skillhub.domain.skill.SkillIntroductionRepository.class),
+                        null, java.time.Clock.systemUTC())
         );
     }
 

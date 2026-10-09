@@ -64,6 +64,7 @@ class SkillIntroductionIntegrationTest {
         assertThat(jobs.claim(id, "second", now.plusSeconds(31), now.plusSeconds(60), 3)).isEqualTo(1);
         assertThat(jobs.complete(id, "first", "旧", "旧", "old", "old", now)).isZero();
         assertThat(jobs.complete(id, "second", "新", "新", "new", "new", now)).isEqualTo(1);
+        assertThat(jobs.findByVersionIdIn(java.util.List.of(id))).extracting(SkillIntroduction::getVersionId).containsExactly(id);
         assertThat(jobs.findById(id)).hasValueSatisfying(job -> {
             assertThat(job.getAttempts()).isEqualTo(2);
             assertThat(job.getStatus()).isEqualTo("COMPLETED");

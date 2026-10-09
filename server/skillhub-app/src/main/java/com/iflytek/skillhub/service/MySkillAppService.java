@@ -41,6 +41,7 @@ public class MySkillAppService {
     private final HiddenSkillQueryRepository hiddenSkillQueryRepository;
     private final SkillLifecycleProjectionService skillLifecycleProjectionService;
     private final NamespaceRepository namespaceRepository;
+    private final SkillIntroductionService skillIntroductionService;
 
     public MySkillAppService(
             SkillRepository skillRepository,
@@ -50,7 +51,8 @@ public class MySkillAppService {
             MySkillQueryRepository mySkillQueryRepository,
             HiddenSkillQueryRepository hiddenSkillQueryRepository,
             SkillLifecycleProjectionService skillLifecycleProjectionService,
-            NamespaceRepository namespaceRepository) {
+            NamespaceRepository namespaceRepository,
+            SkillIntroductionService skillIntroductionService) {
         this.skillRepository = skillRepository;
         this.skillVersionRepository = skillVersionRepository;
         this.skillStarRepository = skillStarRepository;
@@ -59,6 +61,7 @@ public class MySkillAppService {
         this.hiddenSkillQueryRepository = hiddenSkillQueryRepository;
         this.skillLifecycleProjectionService = skillLifecycleProjectionService;
         this.namespaceRepository = namespaceRepository;
+        this.skillIntroductionService = skillIntroductionService;
     }
 
     public PageResponse<SkillSummaryResponse> listMySkills(String userId, int page, int size) {
@@ -97,7 +100,7 @@ public class MySkillAppService {
                 ? mySkillQueryRepository.getHiddenSkillSummaries(skillPage.getContent())
                 : mySkillQueryRepository.getSkillSummaries(skillPage.getContent(), userId);
 
-        return new PageResponse<>(items, skillPage.getTotalElements(), skillPage.getNumber(), skillPage.getSize());
+        return new PageResponse<>(skillIntroductionService.enrichSummaries(items), skillPage.getTotalElements(), skillPage.getNumber(), skillPage.getSize());
     }
 
     private Page<Skill> listHiddenSkills(int page,
@@ -134,7 +137,7 @@ public class MySkillAppService {
                 .toList();
         List<SkillSummaryResponse> items = mySkillQueryRepository.getSkillSummaries(orderedSkills, userId);
 
-        return new PageResponse<>(items, starPage.getTotalElements(), starPage.getNumber(), starPage.getSize());
+        return new PageResponse<>(skillIntroductionService.enrichSummaries(items), starPage.getTotalElements(), starPage.getNumber(), starPage.getSize());
     }
 
     public PageResponse<SkillSummaryResponse> listMySubscriptions(String userId, int page, int size) {
@@ -158,7 +161,7 @@ public class MySkillAppService {
                 .toList();
         List<SkillSummaryResponse> items = mySkillQueryRepository.getSkillSummaries(orderedSkills, userId);
 
-        return new PageResponse<>(items, subPage.getTotalElements(), subPage.getNumber(), subPage.getSize());
+        return new PageResponse<>(skillIntroductionService.enrichSummaries(items), subPage.getTotalElements(), subPage.getNumber(), subPage.getSize());
     }
 
     private Page<Skill> filterSkills(String userId,
