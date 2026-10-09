@@ -309,17 +309,18 @@ describe('SkillDetailPage', () => {
     useSkillFileMock.mockReturnValue({ data: null, isLoading: false, error: null })
   })
 
-  it('shows generated copy and keeps the selected version description in the overview', () => {
+  it('shows only generated usage and keeps the selected version description in the overview', () => {
     useSkillVersionDetailMock.mockReturnValue({ data: {
       parsedMetadataJson: JSON.stringify({ description: 'Version-specific original description' }),
       introduction: { status: 'COMPLETED', zh: { functionDescription: '生成的功能', usageInstructions: '生成的用法' },
         en: { functionDescription: 'Generated function', usageInstructions: 'Generated usage' } },
     } })
     const html = renderToStaticMarkup(<SkillDetailPage />)
-    expect(html).toContain('生成的功能')
+    expect(html).not.toContain('生成的功能')
+    expect(html).not.toContain('skillDetail.functionDescription')
     expect(html).toContain('生成的用法')
     expect(html).toContain('Version-specific original description')
-    expect(html.indexOf('生成的功能')).toBeLessThan(html.indexOf('Version-specific original description'))
+    expect(html.indexOf('生成的用法')).toBeLessThan(html.indexOf('Version-specific original description'))
     expect(html).not.toContain('skillDetail.originalDescription')
   })
 
@@ -330,12 +331,13 @@ describe('SkillDetailPage', () => {
         en: { functionDescription: 'Generated function', usageInstructions: 'Generated usage' } },
     } })
     const view = render(<SkillDetailPage />)
-    expect(screen.getByText('生成的功能')).toBeTruthy()
+    expect(screen.queryByText('生成的功能')).toBeNull()
+    expect(screen.getByText('生成的用法')).toBeTruthy()
     expect(screen.getByText('English description from the skill')).toBeTruthy()
 
     localeMock.language = 'en'
     view.rerender(<SkillDetailPage />)
-    expect(screen.getByText('Generated function')).toBeTruthy()
+    expect(screen.queryByText('Generated function')).toBeNull()
     expect(screen.getByText('Generated usage')).toBeTruthy()
     expect(screen.queryByText('生成的功能')).toBeNull()
     expect(screen.getByText('English description from the skill')).toBeTruthy()

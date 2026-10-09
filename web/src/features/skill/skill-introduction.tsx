@@ -18,15 +18,7 @@ export function getSkillIntroduction(introduction: GeneratedIntroduction | undef
 export function SkillIntroduction({ copy }: { copy: IntroductionCopy }) {
   const { t } = useTranslation()
   return (
-    <dl className="space-y-4 pt-1 text-base leading-7">
-      <div>
-        <dt className="mb-1 font-semibold text-foreground">{t('skillDetail.functionDescription')}</dt>
-        <dd className="space-y-3 text-muted-foreground">
-          {copy.functionDescription.trim().split(/\n\s*\n/).map((paragraph, index) => (
-            <p key={index} className="whitespace-pre-wrap">{paragraph}</p>
-          ))}
-        </dd>
-      </div>
+    <dl className="pt-1 text-base leading-7">
       <div>
         <dt className="mb-1 font-semibold text-foreground">{t('skillDetail.usageInstructions')}</dt>
         <dd className="space-y-3 text-muted-foreground">
