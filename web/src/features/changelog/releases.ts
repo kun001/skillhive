@@ -14,6 +14,20 @@ export interface ReleaseNote {
 // Confirm the date and image tag when deploying; Git submission is not deployment.
 export const releases: ReleaseNote[] = [
   {
+    id: '20261009-skill-introductions',
+    version: 'cloud-20261009-skill-introductions',
+    date: '2026-10-09',
+    title: { zh: '技能说明更易读，中英文展示更一致', en: 'Clearer skill introductions in Chinese and English' },
+    summary: { zh: '新上传的技能版本自动生成中英文功能描述和使用方法，帮助你理解技能用途、向 AI 提出具体需求。', en: 'New skill versions automatically receive Chinese and English descriptions and usage guidance, helping you understand each skill and give AI a concrete request.' },
+    changes: [
+      { zh: '技能详情新增“功能描述”和“使用方法”，附有可直接发给 AI 的示例请求；原简介和技能文档继续保留。', en: 'Skill details now include What it does and How to use it, with an example request you can send to AI. Original summaries and skill documentation remain available.' },
+      { zh: '技能库、首页、搜索、团队空间以及我的技能、收藏和订阅列表，优先显示当前可见版本已生成的功能描述，并随中英文切换；完整悬停提示同步切换。', en: 'Skill libraries, homepage cards, search, team spaces and personal skill, favorite and subscription lists prefer the generated description of the visible version. Descriptions and full hover text follow the selected Chinese or English language.' },
+      { zh: '说明按技能版本保存。生成期间或失败时保留原简介，不阻断上传、扫描和审核；已有版本不会自动批量生成说明。', en: 'Introductions belong to each skill version. Original summaries remain visible while generation is pending or fails, without blocking uploads, scans or reviews. Existing versions are not automatically processed in bulk.' },
+      { zh: '移除技能评分和评论入口，保留收藏与订阅，让页面更聚焦于技能内容和团队使用。', en: 'Removed rating and review controls while keeping favorites and subscriptions, so pages focus on skill content and team use.' },
+      { zh: '语言切换保留中文和英文，精简不适用的语言选项及重复展示文案。', en: 'The language switcher now offers Chinese and English, with unused language options and redundant copy removed.' },
+    ],
+  },
+  {
     id: '20261008-browser-office-preview',
     version: 'cloud-20261008-browser-preview',
     date: '2026-10-08',
