@@ -208,8 +208,6 @@ export interface SkillSummary {
   status?: string
   downloadCount: number
   starCount: number
-  ratingAvg?: number
-  ratingCount: number
   namespace: string
   updatedAt: string
   ownerId?: string
@@ -287,7 +285,6 @@ export type SkillDetail = Omit<
     | 'ownerDisplayName'
     | 'summary'
     | 'subscriptionCount'
-    | 'ratingAvg'
     | 'labels'
     | 'headlineVersion'
     | 'publishedVersion'
@@ -332,6 +329,7 @@ export interface SkillVersionDetail {
   parsedMetadataJson?: string
   manifestJson?: string
   complianceSnapshot?: ComplianceSnapshot
+  introduction?: components['schemas']['SkillIntroductionResponse']
 }
 
 export interface SkillFile {

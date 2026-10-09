@@ -173,8 +173,9 @@ class SkillPublishServiceTest {
         verify(objectStorageService, atLeastOnce()).putObject(anyString(), any(), anyLong(), anyString());
         verify(reviewTaskRepository).save(any(ReviewTask.class));
         ArgumentCaptor<Object> eventCaptor = ArgumentCaptor.forClass(Object.class);
-        verify(eventPublisher).publishEvent(eventCaptor.capture());
-        ReviewSubmittedEvent submittedEvent = (ReviewSubmittedEvent) eventCaptor.getValue();
+        verify(eventPublisher, org.mockito.Mockito.times(2)).publishEvent(eventCaptor.capture());
+        ReviewSubmittedEvent submittedEvent = (ReviewSubmittedEvent) eventCaptor.getAllValues().get(0);
+        assertEquals(new com.iflytek.skillhub.domain.event.SkillVersionUploadedEvent(10L), eventCaptor.getAllValues().get(1));
         assertEquals(1L, submittedEvent.skillId());
         assertEquals(10L, submittedEvent.versionId());
         assertEquals(publisherId, submittedEvent.submitterId());

@@ -25,6 +25,7 @@ import com.iflytek.skillhub.metrics.SkillHubMetrics;
 import com.iflytek.skillhub.ratelimit.RateLimit;
 import com.iflytek.skillhub.service.SkillLabelAppService;
 import com.iflytek.skillhub.service.ComplianceSnapshotProjectionService;
+import com.iflytek.skillhub.service.SkillIntroductionService;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -57,6 +58,7 @@ public class SkillController extends BaseApiController {
     private final SkillLabelAppService skillLabelAppService;
     private final ComplianceSnapshotProjectionService complianceSnapshotProjectionService;
     private final SkillHubMetrics metrics;
+    private final SkillIntroductionService skillIntroductionService;
 
     public SkillController(
             SkillQueryService skillQueryService,
@@ -65,7 +67,8 @@ public class SkillController extends BaseApiController {
             ComplianceSnapshotProjectionService complianceSnapshotProjectionService,
             SkillHubMetrics metrics,
             ApiResponseFactory responseFactory,
-            com.iflytek.skillhub.service.MemberResourceAccessService memberAccess) {
+            com.iflytek.skillhub.service.MemberResourceAccessService memberAccess,
+            SkillIntroductionService skillIntroductionService) {
         super(responseFactory);
         this.memberAccess = memberAccess;
         this.skillQueryService = skillQueryService;
@@ -73,6 +76,7 @@ public class SkillController extends BaseApiController {
         this.skillLabelAppService = skillLabelAppService;
         this.complianceSnapshotProjectionService = complianceSnapshotProjectionService;
         this.metrics = metrics;
+        this.skillIntroductionService = skillIntroductionService;
     }
 
     /**
@@ -105,8 +109,6 @@ public class SkillController extends BaseApiController {
                 detail.downloadCount(),
                 detail.starCount(),
                 detail.subscriptionCount(),
-                detail.ratingAvg(),
-                detail.ratingCount(),
                 detail.hidden(),
                 namespace,
                 skillLabelAppService.listSkillLabelsBySkillId(detail.id()),
@@ -190,7 +192,8 @@ public class SkillController extends BaseApiController {
                 detail.publishedAt(),
                 detail.parsedMetadataJson(),
                 detail.manifestJson(),
-                complianceSnapshotProjectionService.fromParsedMetadataJson(detail.parsedMetadataJson())
+                complianceSnapshotProjectionService.fromParsedMetadataJson(detail.parsedMetadataJson()),
+                skillIntroductionService.findByVersion(detail.id())
         );
         return ok("response.success.read", response);
     }

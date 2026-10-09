@@ -17,11 +17,8 @@ export function clearDeletedSkillQueries(queryClient: QueryClient, namespace: st
   queryClient.removeQueries({ queryKey: baseKey })
   if (skillId) {
     void queryClient.cancelQueries({ queryKey: ['skills', skillId, 'star'], exact: true })
-    void queryClient.cancelQueries({ queryKey: ['skills', skillId, 'rating'], exact: true })
     queryClient.setQueryData(['skills', skillId, 'star'], undefined)
-    queryClient.setQueryData(['skills', skillId, 'rating'], undefined)
     queryClient.removeQueries({ queryKey: ['skills', skillId, 'star'], exact: true })
-    queryClient.removeQueries({ queryKey: ['skills', skillId, 'rating'], exact: true })
   }
 
   void queryClient.invalidateQueries({ queryKey: ['skills', 'my'] })

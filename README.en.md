@@ -12,7 +12,7 @@
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache--2.0-blue.svg" alt="License: Apache-2.0" /></a>
   <img src="https://img.shields.io/badge/Deploy-Self--hosted%20·%20Docker%20Compose-2496ed" alt="Self-hosted with Docker Compose" />
-  <img src="https://img.shields.io/badge/UI-中文%20·%20English%20·%20Русский-6b4f3a" alt="Chinese, English, Russian" />
+  <img src="https://img.shields.io/badge/UI-中文%20·%20English-6b4f3a" alt="Chinese, English" />
 </p>
 
 <p align="center">
@@ -128,7 +128,7 @@ These recordings were made in a local Web interface; the knowledge base files ar
 | **Knowledge bases** | Nested folders; batch uploads with progress and retries; upload Markdown together with its local images or a whole folder; online preview; version history, per-version download and restore; search titles and descriptions, including across knowledge bases. |
 | **Team spaces** | One page shows the space's skills and knowledge bases; member management with per-member read-only, editable and download permissions that apply immediately. |
 | **Governance** | Platform and space roles; notifications; audit log of key operations. |
-| **Interface** | Chinese, English and Russian; light and dark themes; works on phones and narrow screens. |
+| **Interface** | Chinese and English; light and dark themes; works on phones and narrow screens. |
 
 <details>
 <summary><strong>Skill package format</strong></summary>

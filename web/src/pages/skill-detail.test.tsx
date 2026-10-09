@@ -18,8 +18,10 @@ const useSkillLabelsMock = vi.fn()
 const useSkillVersionsMock = vi.fn()
 const useSkillFilesMock = vi.fn()
 const useSkillReadmeMock = vi.fn()
+const useSkillVersionDetailMock = vi.fn()
 const useSkillFileMock = vi.fn()
 const searchMock = vi.hoisted(() => ({ value: { returnTo: '/dashboard/skills', version: undefined as string | undefined } }))
+const localeMock = vi.hoisted(() => ({ language: 'zh' }))
 let authState: {
   user: { userId: string; platformRoles: string[] } | null
   hasRole: (role: string) => boolean
@@ -56,7 +58,7 @@ vi.mock('react-i18next', async () => {
     ...actual,
     useTranslation: () => ({
       t: (key: string) => key,
-      i18n: { language: 'zh' },
+      i18n: localeMock,
     }),
   }
 })
@@ -177,9 +179,6 @@ vi.mock('@/features/skill/file-tree', () => ({
   FileTree: () => <div>files</div>,
 }))
 
-vi.mock('@/features/social/rating-input', () => ({
-  RatingInput: () => <div>__RATING_WIDGET__</div>,
-}))
 
 vi.mock('@/features/social/star-button', () => ({
   StarButton: () => <div>__STAR_WIDGET__</div>,
@@ -196,7 +195,7 @@ vi.mock('@/shared/hooks/use-skill-queries', () => ({
   useAttachSkillLabel: () => ({ mutate: vi.fn(), isPending: false }),
   useDetachSkillLabel: () => ({ mutate: vi.fn(), isPending: false }),
   useSkillVersions: (...args: unknown[]) => useSkillVersionsMock(...args),
-  useSkillVersionDetail: () => ({ data: undefined }),
+  useSkillVersionDetail: (...args: unknown[]) => useSkillVersionDetailMock(...args),
   useSkillFiles: (...args: unknown[]) => useSkillFilesMock(...args),
   useSkillReadme: (...args: unknown[]) => useSkillReadmeMock(...args),
   useSkillFile: (...args: unknown[]) => useSkillFileMock(...args),
@@ -239,8 +238,6 @@ function createSkill(overrides: Record<string, unknown> = {}) {
     status: 'ACTIVE',
     downloadCount: 12,
     starCount: 2,
-    ratingAvg: 4.5,
-    ratingCount: 2,
     hidden: false,
     namespace: 'global',
     canManageLifecycle: true,
@@ -269,10 +266,13 @@ describe('SkillDetailPage', () => {
   afterEach(() => cleanup())
 
   beforeEach(() => {
+    localeMock.language = 'zh'
     searchMock.value = { returnTo: '/dashboard/skills', version: undefined }
     navigateMock.mockReset()
     useSkillFilesMock.mockReset()
     useSkillReadmeMock.mockReset()
+    useSkillVersionDetailMock.mockReset()
+    useSkillVersionDetailMock.mockReturnValue({ data: undefined })
     useSkillFileMock.mockReset()
     toastMocks.success.mockReset()
     toastMocks.error.mockReset()
@@ -307,6 +307,38 @@ describe('SkillDetailPage', () => {
     useSkillFilesMock.mockReturnValue({ data: [] })
     useSkillReadmeMock.mockReturnValue({ data: '# Demo', error: null })
     useSkillFileMock.mockReturnValue({ data: null, isLoading: false, error: null })
+  })
+
+  it('shows generated copy and keeps the selected version description in the overview', () => {
+    useSkillVersionDetailMock.mockReturnValue({ data: {
+      parsedMetadataJson: JSON.stringify({ description: 'Version-specific original description' }),
+      introduction: { status: 'COMPLETED', zh: { functionDescription: '生成的功能', usageInstructions: '生成的用法' },
+        en: { functionDescription: 'Generated function', usageInstructions: 'Generated usage' } },
+    } })
+    const html = renderToStaticMarkup(<SkillDetailPage />)
+    expect(html).toContain('生成的功能')
+    expect(html).toContain('生成的用法')
+    expect(html).toContain('Version-specific original description')
+    expect(html.indexOf('生成的功能')).toBeLessThan(html.indexOf('Version-specific original description'))
+    expect(html).not.toContain('skillDetail.originalDescription')
+  })
+
+  it('updates generated copy when the page language changes, keeping the source description intact', () => {
+    useSkillVersionDetailMock.mockReturnValue({ data: {
+      parsedMetadataJson: JSON.stringify({ description: 'English description from the skill' }),
+      introduction: { status: 'COMPLETED', zh: { functionDescription: '生成的功能', usageInstructions: '生成的用法' },
+        en: { functionDescription: 'Generated function', usageInstructions: 'Generated usage' } },
+    } })
+    const view = render(<SkillDetailPage />)
+    expect(screen.getByText('生成的功能')).toBeTruthy()
+    expect(screen.getByText('English description from the skill')).toBeTruthy()
+
+    localeMock.language = 'en'
+    view.rerender(<SkillDetailPage />)
+    expect(screen.getByText('Generated function')).toBeTruthy()
+    expect(screen.getByText('Generated usage')).toBeTruthy()
+    expect(screen.queryByText('生成的功能')).toBeNull()
+    expect(screen.getByText('English description from the skill')).toBeTruthy()
   })
 
   it('loads the exact version requested by a Suite member link', () => {
@@ -486,7 +518,6 @@ describe('SkillDetailPage', () => {
 
     expect(useSkillVersionsMock).toHaveBeenCalledWith('global', 'demo-skill', false)
     expect(html).not.toContain('__STAR_WIDGET__')
-    expect(html).not.toContain('__RATING_WIDGET__')
   })
 
   it('renders rejected owner preview without pending-review copy', () => {

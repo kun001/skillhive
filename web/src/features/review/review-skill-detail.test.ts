@@ -26,7 +26,6 @@ function createDetail(overrides: Partial<ReviewSkillDetail> = {}): ReviewSkillDe
       status: 'ACTIVE',
       downloadCount: 1,
       starCount: 0,
-      ratingCount: 0,
       hidden: false,
       namespace: 'team-a',
       canDownload: true,

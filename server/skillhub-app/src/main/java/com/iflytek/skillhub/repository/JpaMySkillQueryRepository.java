@@ -131,8 +131,6 @@ public class JpaMySkillQueryRepository implements MySkillQueryRepository {
                 skill.getStatus().name(),
                 skill.getDownloadCount(),
                 skill.getStarCount(),
-                skill.getRatingAvg(),
-                skill.getRatingCount(),
                 namespace != null ? namespace.getSlug() : null,
                 skill.getUpdatedAt(),
                 skill.getOwnerId(),

@@ -270,8 +270,6 @@ public class SkillSearchAppService {
                 skill.getStatus().name(),
                 skill.getDownloadCount(),
                 skill.getStarCount(),
-                skill.getRatingAvg(),
-                skill.getRatingCount(),
                 namespaceSlug,
                 skill.getUpdatedAt(),
                 skill.getOwnerId(),

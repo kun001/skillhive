@@ -169,8 +169,6 @@ class SkillControllerTest {
                         10L,
                         2,
                         0,
-                        null,
-                        0,
                         false,
                         1L,
                         Instant.parse("2026-03-15T10:00:00Z"),

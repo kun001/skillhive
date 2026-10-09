@@ -63,8 +63,6 @@ class MeControllerTest {
                                 "ACTIVE",
                                 12L,
                                 3,
-                                null,
-                                0,
                                 "team-ai",
                                 Instant.parse("2026-03-17T12:00:00Z"),
                                 null,

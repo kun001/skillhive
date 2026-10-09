@@ -21,7 +21,7 @@ const privacyDocuments = {
         paragraphs: [],
         bullets: [
           '账户与身份信息，例如用户名、邮箱、头像、OAuth 提供方标识、平台角色和命名空间成员关系。',
-          '你主动提交的内容，例如技能包、README、版本说明、命名空间资料、评分、星标和审核意见。',
+          '你主动提交的内容，例如技能包、README、版本说明、命名空间资料、星标和审核意见。',
           '使用与安全信息，例如 IP 地址、浏览器或设备信息、请求日志、下载记录、登录事件、API Token 元数据、错误日志和审计日志。',
         ],
       },
@@ -30,7 +30,7 @@ const privacyDocuments = {
         paragraphs: [],
         bullets: [
           '提供登录、会话管理、权限控制、设备授权、账号安全和基础客户支持。',
-          '展示公开技能页面，支持搜索、下载、评分、星标、命名空间协作和后台治理流程。',
+          '展示公开技能页面，支持搜索、下载、星标、命名空间协作和后台治理流程。',
           '执行审核、限流、风控、故障排查、性能分析和产品改进。',
           '在必要时发送与安全、政策更新或服务可用性相关的重要通知。',
         ],
@@ -38,7 +38,7 @@ const privacyDocuments = {
       {
         title: '4. 公开信息与共享',
         paragraphs: [
-          '你发布为公开的技能、版本说明、命名空间名称、公开评分以及部分个人资料信息，可能会向其他用户或访客展示。',
+          '你发布为公开的技能、版本说明、命名空间名称以及部分个人资料信息，可能会向其他用户或访客展示。',
           '除为提供托管、认证、监控、合规支持所必需，或为遵守法律要求、保护平台与用户安全外，我们不会出售你的个人信息。',
           '在私有部署场景中，数据也可能由部署运营方按照其内部治理和合规要求访问、处理或保留。',
         ],
@@ -94,7 +94,7 @@ const privacyDocuments = {
         paragraphs: [],
         bullets: [
           'Account and identity information such as username, email, avatar, OAuth provider identifiers, platform roles, and namespace membership.',
-          'Content you submit, including skill packages, README files, release notes, namespace profiles, ratings, stars, and review comments.',
+          'Content you submit, including skill packages, README files, release notes, namespace profiles, stars, and review comments.',
           'Usage and security information such as IP address, browser or device details, request logs, download activity, login events, API token metadata, error logs, and audit logs.',
         ],
       },
@@ -103,7 +103,7 @@ const privacyDocuments = {
         paragraphs: [],
         bullets: [
           'To provide login, session management, access control, device authorization, account security, and basic support.',
-          'To display public skill pages and power search, downloads, ratings, stars, namespace collaboration, and governance workflows.',
+          'To display public skill pages and power search, downloads, stars, namespace collaboration, and governance workflows.',
           'To perform review operations, rate limiting, abuse prevention, debugging, performance analysis, and service improvement.',
           'To send important notices related to security, policy changes, or service availability when needed.',
         ],
@@ -111,7 +111,7 @@ const privacyDocuments = {
       {
         title: '4. Public Information and Sharing',
         paragraphs: [
-          'Skills you publish publicly, release notes, namespace names, public ratings, and some profile information may be visible to other users or visitors.',
+          'Skills you publish publicly, release notes, namespace names, and some profile information may be visible to other users or visitors.',
           'We do not sell your personal information. We may share information when necessary to provide hosting, authentication, monitoring, or compliance support, or to comply with law and protect the service and its users.',
           'For private deployments, the instance operator may also access, process, or retain data according to its own internal governance and compliance requirements.',
         ],

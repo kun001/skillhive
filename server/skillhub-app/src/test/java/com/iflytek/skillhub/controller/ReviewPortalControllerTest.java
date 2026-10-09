@@ -187,8 +187,6 @@ class ReviewPortalControllerTest {
                                 8L,
                                 2,
                                 0,
-                                null,
-                                0,
                                 false,
                                 "team-a",
                                 List.<com.iflytek.skillhub.dto.SkillLabelDto>of(),

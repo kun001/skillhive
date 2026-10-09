@@ -20,9 +20,14 @@ describe('syncDocumentLanguage', () => {
     expect(document.getElementById('root')?.getAttribute('translate')).toBe('no')
   })
 
-  it('uses the primary subtag for other locales', () => {
+  it('maps English regional variants to en', () => {
     document.body.innerHTML = '<div id="root"></div>'
+    syncDocumentLanguage('en-US')
+    expect(document.documentElement.lang).toBe('en')
+  })
+
+  it('falls back to English for an unsupported previous locale', () => {
     syncDocumentLanguage('ru-RU')
-    expect(document.documentElement.lang).toBe('ru')
+    expect(document.documentElement.lang).toBe('en')
   })
 })

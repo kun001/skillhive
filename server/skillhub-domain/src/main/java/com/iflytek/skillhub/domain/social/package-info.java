@@ -1,5 +1,4 @@
 /**
- * Social interactions such as starring and rating that enrich the skill
- * marketplace experience.
+ * Skill bookmarks and subscriptions, plus historical rating records retained for cleanup.
  */
 package com.iflytek.skillhub.domain.social;

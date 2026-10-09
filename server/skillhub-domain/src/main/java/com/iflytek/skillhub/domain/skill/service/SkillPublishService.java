@@ -3,6 +3,7 @@ package com.iflytek.skillhub.domain.skill.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.iflytek.skillhub.domain.event.ReviewSubmittedEvent;
 import com.iflytek.skillhub.domain.event.SkillPublishedEvent;
+import com.iflytek.skillhub.domain.event.SkillVersionUploadedEvent;
 import com.iflytek.skillhub.domain.namespace.Namespace;
 import com.iflytek.skillhub.domain.namespace.NamespaceMemberRepository;
 import com.iflytek.skillhub.domain.namespace.NamespaceRepository;
@@ -606,6 +607,8 @@ public class SkillPublishService {
         if (autoPublish) {
             eventPublisher.publishEvent(new SkillPublishedEvent(skill.getId(), version.getId(), publisherId));
         }
+
+        eventPublisher.publishEvent(new SkillVersionUploadedEvent(version.getId()));
 
         // 13. Return identifiers for the created version
         return new PublishResult(skill.getId(), skill.getSlug(), version);
