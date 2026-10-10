@@ -39,6 +39,21 @@ public class PostgresFullTextQueryService implements SearchQueryService {
     private static final int SHORT_PREFIX_LENGTH = 2;
     private static final String TITLE_VECTOR_SQL = "to_tsvector('simple', coalesce(title, ''))";
     private static final String TITLE_SQL = "LOWER(title)";
+    /*
+     * Chinese text has no word separators, so the 'simple' tsvector cannot match
+     * a phrase that sits inside a longer run of characters. The card text users
+     * read also lives outside the search document: the generated zh/en function
+     * description is stored per version in skill_introduction. Match those
+     * fields by substring as well. The candidate set is already narrowed by the
+     * visibility and status filters, so a sequential LIKE scan stays cheap.
+     */
+    private static final String DESCRIPTION_SUBSTRING_SQL =
+            "LOWER(s.slug) LIKE :titleLike "
+                    + "OR LOWER(coalesce(d.summary, '')) LIKE :titleLike "
+                    + "OR EXISTS (SELECT 1 FROM skill_introduction si "
+                    + "WHERE si.version_id = s.latest_version_id AND si.status = 'COMPLETED' "
+                    + "AND (LOWER(coalesce(si.zh_function_description, '')) LIKE :titleLike "
+                    + "OR LOWER(coalesce(si.en_function_description, '')) LIKE :titleLike))";
 
     private final EntityManager entityManager;
     private final SkillSearchDocumentJpaRepository searchDocumentRepository;
@@ -166,6 +181,9 @@ public class PostgresFullTextQueryService implements SearchQueryService {
                 sql.append(" OR ");
             }
             sql.append(TITLE_SQL).append(" LIKE :titleLike");
+            if (!useShortPrefixTitleSearch && !isShortAsciiKeyword(normalizedKeyword)) {
+                sql.append(" OR ").append(DESCRIPTION_SUBSTRING_SQL);
+            }
             sql.append(") ");
         }
 
@@ -216,10 +234,10 @@ public class PostgresFullTextQueryService implements SearchQueryService {
                 nativeQuery.setParameter("tsQuery", tsQuery);
             }
             if (useRelevanceOrdering) {
-                nativeQuery.setParameter("titleExact", normalizedKeyword.toLowerCase(Locale.ROOT));
-                nativeQuery.setParameter("titlePrefix", normalizedKeyword.toLowerCase(Locale.ROOT) + "%");
+                nativeQuery.setParameter("titleExact", normalizedKeyword);
+                nativeQuery.setParameter("titlePrefix", escapeLike(normalizedKeyword) + "%");
             }
-            nativeQuery.setParameter("titleLike", "%" + normalizedKeyword.toLowerCase(Locale.ROOT) + "%");
+            nativeQuery.setParameter("titleLike", containsPattern(normalizedKeyword));
         }
 
         nativeQuery.setParameter("limit", sqlLimit);
@@ -259,7 +277,7 @@ public class PostgresFullTextQueryService implements SearchQueryService {
             if (hasTsQuery) {
                 countQuery.setParameter("tsQuery", tsQuery);
             }
-            countQuery.setParameter("titleLike", "%" + normalizedKeyword.toLowerCase(Locale.ROOT) + "%");
+            countQuery.setParameter("titleLike", containsPattern(normalizedKeyword));
         }
 
         long total = ((Number) countQuery.getSingleResult()).longValue();
@@ -323,6 +341,19 @@ public class PostgresFullTextQueryService implements SearchQueryService {
             return null;
         }
         return keyword.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String containsPattern(String normalizedKeyword) {
+        return "%" + escapeLike(normalizedKeyword) + "%";
+    }
+
+    /** Treat user input literally: PostgreSQL LIKE uses backslash as its default escape. */
+    private String escapeLike(String value) {
+        return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+    }
+
+    private boolean isShortAsciiKeyword(String keyword) {
+        return keyword.length() <= SHORT_PREFIX_LENGTH && keyword.chars().allMatch(ch -> ch < 128);
     }
 
     private String buildPrefixTsQuery(String keyword) {

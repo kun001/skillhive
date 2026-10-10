@@ -14,6 +14,17 @@ export interface ReleaseNote {
 // Confirm the date and image tag when deploying; Git submission is not deployment.
 export const releases: ReleaseNote[] = [
   {
+    id: '20261010-skill-search',
+    version: 'cloud-20261010-skill-search',
+    date: '2026-10-10',
+    title: { zh: '技能搜索支持简介关键词', en: 'Skill search matches descriptions' },
+    summary: { zh: '搜索技能时可以直接输入简介里的中文或英文词语；清空搜索框后立即恢复完整列表。', en: 'Search now finds skills by words in their Chinese or English descriptions, and clearing the search box restores the full list right away.' },
+    changes: [
+      { zh: '搜索会匹配技能中英文功能描述和简介中的关键词，中文短语无需与完整词语一致也能找到。', en: 'Search matches keywords in a skill\'s Chinese and English descriptions and summary, including Chinese phrases inside longer sentences.' },
+      { zh: '清空搜索框后立即显示全部技能，无需再点击“搜索”；按回车或点击“搜索”的方式保持不变。', en: 'Clearing the search box shows all skills immediately without clicking Search. Pressing Enter or clicking Search works as before.' },
+    ],
+  },
+  {
     id: '20261009-skill-introductions',
     version: 'cloud-20261009-skill-introductions',
     date: '2026-10-09',

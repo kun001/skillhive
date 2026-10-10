@@ -44,6 +44,64 @@ class PostgresFullTextQueryServiceTest {
     }
 
     @Test
+    void chineseSubstringShouldMatchSummaryAndIntroductionDescriptions() {
+        EntityManager entityManager = mock(EntityManager.class);
+        Query nativeQuery = mock(Query.class);
+        Query countQuery = mock(Query.class);
+        when(entityManager.createNativeQuery(anyString())).thenReturn(nativeQuery, countQuery);
+        when(nativeQuery.setParameter(anyString(), org.mockito.ArgumentMatchers.any())).thenReturn(nativeQuery);
+        when(countQuery.setParameter(anyString(), org.mockito.ArgumentMatchers.any())).thenReturn(countQuery);
+        when(nativeQuery.getResultList()).thenReturn(List.of(1L));
+        when(countQuery.getSingleResult()).thenReturn(1L);
+
+        new PostgresFullTextQueryService(entityManager).search(new SearchQuery(
+                "交互式网页", null, SearchVisibilityScope.anonymous(), "newest", 0, 12, List.of(), false, "public"));
+
+        ArgumentCaptor<String> sql = ArgumentCaptor.forClass(String.class);
+        verify(entityManager, org.mockito.Mockito.times(2)).createNativeQuery(sql.capture());
+        for (String statement : sql.getAllValues()) {
+            assertThat(statement).contains("LOWER(coalesce(d.summary, '')) LIKE :titleLike");
+            assertThat(statement).contains("FROM skill_introduction si WHERE si.version_id = s.latest_version_id");
+            assertThat(statement).contains("LOWER(coalesce(si.zh_function_description, '')) LIKE :titleLike");
+            assertThat(statement).contains("LOWER(coalesce(si.en_function_description, '')) LIKE :titleLike");
+        }
+        verify(nativeQuery).setParameter("titleLike", "%交互式网页%");
+        verify(countQuery).setParameter("titleLike", "%交互式网页%");
+    }
+
+    @Test
+    void likeWildcardsInKeywordShouldBeEscaped() {
+        EntityManager entityManager = mock(EntityManager.class);
+        Query nativeQuery = mock(Query.class);
+        Query countQuery = mock(Query.class);
+        when(entityManager.createNativeQuery(anyString())).thenReturn(nativeQuery, countQuery);
+        when(nativeQuery.getResultList()).thenReturn(List.of());
+        when(countQuery.getSingleResult()).thenReturn(0L);
+
+        new PostgresFullTextQueryService(entityManager).search(new SearchQuery(
+                "100%_done", null, SearchVisibilityScope.anonymous(), "newest", 0, 12, List.of(), false, null));
+
+        verify(nativeQuery).setParameter("titleLike", "%100\\%\\_done%");
+    }
+
+    @Test
+    void shortAsciiKeywordsShouldNotScanDescriptions() {
+        EntityManager entityManager = mock(EntityManager.class);
+        Query nativeQuery = mock(Query.class);
+        Query countQuery = mock(Query.class);
+        when(entityManager.createNativeQuery(anyString())).thenReturn(nativeQuery, countQuery);
+        when(nativeQuery.getResultList()).thenReturn(List.of());
+        when(countQuery.getSingleResult()).thenReturn(0L);
+
+        new PostgresFullTextQueryService(entityManager).search(new SearchQuery(
+                "ai", null, SearchVisibilityScope.anonymous(), "newest", 0, 12, List.of(), false, null));
+
+        ArgumentCaptor<String> sql = ArgumentCaptor.forClass(String.class);
+        verify(entityManager, org.mockito.Mockito.times(2)).createNativeQuery(sql.capture());
+        assertThat(sql.getAllValues().getFirst()).doesNotContain("skill_introduction");
+    }
+
+    @Test
     void shortKeywordsShouldUsePrefixTsQuery() {
         EntityManager entityManager = mock(EntityManager.class);
         Query nativeQuery = mock(Query.class);
@@ -584,8 +642,10 @@ class PostgresFullTextQueryServiceTest {
         ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
         verify(entityManager, org.mockito.Mockito.times(2)).createNativeQuery(sqlCaptor.capture());
         assertThat(sqlCaptor.getAllValues().getFirst()).doesNotContain(payload);
-        verify(nativeQuery).setParameter("titleLike", "%" + payload.toLowerCase() + "%");
-        verify(countQuery).setParameter("titleLike", "%" + payload.toLowerCase() + "%");
+        // LIKE wildcards in user input are escaped so they match literally.
+        verify(nativeQuery).setParameter("titleLike", "%x\\%' or 1=1 --%");
+        // LIKE wildcards in user input are escaped so they match literally.
+        verify(countQuery).setParameter("titleLike", "%x\\%' or 1=1 --%");
     }
 
     @Test
