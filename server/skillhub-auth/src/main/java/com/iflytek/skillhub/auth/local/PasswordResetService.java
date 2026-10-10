@@ -1,6 +1,7 @@
 package com.iflytek.skillhub.auth.local;
 
 import com.iflytek.skillhub.auth.exception.AuthFlowException;
+import com.iflytek.skillhub.auth.session.AuthSessionEpochStore;
 import com.iflytek.skillhub.domain.auth.PasswordResetRequest;
 import com.iflytek.skillhub.domain.auth.PasswordResetRequestRepository;
 import com.iflytek.skillhub.domain.user.UserAccount;
@@ -14,6 +15,7 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -41,6 +43,7 @@ public class PasswordResetService {
     private final PasswordEncoder passwordEncoder;
     private final JavaMailSender mailSender;
     private final PasswordResetProperties properties;
+    private final ObjectProvider<AuthSessionEpochStore> authSessionEpochStore;
 
     public PasswordResetService(PasswordResetRequestRepository resetRequestRepository,
                                 UserAccountRepository userAccountRepository,
@@ -48,7 +51,8 @@ public class PasswordResetService {
                                 PasswordPolicyValidator passwordPolicyValidator,
                                 PasswordEncoder passwordEncoder,
                                 JavaMailSender mailSender,
-                                PasswordResetProperties properties) {
+                                PasswordResetProperties properties,
+                                ObjectProvider<AuthSessionEpochStore> authSessionEpochStore) {
         this.resetRequestRepository = resetRequestRepository;
         this.userAccountRepository = userAccountRepository;
         this.credentialRepository = credentialRepository;
@@ -56,6 +60,7 @@ public class PasswordResetService {
         this.passwordEncoder = passwordEncoder;
         this.mailSender = mailSender;
         this.properties = properties;
+        this.authSessionEpochStore = authSessionEpochStore;
     }
 
     /**
@@ -154,6 +159,14 @@ public class PasswordResetService {
         matchedRequest.markConsumed(now);
         resetRequestRepository.save(matchedRequest);
         invalidatePendingRequests(user.getId(), now);
+        invalidateSessions(user.getId());
+    }
+
+    private void invalidateSessions(String userId) {
+        AuthSessionEpochStore store = authSessionEpochStore.getIfAvailable();
+        if (store != null) {
+            store.bumpEpoch(userId);
+        }
     }
 
     private void invalidatePendingRequests(String userId, Instant now) {

@@ -94,11 +94,14 @@ public class LocalAuthController extends BaseApiController {
     @PostMapping("/change-password")
     @RateLimit(category = "auth-change-password", authenticated = 5, anonymous = 20, windowSeconds = 300)
     public ApiResponse<Void> changePassword(@AuthenticationPrincipal PlatformPrincipal principal,
-                                            @Valid @RequestBody ChangePasswordRequest request) {
+                                            @Valid @RequestBody ChangePasswordRequest request,
+                                            HttpServletRequest httpRequest) {
         if (principal == null) {
             throw new UnauthorizedException("error.auth.required");
         }
         localAuthService.changePassword(principal.userId(), request.currentPassword(), request.newPassword());
+        // Keep the current browser session valid after bumping the epoch that invalidates others.
+        platformSessionService.synchronizeSessionEpoch(principal.userId(), httpRequest);
         return ok("response.success.updated", null);
     }
 

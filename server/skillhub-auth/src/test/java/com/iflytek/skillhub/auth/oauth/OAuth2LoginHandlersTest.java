@@ -3,7 +3,10 @@ package com.iflytek.skillhub.auth.oauth;
 import jakarta.servlet.http.HttpSession;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.mock.web.MockHttpServletRequest;
+import com.iflytek.skillhub.auth.session.AuthSessionEpochStore;
+import com.iflytek.skillhub.auth.session.PlatformSessionService;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -29,11 +32,19 @@ class OAuth2LoginHandlersTest {
         SecurityContextHolder.clearContext();
     }
 
+
+    @SuppressWarnings("unchecked")
+    private static PlatformSessionService platformSessionService() {
+        ObjectProvider<AuthSessionEpochStore> epochStore = mock(ObjectProvider.class);
+        org.mockito.Mockito.when(epochStore.getIfAvailable()).thenReturn(null);
+        return new PlatformSessionService(epochStore);
+    }
+
     @Test
     void successHandler_redirectsToStoredReturnTo() throws Exception {
         OAuthLoginFlowService oauthLoginFlowService = mock(OAuthLoginFlowService.class);
         OAuth2LoginSuccessHandler handler = new OAuth2LoginSuccessHandler(
-                new com.iflytek.skillhub.auth.session.PlatformSessionService(),
+                platformSessionService(),
                 oauthLoginFlowService
         );
         MockHttpServletRequest request = new MockHttpServletRequest();
@@ -76,7 +87,7 @@ class OAuth2LoginHandlersTest {
     void successHandler_appliesSubPathPrefixExactlyOnce() throws Exception {
         OAuthLoginFlowService oauthLoginFlowService = mock(OAuthLoginFlowService.class);
         OAuth2LoginSuccessHandler handler = new OAuth2LoginSuccessHandler(
-                new com.iflytek.skillhub.auth.session.PlatformSessionService(),
+                platformSessionService(),
                 oauthLoginFlowService
         );
         MockHttpServletRequest request = new MockHttpServletRequest();
@@ -118,7 +129,7 @@ class OAuth2LoginHandlersTest {
     void successHandler_ignoresSavedApiRequestAndRedirectsToDefault() throws Exception {
         OAuthLoginFlowService oauthLoginFlowService = mock(OAuthLoginFlowService.class);
         OAuth2LoginSuccessHandler handler = new OAuth2LoginSuccessHandler(
-                new com.iflytek.skillhub.auth.session.PlatformSessionService(),
+                platformSessionService(),
                 oauthLoginFlowService
         );
         MockHttpServletRequest request = new MockHttpServletRequest();

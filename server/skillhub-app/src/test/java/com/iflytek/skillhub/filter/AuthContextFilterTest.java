@@ -4,6 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.iflytek.skillhub.auth.policy.RouteSecurityPolicyRegistry;
 import com.iflytek.skillhub.auth.rbac.PlatformPrincipal;
+import com.iflytek.skillhub.auth.repository.UserRoleBindingRepository;
+import com.iflytek.skillhub.auth.session.AuthSessionEpochStore;
+import com.iflytek.skillhub.auth.session.PlatformSessionService;
 import com.iflytek.skillhub.domain.namespace.NamespaceMember;
 import com.iflytek.skillhub.domain.namespace.NamespaceMemberRepository;
 import com.iflytek.skillhub.domain.namespace.NamespaceRole;
@@ -25,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockHttpSession;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.context.support.StaticMessageSource;
@@ -44,17 +48,30 @@ class AuthContextFilterTest {
 
     private final NamespaceMemberRepository namespaceMemberRepository = mock(NamespaceMemberRepository.class);
     private final UserAccountRepository userAccountRepository = mock(UserAccountRepository.class);
+    private final UserRoleBindingRepository userRoleBindingRepository = mock(UserRoleBindingRepository.class);
+    private final PlatformSessionService platformSessionService = mock(PlatformSessionService.class);
+    @SuppressWarnings("unchecked")
+    private final ObjectProvider<AuthSessionEpochStore> authSessionEpochStore = mock(ObjectProvider.class);
+    private final AuthSessionEpochStore epochStore = mock(AuthSessionEpochStore.class);
     private final AuthContextFilter filter;
 
     AuthContextFilterTest() {
         StaticMessageSource messageSource = new StaticMessageSource();
         messageSource.addMessage("error.auth.local.accountDisabled", Locale.ENGLISH, "This account has been disabled");
+        messageSource.addMessage("error.auth.required", Locale.ENGLISH, "Authentication required");
         Clock clock = Clock.fixed(Instant.parse("2026-03-18T00:00:00Z"), ZoneOffset.UTC);
         ApiResponseFactory apiResponseFactory =
                 new ApiResponseFactory(messageSource, clock, new RequestIdAccessor());
+        when(authSessionEpochStore.getIfAvailable()).thenReturn(epochStore);
+        when(epochStore.currentEpoch(org.mockito.ArgumentMatchers.anyString())).thenReturn(0L);
+        when(userRoleBindingRepository.findByUserId(org.mockito.ArgumentMatchers.anyString()))
+                .thenReturn(List.of());
         filter = new AuthContextFilter(
                 namespaceMemberRepository,
                 userAccountRepository,
+                userRoleBindingRepository,
+                platformSessionService,
+                authSessionEpochStore,
                 apiResponseFactory,
                 new ObjectMapper().registerModule(new JavaTimeModule()),
                 true,
@@ -212,7 +229,34 @@ class AuthContextFilterTest {
     }
 
     @Test
-    void anonymousRequest_shouldPassThroughWithoutLoadingUserContext() throws Exception {
+    void staleSessionEpoch_shouldClearAuthentication() throws Exception {
+        PlatformPrincipal principal = new PlatformPrincipal("user-epoch", "Eve", "eve@example.com", null, "local", Set.of("USER_ADMIN"));
+        UserAccount user = new UserAccount("user-epoch", "Eve", "eve@example.com", null);
+        user.setStatus(UserStatus.ACTIVE);
+
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRequestURI("/api/v1/auth/me");
+        MockHttpSession session = (MockHttpSession) request.getSession(true);
+        session.setAttribute("platformPrincipal", principal);
+        session.setAttribute(AuthSessionEpochStore.SESSION_ATTRIBUTE, 1L);
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(principal, null, List.of())
+        );
+        when(userAccountRepository.findById("user-epoch")).thenReturn(java.util.Optional.of(user));
+        when(epochStore.currentEpoch("user-epoch")).thenReturn(2L);
+
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        FilterChain filterChain = mock(FilterChain.class);
+        filter.doFilter(request, response, filterChain);
+
+        assertEquals(401, response.getStatus());
+        assertNull(session.getAttribute("platformPrincipal"));
+        assertNull(SecurityContextHolder.getContext().getAuthentication());
+        verify(filterChain, never()).doFilter(request, response);
+    }
+
+    @Test
+        void anonymousRequest_shouldPassThroughWithoutLoadingUserContext() throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setRequestURI("/assets/app.js");
         MockHttpServletResponse response = new MockHttpServletResponse();
