@@ -20,6 +20,7 @@ vi.mock('react-i18next', async () => {
     ...actual,
     useTranslation: () => ({
       t: (key: string) => key,
+      i18n: { language: 'en', resolvedLanguage: 'en' },
     }),
   }
 })
@@ -46,8 +47,28 @@ vi.mock('@/shared/ui/card', () => ({
   Card: ({ children }: { children: ReactNode }) => createElement('div', null, children),
 }))
 
+vi.mock('@/shared/ui/select', () => ({
+  Select: ({ children }: { children: ReactNode }) => createElement('div', null, children),
+  SelectTrigger: ({ children }: { children: ReactNode }) => createElement('div', null, children),
+  SelectValue: () => null,
+  SelectContent: ({ children }: { children: ReactNode }) => createElement('div', null, children),
+  SelectItem: ({ children }: { children: ReactNode }) => createElement('div', null, children),
+}))
+
+vi.mock('@/shared/ui/input', () => ({
+  Input: () => createElement('input'),
+}))
+
 vi.mock('@/shared/components/empty-state', () => ({
-  EmptyState: () => createElement('div', null, 'empty-state'),
+  EmptyState: ({
+    title,
+    description,
+    action,
+  }: {
+    title: string
+    description?: string
+    action?: ReactNode
+  }) => createElement('div', { 'data-testid': 'empty-state' }, title, description, action),
 }))
 
 vi.mock('@/shared/components/confirm-dialog', () => ({
@@ -241,6 +262,20 @@ describe('MySkillsPage', () => {
     renderToStaticMarkup(createElement(MySkillsPage))
 
     expect(buttonRecords.some((button) => button.label === 'mySkills.restoreHidden')).toBe(false)
+  })
+
+  it('shows a publish CTA on the empty All filter state', () => {
+    useMySkillsMock.mockReturnValue({
+      data: { items: [], total: 0, page: 0, size: 10 },
+      isLoading: false,
+    })
+
+    const html = renderToStaticMarkup(createElement(MySkillsPage))
+    expect(html).toContain('mySkills.emptyTitle')
+    expect(html).toContain('mySkills.publishSkill')
+
+    findButton('mySkills.publishSkill').onClick?.()
+    expect(navigateMock).toHaveBeenCalledWith({ to: '/dashboard/publish' })
   })
 
   it('exports a named component function', () => {

@@ -3,7 +3,7 @@
  * Determines which files can be previewed and provides appropriate icons/labels.
  */
 
-// Maximum file size for preview (1MB)
+// Maximum file size for text preview (1MB)
 const MAX_PREVIEW_SIZE = 1024 * 1024
 
 // File extensions that support text preview
@@ -21,13 +21,19 @@ const PREVIEWABLE_EXTENSIONS = new Set([
   'vue', 'svelte',
 ])
 
-// Binary file extensions that cannot be previewed
+/** Office formats rendered in-browser (same set as knowledge browser-office-preview). */
+const OFFICE_BROWSER_PREVIEW_EXTENSIONS = new Set([
+  'docx',
+  'pptx',
+])
+
+// Binary file extensions that cannot be previewed as text (legacy .doc/.ppt stay download-only)
 const BINARY_EXTENSIONS = new Set([
   'png', 'jpg', 'jpeg', 'gif', 'bmp', 'ico', 'svg',
   'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm',
   'mp3', 'wav', 'ogg', 'flac',
   'zip', 'tar', 'gz', 'rar', '7z',
-  'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx',
+  'pdf', 'doc', 'xls', 'xlsx', 'ppt',
   'exe', 'dll', 'so', 'dylib',
 ])
 
@@ -42,12 +48,17 @@ export function getFileExtension(fileName: string): string {
   return parts.length > 1 ? parts[parts.length - 1].toLowerCase() : ''
 }
 
+/** True when the file can be rendered with the browser Office preview (docx/pptx). */
+export function isBrowserOfficePreviewable(fileName: string): boolean {
+  return OFFICE_BROWSER_PREVIEW_EXTENSIONS.has(getFileExtension(fileName))
+}
+
 /**
- * Checks if a file can be previewed based on its name and size.
+ * Checks if a file can be previewed as text based on its name and size.
  *
  * @param fileName - The name of the file
  * @param fileSize - The size of the file in bytes
- * @returns True if the file can be previewed
+ * @returns True if the file can be previewed as text
  */
 export function isPreviewable(fileName: string, fileSize: number): boolean {
   if (fileSize > MAX_PREVIEW_SIZE) {
@@ -56,7 +67,7 @@ export function isPreviewable(fileName: string, fileSize: number): boolean {
 
   const ext = getFileExtension(fileName)
 
-  if (BINARY_EXTENSIONS.has(ext)) {
+  if (BINARY_EXTENSIONS.has(ext) || OFFICE_BROWSER_PREVIEW_EXTENSIONS.has(ext)) {
     return false
   }
 
@@ -69,17 +80,22 @@ export function isPreviewable(fileName: string, fileSize: number): boolean {
  *
  * @param fileName - The name of the file
  * @param fileSize - The size of the file in bytes
- * @returns Object with canPreview flag and optional reason
+ * @returns Object with canPreview flag, optional reason, and preview mode
  */
 export function canPreviewFile(fileName: string, fileSize: number): {
   canPreview: boolean
   reason?: 'too-large' | 'binary' | 'unsupported'
+  mode?: 'text' | 'office'
 } {
+  const ext = getFileExtension(fileName)
+
+  if (OFFICE_BROWSER_PREVIEW_EXTENSIONS.has(ext)) {
+    return { canPreview: true, mode: 'office' }
+  }
+
   if (fileSize > MAX_PREVIEW_SIZE) {
     return { canPreview: false, reason: 'too-large' }
   }
-
-  const ext = getFileExtension(fileName)
 
   if (BINARY_EXTENSIONS.has(ext)) {
     return { canPreview: false, reason: 'binary' }
@@ -89,7 +105,7 @@ export function canPreviewFile(fileName: string, fileSize: number): {
     return { canPreview: false, reason: 'unsupported' }
   }
 
-  return { canPreview: true }
+  return { canPreview: true, mode: 'text' }
 }
 
 /**
@@ -112,6 +128,8 @@ export function getFileTypeLabel(fileName: string): string {
     sh: 'bash',
     bash: 'bash',
     yml: 'yaml',
+    docx: 'docx',
+    pptx: 'pptx',
   }
 
   return labelMap[ext] || ext || 'text'
@@ -131,6 +149,7 @@ export function getFileIcon(fileName: string): string {
   if (['ts', 'tsx', 'js', 'jsx'].includes(ext)) return 'FileCode'
   if (['json', 'yaml', 'yml'].includes(ext)) return 'FileJson'
   if (['sh', 'bash'].includes(ext)) return 'Terminal'
+  if (OFFICE_BROWSER_PREVIEW_EXTENSIONS.has(ext)) return 'FileText'
   if (BINARY_EXTENSIONS.has(ext)) return 'File'
 
   return 'FileText'

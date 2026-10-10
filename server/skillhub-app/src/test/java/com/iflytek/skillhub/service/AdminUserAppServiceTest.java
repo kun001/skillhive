@@ -3,6 +3,7 @@ package com.iflytek.skillhub.service;
 import com.iflytek.skillhub.auth.entity.Role;
 import com.iflytek.skillhub.auth.entity.UserRoleBinding;
 import com.iflytek.skillhub.auth.repository.RoleRepository;
+import com.iflytek.skillhub.auth.session.AuthSessionEpochStore;
 import com.iflytek.skillhub.auth.repository.UserRoleBindingRepository;
 import com.iflytek.skillhub.domain.shared.exception.DomainBadRequestException;
 import com.iflytek.skillhub.domain.shared.exception.DomainForbiddenException;
@@ -13,6 +14,7 @@ import com.iflytek.skillhub.domain.user.UserStatus;
 import com.iflytek.skillhub.dto.PageResponse;
 import com.iflytek.skillhub.repository.AdminUserSearchRepository;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -37,12 +39,16 @@ class AdminUserAppServiceTest {
     private final RoleRepository roleRepository = mock(RoleRepository.class);
     private final UserAccountRepository userAccountRepository = mock(UserAccountRepository.class);
     private final ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
+    @SuppressWarnings("unchecked")
+    private final ObjectProvider<AuthSessionEpochStore> authSessionEpochStore = mock(ObjectProvider.class);
+    private final AuthSessionEpochStore epochStore = mock(AuthSessionEpochStore.class);
     private final AdminUserAppService service = new AdminUserAppService(
             adminUserSearchRepository,
             userAccountRepository,
             userRoleBindingRepository,
             roleRepository,
-            eventPublisher
+            eventPublisher,
+            authSessionEpochStore
     );
 
     @Test
@@ -182,6 +188,34 @@ class AdminUserAppServiceTest {
         when(userAccountRepository.findById("missing")).thenReturn(Optional.empty());
 
         assertThrows(DomainNotFoundException.class, () -> service.updateUserStatus("missing", "DISABLED"));
+    }
+
+
+    @org.junit.jupiter.api.BeforeEach
+    void stubEpochStore() {
+        when(authSessionEpochStore.getIfAvailable()).thenReturn(epochStore);
+    }
+
+    @Test
+    void updateUserRole_bumpsSessionEpoch() {
+        when(userAccountRepository.findById("user-1"))
+                .thenReturn(Optional.of(user("user-1", "alice", "alice@example.com", UserStatus.ACTIVE)));
+        when(roleRepository.findByCode("AUDITOR")).thenReturn(Optional.of(role("AUDITOR")));
+
+        service.updateUserRole("user-1", "AUDITOR", Set.of("SUPER_ADMIN"));
+
+        verify(epochStore).bumpEpoch("user-1");
+    }
+
+    @Test
+    void updateUserStatus_disableBumpsSessionEpoch() {
+        UserAccount user = user("user-1", "alice", "alice@example.com", UserStatus.ACTIVE);
+        when(userAccountRepository.findById("user-1")).thenReturn(Optional.of(user));
+        when(userAccountRepository.save(user)).thenReturn(user);
+
+        service.updateUserStatus("user-1", "DISABLED");
+
+        verify(epochStore).bumpEpoch("user-1");
     }
 
     private UserAccount user(String id, String displayName, String email, UserStatus status) {

@@ -1,13 +1,21 @@
-import { useState, type MouseEvent } from 'react'
-import { Copy, Check, Download, X } from 'lucide-react'
+import { useEffect, useState, type MouseEvent } from 'react'
+import { Copy, Check, Download, Loader2, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Dialog, DialogContent } from '@/shared/ui/dialog'
 import { Button } from '@/shared/ui/button'
+import { DocxCanvas } from '@/features/knowledge/docx-preview'
+import { PptxCanvas } from '@/features/knowledge/pptx-preview'
 import { MarkdownRenderer } from './markdown-renderer'
 import { CodeRenderer } from './code-renderer'
 import { toast } from '@/shared/lib/toast'
 import { copyToClipboard } from '@/shared/lib/clipboard'
-import { getFileTypeLabel, canPreviewFile, getLanguageForHighlight } from './file-type-utils'
+import {
+  getFileTypeLabel,
+  canPreviewFile,
+  getLanguageForHighlight,
+  getFileExtension,
+  isBrowserOfficePreviewable,
+} from './file-type-utils'
 import type { FileTreeNode } from './file-tree-builder'
 
 interface FilePreviewDialogProps {
@@ -20,11 +28,60 @@ interface FilePreviewDialogProps {
   canDownload?: boolean
   onDownload: () => void
   onLinkClick?: (href: string, event: MouseEvent<HTMLAnchorElement>) => void
+  /** Absolute or same-origin URL used to fetch binary Office content for in-browser preview. */
+  contentUrl?: string | null
+}
+
+function SkillOfficePreview({ url, fileName, title }: { url: string; fileName: string; title: string }) {
+  const { t } = useTranslation()
+  const [blob, setBlob] = useState<Blob | null>(null)
+  const [status, setStatus] = useState<'loading' | 'ready' | 'failed'>('loading')
+
+  useEffect(() => {
+    let active = true
+    setStatus('loading')
+    setBlob(null)
+    void fetch(url, { credentials: 'include' })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`)
+        }
+        return response.blob()
+      })
+      .then((data) => {
+        if (!active) return
+        setBlob(data)
+        setStatus('ready')
+      })
+      .catch(() => {
+        if (active) setStatus('failed')
+      })
+    return () => {
+      active = false
+    }
+  }, [url])
+
+  const Canvas = getFileExtension(fileName) === 'pptx' ? PptxCanvas : DocxCanvas
+
+  return (
+    <div className="space-y-4">
+      {status === 'loading' ? (
+        <div role="status" className="flex min-h-48 items-center justify-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+          {t('knowledge.preview.loading')}
+        </div>
+      ) : null}
+      {status === 'failed' ? (
+        <p role="alert" className="p-8 text-center text-muted-foreground">{t('knowledge.preview.officeFailed')}</p>
+      ) : null}
+      {status === 'ready' && blob ? <Canvas blob={blob} title={title} /> : null}
+    </div>
+  )
 }
 
 /**
  * Dialog component for previewing file contents.
- * Supports Markdown rendering and plain text display.
+ * Supports Markdown, code, plain text, and browser Office (docx/pptx) preview.
  * Shows appropriate messages for non-previewable files.
  */
 export function FilePreviewDialog({
@@ -37,6 +94,7 @@ export function FilePreviewDialog({
   canDownload = true,
   onDownload,
   onLinkClick,
+  contentUrl,
 }: FilePreviewDialogProps) {
   const { t } = useTranslation()
   // Tracks the copy animation state: idle → spinning → done
@@ -46,6 +104,7 @@ export function FilePreviewDialog({
 
   const fileTypeLabel = getFileTypeLabel(node.name)
   const previewCheck = canPreviewFile(node.name, node.file?.fileSize || 0)
+  const isOffice = previewCheck.mode === 'office' || isBrowserOfficePreviewable(node.name)
   const isMarkdown = ['md', 'mdx', 'markdown'].includes(fileTypeLabel)
   const fileSize = node.file?.fileSize || 0
   const language = getLanguageForHighlight(node.name)
@@ -89,7 +148,7 @@ export function FilePreviewDialog({
             </span>
           </div>
           <div className="flex items-center gap-1 flex-shrink-0">
-            {content && (
+            {content && !isOffice ? (
               <Button
                 variant="ghost"
                 size="icon"
@@ -102,7 +161,7 @@ export function FilePreviewDialog({
                   ? <Check className="h-4 w-4 text-emerald-500" />
                   : <Copy className={`h-4 w-4 transition-transform duration-300 ${copyState === 'spinning' ? 'animate-spin' : 'hover:rotate-180'}`} />}
               </Button>
-            )}
+            ) : null}
             <Button
               variant="ghost"
               size="icon"
@@ -125,9 +184,11 @@ export function FilePreviewDialog({
           </div>
         </div>
 
-        {/* Content area: loading, error, non-previewable, or actual content */}
+        {/* Content area: loading, error, office, non-previewable, or actual content */}
         <div className="overflow-auto p-6 bg-card flex-1 min-h-0">
-          {isLoading ? (
+          {isOffice && contentUrl ? (
+            <SkillOfficePreview url={contentUrl} fileName={node.name} title={node.name} />
+          ) : isLoading ? (
             <div className="flex items-center justify-center py-12">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
             </div>
@@ -136,12 +197,12 @@ export function FilePreviewDialog({
               <p className="text-sm font-medium text-foreground">{t('filePreview.loadError')}</p>
               <p className="text-sm text-muted-foreground mt-2">{error.message}</p>
             </div>
-          ) : !previewCheck.canPreview ? (
+          ) : !previewCheck.canPreview || (isOffice && !contentUrl) ? (
             <div className="text-center py-12 space-y-4">
               <p className="text-sm font-medium text-foreground">
                 {previewCheck.reason === 'too-large'
                   ? t('filePreview.tooLarge')
-                  : previewCheck.reason === 'binary'
+                  : previewCheck.reason === 'binary' || isOffice
                     ? t('filePreview.binaryFile')
                     : t('filePreview.unsupported')}
               </p>

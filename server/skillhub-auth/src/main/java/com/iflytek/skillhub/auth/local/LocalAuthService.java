@@ -1,6 +1,7 @@
 package com.iflytek.skillhub.auth.local;
 
 import com.iflytek.skillhub.auth.exception.AuthFlowException;
+import com.iflytek.skillhub.auth.session.AuthSessionEpochStore;
 import com.iflytek.skillhub.auth.rbac.PlatformPrincipal;
 import com.iflytek.skillhub.auth.rbac.PlatformRoleDefaults;
 import com.iflytek.skillhub.auth.repository.UserRoleBindingRepository;
@@ -17,6 +18,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -49,6 +51,7 @@ public class LocalAuthService {
     private final PasswordEncoder passwordEncoder;
     private final Clock clock;
     private final ApplicationEventPublisher eventPublisher;
+    private final ObjectProvider<AuthSessionEpochStore> authSessionEpochStore;
 
     public LocalAuthService(LocalCredentialRepository credentialRepository,
                             UserAccountRepository userAccountRepository,
@@ -57,7 +60,8 @@ public class LocalAuthService {
                             PasswordPolicyValidator passwordPolicyValidator,
                             PasswordEncoder passwordEncoder,
                             Clock clock,
-                            ApplicationEventPublisher eventPublisher) {
+                            ApplicationEventPublisher eventPublisher,
+                            ObjectProvider<AuthSessionEpochStore> authSessionEpochStore) {
         this.credentialRepository = credentialRepository;
         this.userAccountRepository = userAccountRepository;
         this.userRoleBindingRepository = userRoleBindingRepository;
@@ -66,6 +70,7 @@ public class LocalAuthService {
         this.passwordEncoder = passwordEncoder;
         this.clock = clock;
         this.eventPublisher = eventPublisher;
+        this.authSessionEpochStore = authSessionEpochStore;
     }
 
     /**
@@ -165,6 +170,14 @@ public class LocalAuthService {
         credential.setFailedAttempts(0);
         credential.setLockedUntil(null);
         credentialRepository.save(credential);
+        invalidateSessions(userId);
+    }
+
+    private void invalidateSessions(String userId) {
+        AuthSessionEpochStore store = authSessionEpochStore.getIfAvailable();
+        if (store != null) {
+            store.bumpEpoch(userId);
+        }
     }
 
     private PlatformPrincipal buildPrincipal(UserAccount user) {

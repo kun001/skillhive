@@ -12,6 +12,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.BDDMockito.given;
 
 import com.iflytek.skillhub.auth.exception.AuthFlowException;
+import com.iflytek.skillhub.auth.session.AuthSessionEpochStore;
 import com.iflytek.skillhub.domain.auth.PasswordResetRequest;
 import com.iflytek.skillhub.domain.auth.PasswordResetRequestRepository;
 import com.iflytek.skillhub.domain.user.UserAccount;
@@ -27,6 +28,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -50,6 +52,12 @@ class PasswordResetServiceTest {
     @Mock
     private JavaMailSender mailSender;
 
+    @Mock
+    private ObjectProvider<AuthSessionEpochStore> authSessionEpochStore;
+
+    @Mock
+    private AuthSessionEpochStore epochStore;
+
     private PasswordResetService service;
 
     @BeforeEach
@@ -58,6 +66,7 @@ class PasswordResetServiceTest {
         properties.setCodeExpiry(Duration.ofMinutes(10));
         properties.setEmailFromAddress("noreply@skillhub.local");
         properties.setEmailFromName("SkillHub");
+        org.mockito.Mockito.lenient().when(authSessionEpochStore.getIfAvailable()).thenReturn(epochStore);
         service = new PasswordResetService(
                 resetRequestRepository,
                 userAccountRepository,
@@ -65,7 +74,8 @@ class PasswordResetServiceTest {
                 new PasswordPolicyValidator(),
                 passwordEncoder,
                 mailSender,
-                properties
+                properties,
+                authSessionEpochStore
         );
     }
 
@@ -168,6 +178,7 @@ class PasswordResetServiceTest {
         verify(resetRequestRepository, atLeastOnce()).save(requestCaptor.capture());
         assertThat(requestCaptor.getAllValues())
                 .anySatisfy(captured -> assertThat(captured.getConsumedAt()).isNotNull());
+        verify(epochStore).bumpEpoch("usr_1");
     }
 
     @Test
