@@ -23,6 +23,7 @@ import { ReviewAttemptTimeline } from '@/features/review/review-attempt-timeline
 import { SecurityAuditSection } from '@/features/security-audit/security-audit-section'
 import { FileTree } from '@/features/skill/file-tree'
 import { FilePreviewDialog } from '@/features/skill/file-preview-dialog'
+import { isBrowserOfficePreviewable } from '@/features/skill/file-type-utils'
 import type { FileTreeNode } from '@/features/skill/file-tree-builder'
 import { useReviewFile } from '@/features/review/use-review-file'
 import { buildApiUrl, WEB_API_PREFIX } from '@/api/client'
@@ -97,11 +98,15 @@ function ReviewDetailScreen({
     review.namespace !== 'global' &&
     !hasGlobalReviewAccess
 
-  // File content for preview — uses the review-bound version via review file API
+  const previewIsOffice = previewNode ? isBrowserOfficePreviewable(previewNode.name) : false
+  const previewContentUrl = previewNode
+    ? buildApiUrl(`${WEB_API_PREFIX}/reviews/${taskId}/file?disposition=inline&path=${encodeURIComponent(previewNode.path)}`)
+    : null
+  // File content for preview — uses the review-bound version via review file API (skip text for Office)
   const { data: previewContent, isLoading: isLoadingPreview, error: previewError } = useReviewFile(
     taskId,
     previewNode?.path || null,
-    previewDialogOpen && !!previewNode
+    previewDialogOpen && !!previewNode && !previewIsOffice
   )
 
   const handleFileClick = (node: FileTreeNode) => {
@@ -436,6 +441,7 @@ function ReviewDetailScreen({
         isLoading={isLoadingPreview}
         error={previewError}
         onDownload={handleDownloadFile}
+        contentUrl={previewIsOffice ? previewContentUrl : null}
       />
     </div>
   )

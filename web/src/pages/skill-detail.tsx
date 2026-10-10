@@ -8,6 +8,7 @@ import { getSkillIntroduction, SkillIntroduction } from '@/features/skill/skill-
 import { resolvePackageRelativeLink } from '@/features/skill/package-relative-link'
 import { FileTree } from '@/features/skill/file-tree'
 import { FilePreviewDialog } from '@/features/skill/file-preview-dialog'
+import { isBrowserOfficePreviewable } from '@/features/skill/file-type-utils'
 import type { FileTreeNode } from '@/features/skill/file-tree-builder'
 import type { SkillFile } from '@/api/types'
 import { ShareButton } from '@/features/skill/share-button'
@@ -176,12 +177,18 @@ export function SkillDetailPage() {
   const { data: files } = useSkillFiles(qns, qslug, selectedVersion, skillReady)
   const documentationPath = resolveDocumentationFilePath(files)
   const { data: readme, error: readmeError } = useSkillReadme(qns, qslug, selectedVersion, documentationPath, skillReady)
+  const previewIsOffice = previewNode ? isBrowserOfficePreviewable(previewNode.name) : false
+  const previewContentUrl = previewNode && selectedVersion
+    ? buildApiUrl(
+      `${WEB_API_PREFIX}/skills/${(namespace.startsWith('@') ? namespace.slice(1) : namespace)}/${encodeURIComponent(slug)}/versions/${encodeURIComponent(selectedVersion)}/file?disposition=inline&path=${encodeURIComponent(previewNode.path)}`,
+    )
+    : null
   const { data: previewContent, isLoading: isLoadingPreview, error: previewError } = useSkillFile(
     qns,
     qslug,
     selectedVersion,
     previewNode?.path || null,
-    previewDialogOpen && !!previewNode && skillReady
+    previewDialogOpen && !!previewNode && skillReady && !previewIsOffice
   )
   const { data: diffSourceDetail } = useSkillVersionDetail(qns, qslug, diffSourceVersion ?? undefined, skillReady)
   const { data: diffCompareDetail } = useSkillVersionDetail(qns, qslug, diffCompareVersion ?? undefined, skillReady)
@@ -1660,6 +1667,7 @@ export function SkillDetailPage() {
         canDownload={!!skill?.canDownload}
         onDownload={handleDownloadFile}
         onLinkClick={handlePreviewLinkClick}
+        contentUrl={previewIsOffice ? previewContentUrl : null}
       />
     </div>
   )
