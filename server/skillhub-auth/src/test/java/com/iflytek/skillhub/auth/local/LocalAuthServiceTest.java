@@ -10,6 +10,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.iflytek.skillhub.auth.exception.AuthFlowException;
+import com.iflytek.skillhub.auth.session.AuthSessionEpochStore;
 import com.iflytek.skillhub.auth.entity.Role;
 import com.iflytek.skillhub.auth.entity.UserRoleBinding;
 import com.iflytek.skillhub.auth.repository.UserRoleBindingRepository;
@@ -29,6 +30,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -56,10 +58,17 @@ class LocalAuthServiceTest {
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
+    @Mock
+    private ObjectProvider<AuthSessionEpochStore> authSessionEpochStore;
+
+    @Mock
+    private AuthSessionEpochStore epochStore;
+
     private LocalAuthService service;
 
     @BeforeEach
     void setUp() {
+        org.mockito.Mockito.lenient().when(authSessionEpochStore.getIfAvailable()).thenReturn(epochStore);
         service = new LocalAuthService(
             credentialRepository,
             userAccountRepository,
@@ -68,7 +77,8 @@ class LocalAuthServiceTest {
             new PasswordPolicyValidator(),
             passwordEncoder,
             CLOCK,
-            eventPublisher
+            eventPublisher,
+            authSessionEpochStore
         );
     }
 
@@ -282,7 +292,20 @@ class LocalAuthServiceTest {
     }
 
     @Test
-    void changePassword_withoutLocalCredential_rejectsRequest() {
+    void changePassword_bumpsSessionEpochForOtherSessions() {
+        LocalCredential credential = new LocalCredential("usr_1", "alice", "encoded");
+        given(credentialRepository.findByUserId("usr_1")).willReturn(Optional.of(credential));
+        given(passwordEncoder.matches("Oldpass123!", "encoded")).willReturn(true);
+        given(passwordEncoder.encode("Newpass123!")).willReturn("encoded-new");
+
+        service.changePassword("usr_1", "Oldpass123!", "Newpass123!");
+
+        verify(credentialRepository).save(credential);
+        verify(epochStore).bumpEpoch("usr_1");
+    }
+
+    @Test
+        void changePassword_withoutLocalCredential_rejectsRequest() {
         given(credentialRepository.findByUserId("oauth-only")).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.changePassword("oauth-only", "old", "Newpass123!"))

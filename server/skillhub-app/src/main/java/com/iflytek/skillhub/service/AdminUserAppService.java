@@ -4,6 +4,7 @@ import com.iflytek.skillhub.auth.entity.Role;
 import com.iflytek.skillhub.auth.entity.UserRoleBinding;
 import com.iflytek.skillhub.auth.repository.RoleRepository;
 import com.iflytek.skillhub.auth.repository.UserRoleBindingRepository;
+import com.iflytek.skillhub.auth.session.AuthSessionEpochStore;
 import com.iflytek.skillhub.domain.event.UserActivatedEvent;
 import com.iflytek.skillhub.domain.shared.exception.DomainBadRequestException;
 import com.iflytek.skillhub.domain.shared.exception.DomainForbiddenException;
@@ -15,6 +16,7 @@ import com.iflytek.skillhub.dto.AdminUserMutationResponse;
 import com.iflytek.skillhub.dto.AdminUserSummaryResponse;
 import com.iflytek.skillhub.dto.PageResponse;
 import com.iflytek.skillhub.repository.AdminUserSearchRepository;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -47,18 +49,21 @@ public class AdminUserAppService {
     private final UserRoleBindingRepository userRoleBindingRepository;
     private final RoleRepository roleRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final ObjectProvider<AuthSessionEpochStore> authSessionEpochStore;
 
     public AdminUserAppService(
             AdminUserSearchRepository adminUserSearchRepository,
             UserAccountRepository userAccountRepository,
             UserRoleBindingRepository userRoleBindingRepository,
             RoleRepository roleRepository,
-            ApplicationEventPublisher eventPublisher) {
+            ApplicationEventPublisher eventPublisher,
+            ObjectProvider<AuthSessionEpochStore> authSessionEpochStore) {
         this.adminUserSearchRepository = adminUserSearchRepository;
         this.userAccountRepository = userAccountRepository;
         this.userRoleBindingRepository = userRoleBindingRepository;
         this.roleRepository = roleRepository;
         this.eventPublisher = eventPublisher;
+        this.authSessionEpochStore = authSessionEpochStore;
     }
 
     @Transactional(readOnly = true)
@@ -106,6 +111,7 @@ public class AdminUserAppService {
             userRoleBindingRepository.save(new UserRoleBinding(user.getId(), role));
         }
 
+        invalidateSessions(user.getId());
         return new AdminUserMutationResponse(user.getId(), normalizedRoleCode, user.getStatus().name());
     }
 
@@ -117,11 +123,21 @@ public class AdminUserAppService {
         UserStatus previousStatus = user.getStatus();
         user.setStatus(nextStatus);
         userAccountRepository.save(user);
+        if (nextStatus == UserStatus.DISABLED && previousStatus != UserStatus.DISABLED) {
+            invalidateSessions(user.getId());
+        }
         if (nextStatus == UserStatus.ACTIVE && previousStatus != UserStatus.ACTIVE) {
             eventPublisher.publishEvent(
                     new UserActivatedEvent(user.getId(), user.getDisplayName(), user.getEmail()));
         }
         return new AdminUserMutationResponse(user.getId(), null, nextStatus.name());
+    }
+
+    private void invalidateSessions(String userId) {
+        AuthSessionEpochStore store = authSessionEpochStore.getIfAvailable();
+        if (store != null) {
+            store.bumpEpoch(userId);
+        }
     }
 
     private UserStatus parseManageableStatus(String status) {

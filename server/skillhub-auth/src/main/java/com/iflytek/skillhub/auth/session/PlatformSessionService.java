@@ -1,5 +1,6 @@
 package com.iflytek.skillhub.auth.session;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
 import com.iflytek.skillhub.auth.rbac.PlatformPrincipal;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 
 /**
  * Synchronizes {@link PlatformPrincipal} snapshots with Spring Security's
@@ -18,6 +20,12 @@ import jakarta.servlet.http.HttpServletRequest;
  */
 @Service
 public class PlatformSessionService {
+
+    private final ObjectProvider<AuthSessionEpochStore> authSessionEpochStore;
+
+    public PlatformSessionService(ObjectProvider<AuthSessionEpochStore> authSessionEpochStore) {
+        this.authSessionEpochStore = authSessionEpochStore;
+    }
 
     /**
      * Establishes a new authenticated session and rotates the session id to
@@ -64,6 +72,22 @@ public class PlatformSessionService {
         persist(principal, platformAuth, request, rotateSessionId);
     }
 
+    /**
+     * Aligns the current HTTP session with the user's latest auth-session epoch
+     * so the caller remains authenticated after an epoch bump (e.g. password change).
+     */
+    public void synchronizeSessionEpoch(String userId, HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session == null || userId == null) {
+            return;
+        }
+        AuthSessionEpochStore store = authSessionEpochStore.getIfAvailable();
+        if (store == null) {
+            return;
+        }
+        session.setAttribute(AuthSessionEpochStore.SESSION_ATTRIBUTE, store.currentEpoch(userId));
+    }
+
     private void persist(PlatformPrincipal principal,
                          Authentication authentication,
                          HttpServletRequest request,
@@ -76,7 +100,12 @@ public class PlatformSessionService {
         if (rotateSessionId) {
             request.changeSessionId();
         }
-        request.getSession().setAttribute("platformPrincipal", principal);
-        request.getSession().setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, context);
+        HttpSession session = request.getSession();
+        session.setAttribute("platformPrincipal", principal);
+        session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, context);
+        AuthSessionEpochStore store = authSessionEpochStore.getIfAvailable();
+        if (store != null) {
+            session.setAttribute(AuthSessionEpochStore.SESSION_ATTRIBUTE, store.currentEpoch(principal.userId()));
+        }
     }
 }
