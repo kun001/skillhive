@@ -14,6 +14,18 @@ export interface ReleaseNote {
 // Confirm the date and image tag when deploying; Git submission is not deployment.
 export const releases: ReleaseNote[] = [
   {
+    id: '20261010-security-ux',
+    version: 'cloud-20261010-security-ux',
+    date: '2026-10-10',
+    title: { zh: '会话安全加固与体验修复', en: 'Session security and experience fixes' },
+    summary: { zh: '撤权或改密后旧会话立即失效；升级服务端组件并加强网页安全头；知识库上传筛选、我的技能发布入口和技能内 Office 预览也一并修好。', en: 'Old sessions end right away after role revoke or password change. Server components and web security headers are hardened. Knowledge upload filters, the My Skills publish entry, and in-skill Office preview are fixed.' },
+    changes: [
+      { zh: '调整管理员角色、禁用账号、修改或找回密码后，旧登录会话立即失效；改密时当前浏览器保持登录，其他设备需重新登录。', en: 'After changing admin roles, disabling an account, or changing or resetting a password, older sessions end immediately. The browser that changed the password stays signed in; other devices must sign in again.' },
+      { zh: '升级 Spring Boot 与内嵌 Tomcat，并为网页响应增加内容安全策略、防点击劫持和强制 HTTPS 等安全头。', en: 'Upgraded Spring Boot and embedded Tomcat, and added Content-Security-Policy, clickjacking protection, HSTS and related security headers on web responses.' },
+      { zh: '上传知识文件后按新文件类型自动调整筛选；我的技能空状态可直接发布；技能包内的 .docx / .pptx 可在浏览器中预览。', en: 'After uploading knowledge files, filters follow the new file types. The empty My Skills state offers a publish action. .docx and .pptx templates inside skills preview in the browser.' },
+    ],
+  },
+  {
     id: '20261010-skill-search',
     version: 'cloud-20261010-skill-search',
     date: '2026-10-10',
