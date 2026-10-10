@@ -541,6 +541,10 @@ export function MySkillsPage() {
               <Button size="lg" variant="outline" onClick={handleClearSearch}>
                 {t('mySkills.clearSearch')}
               </Button>
+            ) : filter === 'ALL' ? (
+              <Button size="lg" onClick={() => navigate({ to: '/dashboard/publish' })}>
+                {t('mySkills.publishSkill')}
+              </Button>
             ) : undefined
           }
         />

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isPreviewable, getFileTypeLabel, canPreviewFile } from './file-type-utils'
+import { isPreviewable, getFileTypeLabel, canPreviewFile, isBrowserOfficePreviewable } from './file-type-utils'
 
 describe('file-type-utils', () => {
   describe('isPreviewable', () => {
@@ -18,6 +18,7 @@ describe('file-type-utils', () => {
       expect(isPreviewable('image.png', 1024)).toBe(false)
       expect(isPreviewable('video.mp4', 2048)).toBe(false)
       expect(isPreviewable('archive.zip', 512)).toBe(false)
+      expect(isPreviewable('design.docx', 1024)).toBe(false)
     })
 
     it('should reject files larger than 1MB', () => {
@@ -43,11 +44,31 @@ describe('file-type-utils', () => {
         canPreview: false,
         reason: 'unsupported',
       })
+
+      expect(canPreviewFile('legacy.doc', 1024)).toEqual({
+        canPreview: false,
+        reason: 'binary',
+      })
     })
 
-    it('should return canPreview true for valid files', () => {
+    it('should return canPreview true for valid text files', () => {
       expect(canPreviewFile('README.md', 1024)).toEqual({
         canPreview: true,
+        mode: 'text',
+      })
+    })
+
+    it('should allow browser Office preview for docx and pptx', () => {
+      expect(isBrowserOfficePreviewable('design.docx')).toBe(true)
+      expect(isBrowserOfficePreviewable('deck.pptx')).toBe(true)
+      expect(isBrowserOfficePreviewable('legacy.doc')).toBe(false)
+      expect(canPreviewFile('design.docx', 5 * 1024 * 1024)).toEqual({
+        canPreview: true,
+        mode: 'office',
+      })
+      expect(canPreviewFile('deck.pptx', 1024)).toEqual({
+        canPreview: true,
+        mode: 'office',
       })
     })
   })
@@ -57,6 +78,7 @@ describe('file-type-utils', () => {
       expect(getFileTypeLabel('test.md')).toBe('markdown')
       expect(getFileTypeLabel('script.sh')).toBe('bash')
       expect(getFileTypeLabel('config.json')).toBe('json')
+      expect(getFileTypeLabel('design.docx')).toBe('docx')
     })
   })
 })

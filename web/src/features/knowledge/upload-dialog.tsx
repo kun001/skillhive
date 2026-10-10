@@ -25,9 +25,11 @@ interface UploadDialogProps {
   folderId: number | undefined
   /** Files dropped onto the page before the dialog opened. */
   initialFiles?: File[]
+  /** Called after at least one file uploads successfully so the parent can adjust filters. */
+  onUploaded?: (result: { fileNames: string[]; folderId: number | undefined }) => void
 }
 
-export function KnowledgeUploadDialog({ open, onOpenChange, namespace, base, tree, folderId, initialFiles }: UploadDialogProps) {
+export function KnowledgeUploadDialog({ open, onOpenChange, namespace, base, tree, folderId, initialFiles, onUploaded }: UploadDialogProps) {
   const { t } = useTranslation()
   const invalidate = useInvalidateKnowledge()
   const inputRef = useRef<HTMLInputElement>(null)
@@ -82,11 +84,13 @@ export function KnowledgeUploadDialog({ open, onOpenChange, namespace, base, tre
     const queuedIds = new Set(queue.map((item) => item.id))
     const pending = plan.filter((entry) => entry.item.status !== 'done' && (queuedIds.has(entry.item.id) || entry.bundle.images.some((image) => queuedIds.has(image.itemId))))
     const completedIds = new Set(items.filter((item) => item.status === 'done').map((item) => item.id))
+    const uploadedNames: string[] = []
     let succeeded = 0
     for (const entry of pending) {
       if (await uploadOne(entry)) {
         succeeded += 1
         completedIds.add(entry.item.id)
+        uploadedNames.push(entry.item.file.name)
       } else completedIds.delete(entry.item.id)
     }
     for (const item of items) {
@@ -100,6 +104,7 @@ export function KnowledgeUploadDialog({ open, onOpenChange, namespace, base, tre
     }
     setRunning(false)
     if (succeeded > 0) {
+      onUploaded?.({ fileNames: uploadedNames, folderId: targetFolder })
       if (items.every((item) => completedIds.has(item.id))) {
         onOpenChange(false)
       }
