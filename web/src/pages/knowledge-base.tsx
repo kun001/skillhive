@@ -8,7 +8,7 @@ import { EditKnowledgeBaseDialog } from '@/features/knowledge/base-dialog'
 import { EditKnowledgeDocumentDialog, NewKnowledgeVersionDialog } from '@/features/knowledge/document-dialogs'
 import { KnowledgeDocumentGrid, KnowledgeDocumentTable } from '@/features/knowledge/document-list'
 import { knowledgeErrorMessage } from '@/features/knowledge/errors'
-import { extensionsForCategory, KNOWLEDGE_FILE_CATEGORIES } from '@/features/knowledge/file-types'
+import { extensionsForCategory, KNOWLEDGE_FILE_CATEGORIES, typeFilterAfterUpload } from '@/features/knowledge/file-types'
 import { KnowledgeFolderDialog } from '@/features/knowledge/folder-dialog'
 import { buildFolderTree, folderAncestry } from '@/features/knowledge/folder-tree'
 import { KnowledgeFolderTreeNav } from '@/features/knowledge/folder-tree-nav'
@@ -354,6 +354,13 @@ export function KnowledgeBasePage() {
         tree={tree}
         folderId={search.folder}
         initialFiles={upload.files}
+        onUploaded={({ fileNames, folderId }) => {
+          updateSearch({
+            type: typeFilterAfterUpload(fileNames),
+            folder: folderId,
+            page: undefined,
+          })
+        }}
       />
       <KnowledgeFolderDialog
         open={folderDialog !== null}

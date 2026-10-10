@@ -88,3 +88,18 @@ export function formatFileSize(bytes: number): string {
   }
   return `${value >= 10 ? value.toFixed(0) : value.toFixed(1)} ${units[unit]}`
 }
+
+/** Pick a type filter that keeps newly uploaded files visible. One category → that type; mixed/unknown → All. */
+export function typeFilterAfterUpload(fileNames: string[]): KnowledgeFileCategoryId | undefined {
+  const categories = new Set<KnowledgeFileCategoryId>()
+  for (const name of fileNames) {
+    const category = categoryForExtension(fileExtension(name))
+    if (category) {
+      categories.add(category)
+    }
+  }
+  if (categories.size === 1) {
+    return [...categories][0]
+  }
+  return undefined
+}

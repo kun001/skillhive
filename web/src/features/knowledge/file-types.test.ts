@@ -5,6 +5,7 @@ import {
   fileExtension,
   formatFileSize,
   KNOWLEDGE_MAX_FILE_SIZE_BYTES,
+  typeFilterAfterUpload,
   validateKnowledgeFile,
 } from './file-types'
 
@@ -33,5 +34,12 @@ describe('knowledge file types', () => {
     expect(formatFileSize(512)).toBe('512 B')
     expect(formatFileSize(1536)).toBe('1.5 KB')
     expect(formatFileSize(25 * 1024 * 1024)).toBe('25 MB')
+  })
+
+  it('picks a type filter that keeps uploaded files visible', () => {
+    expect(typeFilterAfterUpload(['notes.md'])).toBe('text')
+    expect(typeFilterAfterUpload(['a.docx', 'b.doc'])).toBe('word')
+    expect(typeFilterAfterUpload(['a.md', 'b.docx'])).toBeUndefined()
+    expect(typeFilterAfterUpload([])).toBeUndefined()
   })
 })

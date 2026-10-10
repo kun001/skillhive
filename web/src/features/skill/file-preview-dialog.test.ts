@@ -30,6 +30,16 @@ vi.mock('@/features/skill/code-renderer', () => ({
     createElement('div', { 'data-testid': 'code-renderer' }, `${language ?? 'plain'}:${code}`),
 }))
 
+vi.mock('@/features/knowledge/docx-preview', () => ({
+  DocxCanvas: ({ title }: { blob: Blob; title: string }) =>
+    createElement('div', { 'data-testid': 'docx-canvas' }, title),
+}))
+
+vi.mock('@/features/knowledge/pptx-preview', () => ({
+  PptxCanvas: ({ title }: { blob: Blob; title: string }) =>
+    createElement('div', { 'data-testid': 'pptx-canvas' }, title),
+}))
+
 vi.mock('@/shared/lib/toast', () => ({
   toast: {
     success: vi.fn(),
@@ -157,5 +167,34 @@ describe('FilePreviewDialog', () => {
     expect(html).not.toContain('data-testid="code-renderer"')
     expect(html).not.toContain('data-testid="markdown-renderer"')
     expect(html).toContain('<pre class="text-sm font-mono whitespace-pre-wrap break-words"><code>plain text content</code></pre>')
+  })
+
+  it('starts browser Office preview for docx when contentUrl is provided', () => {
+    const html = renderDialog({
+      content: null,
+      contentUrl: '/api/web/skills/demo/skill/versions/1.0.0/file?disposition=inline&path=design.docx',
+      node: createNode({
+        name: 'design.docx',
+        path: 'templates/design.docx',
+        file: { fileSize: 4096 } as FileTreeNode['file'],
+      }),
+    })
+
+    expect(html).toContain('design.docx')
+    expect(html).toContain('knowledge.preview.loading')
+    expect(html).not.toContain('filePreview.binaryFile')
+  })
+
+  it('keeps legacy .doc as download-only binary', () => {
+    const html = renderDialog({
+      content: null,
+      node: createNode({
+        name: 'legacy.doc',
+        path: 'templates/legacy.doc',
+        file: { fileSize: 4096 } as FileTreeNode['file'],
+      }),
+    })
+
+    expect(html).toContain('filePreview.binaryFile')
   })
 })

@@ -5,6 +5,7 @@ import { buildApiUrl, WEB_API_PREFIX } from '@/api/client'
 import type { ReviewSkillDetail } from '@/api/types'
 import { FileTree } from '@/features/skill/file-tree'
 import { FilePreviewDialog } from '@/features/skill/file-preview-dialog'
+import { isBrowserOfficePreviewable } from '@/features/skill/file-type-utils'
 import type { FileTreeNode } from '@/features/skill/file-tree-builder'
 import { MarkdownRenderer } from '@/features/skill/markdown-renderer'
 import { ComplianceSnapshotPanel } from '@/features/skill/compliance-snapshot-panel'
@@ -30,11 +31,15 @@ export function ReviewSkillDetailSection({ detail, isLoading, hasError, reviewId
   const [previewNode, setPreviewNode] = useState<FileTreeNode | null>(null)
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false)
 
-  // Fetch file content when preview dialog is opened
+  const previewIsOffice = previewNode ? isBrowserOfficePreviewable(previewNode.name) : false
+  const previewContentUrl = previewNode && reviewId
+    ? buildApiUrl(`${WEB_API_PREFIX}/reviews/${reviewId}/file?disposition=inline&path=${encodeURIComponent(previewNode.path)}`)
+    : null
+  // Fetch text content when preview dialog is opened (skip for Office binaries)
   const { data: previewContent, isLoading: isLoadingPreview, error: previewError } = useReviewFile(
     reviewId,
     previewNode?.path || null,
-    previewDialogOpen && !!previewNode
+    previewDialogOpen && !!previewNode && !previewIsOffice
   )
 
   // File tree click handler: opens preview dialog for the selected file
@@ -204,6 +209,7 @@ export function ReviewSkillDetailSection({ detail, isLoading, hasError, reviewId
             isLoading={isLoadingPreview}
             error={previewError}
             onDownload={handleDownloadFile}
+            contentUrl={previewIsOffice ? previewContentUrl : null}
           />
 
           <div className="flex justify-start">
