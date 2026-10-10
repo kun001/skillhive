@@ -8,7 +8,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.2.3</version>
+        <version>3.3.13</version>
         <relativePath/>
     </parent>
 
@@ -19,6 +19,8 @@
 
     <properties>
         <java.version>21</java.version>
+        <!-- Boot 3.3.13 ships 10.1.42 (CVE-2025-48988/48976); pin current 10.1 line for later CVEs. -->
+        <tomcat.version>10.1.60</tomcat.version>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <byte-buddy.version>1.17.5</byte-buddy.version>

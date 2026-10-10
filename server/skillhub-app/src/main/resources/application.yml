@@ -1,6 +1,11 @@
 server:
   port: 8080
   shutdown: graceful
+  tomcat:
+    # Align with spring.servlet.multipart + knowledge multi-image uploads.
+    # Defaults in Tomcat 10.1.42+ (10 parts / 512B headers) are too tight for markdown+images.
+    max-part-count: 200
+    max-part-header-size: 8KB
   forward-headers-strategy: framework
   servlet:
     session:
