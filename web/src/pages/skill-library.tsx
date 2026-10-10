@@ -76,6 +76,14 @@ export function SkillLibraryPage() {
     void navigate({ to: '/skills', search: { q, label, library, sort, page, view, ...patch } })
   }
 
+  // Clearing the box is an unambiguous request for the full list, so apply it without a submit.
+  const changeQueryInput = (value: string) => {
+    setQueryInput(value)
+    if (value.trim() === '' && q) {
+      update({ q: '', page: 0 })
+    }
+  }
+
   const submitSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     update({ q: normalizeSearchQuery(queryInput), page: 0 })
@@ -144,7 +152,7 @@ export function SkillLibraryPage() {
           <input
             type="search"
             value={queryInput}
-            onChange={(event) => setQueryInput(event.target.value)}
+            onChange={(event) => changeQueryInput(event.target.value)}
             placeholder={t('skillLibrary.searchPlaceholder')}
             aria-label={t('skillLibrary.searchPlaceholder')}
             className="min-w-0 flex-1 bg-transparent py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground"

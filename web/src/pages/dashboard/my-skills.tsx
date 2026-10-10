@@ -308,7 +308,14 @@ export function MySkillsPage() {
           <Input
             type="search"
             value={keywordInput}
-            onChange={(event) => setKeywordInput(event.target.value)}
+            onChange={(event) => {
+              const value = event.target.value
+              setKeywordInput(value)
+              // Clearing the box restores the full list without another submit.
+              if (value.trim() === '' && keyword) {
+                updateSearch({ q: undefined, page: 0 }, { replace: true })
+              }
+            }}
             placeholder={t('mySkills.searchPlaceholder')}
             aria-label={t('mySkills.searchPlaceholder')}
             className="sm:max-w-md"

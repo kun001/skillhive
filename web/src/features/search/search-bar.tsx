@@ -37,6 +37,10 @@ export function SearchBar({ defaultValue = '', value, placeholder, isSearching =
       setQuery(nextQuery)
     }
     onChange?.(nextQuery)
+    // Typing waits for an explicit submit, but emptying the box resets to the full list right away.
+    if (nextQuery.trim() === '' && currentQuery.trim() !== '') {
+      onSearch?.('')
+    }
   }
 
   const handleSubmit = (e: React.FormEvent) => {
