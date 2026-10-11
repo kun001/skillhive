@@ -154,6 +154,12 @@ public class AuthContextFilter extends OncePerRequestFilter {
     }
 
     private PlatformPrincipal refreshPrincipalRolesIfNeeded(PlatformPrincipal principal, HttpServletRequest request) {
+        if (!enforceActiveUserCheck) {
+            // Without the active-user check the user store is not treated as the source of truth
+            // (e.g. the test profile, where principals are not persisted), so keep session roles.
+            // Role revocation still invalidates sessions through the auth-session epoch.
+            return principal;
+        }
         Set<String> freshRoles = PlatformRoleDefaults.withDefaultUserRole(
                 userRoleBindingRepository.findByUserId(principal.userId()).stream()
                         .map(binding -> binding.getRole().getCode())
