@@ -5,20 +5,21 @@
 <h3 align="center">私有部署的团队 AI 技能与资料共享中心</h3>
 
 <p align="center">
-  技能经审核再发布，资料上传即共享，<br />
-  都放在同一个团队空间里，数据留在你自己的服务器上。
+  技能经审核再发布，资料上传即共享，都放在同一个团队空间里；<br />
+  AI 工具通过 MCP 按你的权限直接查阅，数据留在你自己的服务器上。
 </p>
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache--2.0-blue.svg" alt="License: Apache-2.0" /></a>
   <img src="https://img.shields.io/badge/部署-私有化%20·%20Docker%20Compose-2496ed" alt="私有化部署 Docker Compose" />
   <img src="https://img.shields.io/badge/界面-中文%20·%20English-6b4f3a" alt="中文 English" />
+  <a href="#mcp让-ai-直接查阅团队技能和资料"><img src="https://img.shields.io/badge/AI%20接入-MCP%20只读-7c3aed" alt="MCP 只读接入" /></a>
 </p>
 
 <p align="center">
   <strong>简体中文</strong> · <a href="README.en.md">English</a>
   <br />
-  <a href="#为什么选择-skillhive">为什么选择</a> · <a href="#在线体验">在线体验</a> · <a href="#产品演示">产品演示</a> · <a href="#功能一览">功能一览</a> · <a href="#部署">部署</a> · <a href="#开发与文档">开发与文档</a>
+  <a href="#为什么选择-skillhive">为什么选择</a> · <a href="#mcp让-ai-直接查阅团队技能和资料">MCP 接入</a> · <a href="#在线体验">在线体验</a> · <a href="#产品演示">产品演示</a> · <a href="#功能一览">功能一览</a> · <a href="#部署">部署</a> · <a href="#开发与文档">开发与文档</a>
 </p>
 
 ## 为什么选择 SkillHive
@@ -48,8 +49,8 @@
       在空间角色之外，可为每位成员单独设置只读或可编辑，以及是否允许下载，调整后立即生效。关键操作都记入审计日志。
     </td>
     <td valign="top">
-      <strong>不绑定任何 AI 工具</strong><br /><br />
-      技能采用通用的 <code>SKILL.md</code> 格式。成员下载后交给自己习惯的 AI 工具使用，也可以用只读 Token 通过本地 <a href="mcp/README.md">MCP 服务</a>让 AI 工具直接查阅技能和资料。平台本身不执行技能脚本。
+      <strong>AI 工具直接查阅（MCP）</strong><br /><br />
+      Claude Code、Cursor 等 AI 工具通过本地 <a href="#mcp让-ai-直接查阅团队技能和资料">MCP 服务</a>，用你的只读 Token 搜索和读取团队技能与知识库文件，权限与网页一致，每次读取都记入审计。技能采用通用的 <code>SKILL.md</code> 格式，不绑定任何 AI 工具，平台本身不执行技能脚本。
     </td>
   </tr>
 </table>
@@ -63,6 +64,7 @@
 | 模板和资料 | 多处副本，难以确认哪份最新 | 统一入口，版本历史可回溯 |
 | 找东西 | 翻聊天记录、问同事 | 按团队空间浏览，跨知识库搜索 |
 | 谁能访问 | 链接一转发就能看 | 仅团队成员可见，下载权限单独控制 |
+| 让 AI 用上团队资料 | 手动下载、复制粘贴进对话框 | AI 工具通过 MCP 按你的权限直接查阅，读取留有审计 |
 | 数据在哪 | 第三方平台 | 你自己的服务器 |
 
 ### 它是怎么工作的
@@ -75,9 +77,45 @@ flowchart LR
     KB --> NS
     NS -->|浏览 · 搜索 · 下载| M[团队成员]
     M --> T[自己的 AI 工具]
+    NS -.->|MCP · 只读 Token · 审计| T
 ```
 
-举个例子：团队把“会议纪要整理”技能发布到技能库，把会议模板和项目资料放进知识库。新成员打开团队空间，就能同时找到这套方法和配套资料，下载后交给自己的 AI 工具完成工作。
+举个例子：团队把“会议纪要整理”技能发布到技能库，把会议模板和项目资料放进知识库。新成员打开团队空间，就能同时找到这套方法和配套资料；也可以直接在 Claude Code 里说“用团队的会议纪要技能和模板整理这份记录”，AI 通过 MCP 自己找到技能和模板来完成。
+
+## MCP：让 AI 直接查阅团队技能和资料
+
+SkillHive 提供一个本地运行的 [MCP 服务](mcp/README.md)。在 Claude Code、Cursor、Claude Desktop 等支持 MCP 的 AI 工具里配置后，AI 可以用你的 API Token 搜索、浏览和读取团队的技能与知识库文件，不用再手动下载、复制粘贴。
+
+你可以直接这样问 AI：
+
+- “在团队知识库里找一下报销流程相关的文件，总结关键步骤。”
+- “用团队技能库里的 `meeting-notes` 技能，整理这份会议记录。”
+- “看看我们空间里有哪些前端相关的技能，读一下最新版本的说明。”
+
+| 特点 | 说明 |
+| --- | --- |
+| **只读** | 只接受只读 Token，带发布、删除等写入权限的 Token 无法启动，AI 不能修改任何内容。 |
+| **权限与网页一致** | 只能看到你所在团队的内容，读取文件同样需要下载权限；平台管理员的 Token 也只按团队成员身份访问知识库。 |
+| **原样传递** | 文本文件直接返回文本，PDF、Word 等返回原文件交给 AI 工具处理，平台不做内容解析。 |
+| **可追溯** | 通过 Token 读取的知识库文件和技能文件都记入审计日志，标明是哪个 Token。 |
+| **按需授权** | 技能库与知识库分开授权，Token 只授予哪一边，MCP 就只提供哪一边的工具。 |
+
+提供 12 个工具：`whoami`；技能库 `search_skills`、`get_skill`、`list_skill_versions`、`list_skill_files`、`read_skill_file`、`list_my_skills`；知识库 `list_knowledge_bases`、`browse_knowledge_base`、`search_knowledge`、`get_document`、`read_document`。
+
+**三步接入**：
+
+1. 在 SkillHive「个人中心 → Token 凭证」创建 Token：技能库选「只读」，勾选「知识库（只读）」。
+2. 构建 MCP 服务（需要 Node.js 20+ 和 pnpm）：`make build-mcp`。
+3. 添加到 AI 工具，以 Claude Code 为例：
+
+```bash
+claude mcp add skillhive \
+  -e SKILLHIVE_URL=https://your-skillhive.example.com \
+  -e SKILLHIVE_TOKEN=sk_xxx \
+  -- node /path/to/skillhive/mcp/dist/index.js
+```
+
+其他客户端的配置、全部工具说明和常见问题见 [mcp/README.md](mcp/README.md)，设计与权限模型见 [MCP 服务设计](skillhive-docs/26-mcp-server.md)。
 
 ## 在线体验
 
@@ -124,10 +162,11 @@ flowchart LR
 
 | 模块 | 能做什么 |
 | --- | --- |
-| **技能库** | 上传含 `SKILL.md` 的技能包；查看说明、包内文件和版本历史；校验、安全扫描、审核后发布；收藏、评分、订阅；按关键词、标签和排序浏览；下架与隐藏。 |
+| **技能库** | 上传含 `SKILL.md` 的技能包；查看说明、包内文件和版本历史；校验、安全扫描、审核后发布；收藏、订阅；按关键词、标签和排序浏览；下架与隐藏。 |
 | **知识库** | 多层文件夹；批量上传、进度查看与失败重试；Markdown 可连同本地图片或整个文件夹上传；在线预览；版本历史、指定版本下载与恢复；按标题和描述搜索，可跨知识库。 |
 | **团队空间** | 一个页面同时展示空间内的技能和知识库；成员管理，按成员设置只读、可编辑和下载权限，调整即时生效。 |
-| **治理** | 平台角色与空间角色；业务通知；关键操作审计日志。 |
+| **AI 接入** | 本地 MCP 服务，让 AI 工具只读查阅技能和知识库文件；个人中心创建 API Token，技能库（读写 / 只读）与知识库（只读）分开授权。 |
+| **治理** | 平台角色与空间角色；业务通知；关键操作审计日志，包括知识文件的下载与预览、通过 Token 读取技能和资料。 |
 | **界面** | 中文、English；浅色 / 深色主题；适配手机和窄屏。 |
 
 <details>
@@ -179,7 +218,7 @@ description: 整理会议记录，提取讨论结论与后续待办。
 
 </details>
 
-**边界说明**：SkillHive 通过 Web 管理资源，不在平台内执行技能脚本。知识文件搜索匹配标题和描述（标题默认取自文件名），不检索正文，也不提供文档解析、向量检索、RAG 问答或在线协同编辑。
+**边界说明**：SkillHive 通过 Web 管理资源，不在平台内执行技能脚本；MCP 服务只读，不能通过它发布或修改内容。知识文件搜索匹配标题和描述（标题默认取自文件名），不检索正文，也不提供文档解析、向量检索、RAG 问答或在线协同编辑。
 
 ## 部署
 
@@ -212,6 +251,7 @@ SkillHive 面向在自己环境中部署的团队。所有服务都以容器运�
 flowchart TB
     User[用户] --> Web[Web 界面]
     Web --> API[后端 API]
+    AI[AI 工具] --> MCP[MCP 服务 · 本地 stdio · 只读 Token] --> API
     API --> Skill[技能 · 校验 / 扫描 / 审核 / 发布]
     API --> Knowledge[资料 · 文件夹 / 预览 / 版本]
     API --> Governance[团队空间 / 权限 / 通知 / 审计]
@@ -242,7 +282,7 @@ flowchart TB
 
 ### 扩展方向
 
-开放 API 与 CLI 接入属于后续规划，具体能力以未来的更新日志为准。现有后端 API 服务于 Web 界面，尚未作为完整的开放 API 发布，API Token 管理入口暂时隐藏。
+MCP 第一期为本地运行、只读访问。后续规划包括需用户确认的写入能力（如发布技能）、团队托管的远程 MCP 服务（按用户授权）以及限定到单个团队的 Token，见 [MCP 服务设计](skillhive-docs/26-mcp-server.md)。现有后端 API 主要服务于 Web 界面和 MCP，尚未作为完整的开放 API 发布；具体能力以更新日志为准。
 
 ## 致谢
 
