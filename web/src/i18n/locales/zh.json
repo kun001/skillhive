@@ -757,6 +757,9 @@
     "noReadme": "暂无 README",
     "readmeUnavailable": "README 暂时不可用，请稍后重试或重新上传该技能版本。",
     "documentationSource": "来源：{{path}}",
+    "noDownloadPreviewTitle": "无下载权限，无法预览",
+    "noDownloadPreviewDescription": "SKILL.md 等文件内容与下载使用同一项权限，如需查看请联系团队管理员开启下载权限。",
+    "readmeChangeNoDownload": "无下载权限，无法比较文档内容",
     "documentationUnavailableTitle": "文档暂时不可用",
     "documentationUnavailable": "当前无法读取这个技能版本的文档文件。你仍然可以在文件列表里查看包内容。",
     "packageLinkMissingTitle": "文件未找到",
@@ -1195,6 +1198,8 @@
     "title": "文件浏览"
   },
   "filePreview": {
+    "noDownloadTitle": "无下载权限，无法预览",
+    "noDownloadDescription": "预览与下载使用同一项权限，如需查看请联系团队管理员开启下载权限。",
     "loadError": "加载文件失败",
     "tooLarge": "文件过大，暂不支持预览",
     "binaryFile": "二进制文件不支持预览",

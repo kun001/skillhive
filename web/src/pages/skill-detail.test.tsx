@@ -248,6 +248,7 @@ function createSkill(overrides: Record<string, unknown> = {}) {
     publishedVersion: { id: 10, version: '1.0.0', status: 'PUBLISHED' },
     ownerPreviewVersion: undefined,
     resolutionMode: 'PUBLISHED',
+    canDownload: true,
     ...overrides,
   }
 }
@@ -661,6 +662,25 @@ describe('SkillDetailPage', () => {
 
     expect(html).toContain('break-all')
     expect(html).toContain('leading-snug')
+  })
+
+  it('does not fetch SKILL.md and explains why when the viewer lacks download permission', () => {
+    useSkillDetailMock.mockReturnValue({
+      data: createSkill({ namespace: 'team-a', canDownload: false }),
+      isLoading: false,
+      isFetching: false,
+      error: null,
+    })
+    useSkillFilesMock.mockReturnValue({ data: [createSkillFile('SKILL.md')] })
+    useSkillReadmeMock.mockReturnValue({ data: undefined, error: null })
+
+    render(<SkillDetailPage />)
+
+    expect(useSkillReadmeMock).toHaveBeenCalledWith('global', 'demo-skill', '1.0.0', 'SKILL.md', false)
+    expect(useSkillReadmeMock).not.toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.anything(), expect.anything(), true)
+    expect(screen.getByText('skillDetail.noDownloadPreviewTitle')).toBeTruthy()
+    expect(screen.getByText('skillDetail.noDownloadPreviewDescription')).toBeTruthy()
+    expect(useSkillFileMock).not.toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.anything(), expect.anything(), true)
   })
 
   it('opens a file preview when overview markdown relative link matches a package file', () => {

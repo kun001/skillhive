@@ -181,6 +181,8 @@ export const knowledgeZh = {
     notFound: '文件不存在或你没有访问权限',
   },
   preview: {
+    noDownloadTitle: '无下载权限，无法预览',
+    noDownloadDescription: '预览与下载使用同一项权限，如需查看请联系团队管理员开启下载权限。',
     unsupportedTitle: '该格式暂不支持在线预览',
     unsupportedDescription: '请下载后使用本地软件打开。',
     tooLarge: '文件较大，请下载后查看。',
@@ -385,6 +387,8 @@ export const knowledgeEn: typeof knowledgeZh = {
     notFound: 'The file does not exist or you do not have access to it',
   },
   preview: {
+    noDownloadTitle: 'No download permission, preview unavailable',
+    noDownloadDescription: 'Preview uses the same permission as download. Ask a team admin to enable downloads for you.',
     unsupportedTitle: 'Online preview is not available for this format',
     unsupportedDescription: 'Download the file and open it with a local application.',
     tooLarge: 'This file is large. Download it to view.',

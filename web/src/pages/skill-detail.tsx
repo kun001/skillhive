@@ -176,9 +176,11 @@ export function SkillDetailPage() {
   const introductionStatus = selectedVersionDetail?.introduction?.status
   const { data: files } = useSkillFiles(qns, qslug, selectedVersion, skillReady)
   const documentationPath = resolveDocumentationFilePath(files)
-  const { data: readme, error: readmeError } = useSkillReadme(qns, qslug, selectedVersion, documentationPath, skillReady)
+  // Previews stream the original package files, so they share the download permission.
+  const canPreviewFiles = Boolean(skill?.canDownload)
+  const { data: readme, error: readmeError } = useSkillReadme(qns, qslug, selectedVersion, documentationPath, skillReady && canPreviewFiles)
   const previewIsOffice = previewNode ? isBrowserOfficePreviewable(previewNode.name) : false
-  const previewContentUrl = previewNode && selectedVersion
+  const previewContentUrl = previewNode && selectedVersion && canPreviewFiles
     ? buildApiUrl(
       `${WEB_API_PREFIX}/skills/${(namespace.startsWith('@') ? namespace.slice(1) : namespace)}/${encodeURIComponent(slug)}/versions/${encodeURIComponent(selectedVersion)}/file?disposition=inline&path=${encodeURIComponent(previewNode.path)}`,
     )
@@ -188,7 +190,7 @@ export function SkillDetailPage() {
     qslug,
     selectedVersion,
     previewNode?.path || null,
-    previewDialogOpen && !!previewNode && skillReady && !previewIsOffice
+    previewDialogOpen && !!previewNode && skillReady && canPreviewFiles && !previewIsOffice
   )
   const { data: diffSourceDetail } = useSkillVersionDetail(qns, qslug, diffSourceVersion ?? undefined, skillReady)
   const { data: diffCompareDetail } = useSkillVersionDetail(qns, qslug, diffCompareVersion ?? undefined, skillReady)
@@ -196,8 +198,8 @@ export function SkillDetailPage() {
   const { data: diffCompareFiles } = useSkillFiles(qns, qslug, diffCompareVersion ?? undefined, skillReady)
   const diffSourceDocumentationPath = resolveDocumentationFilePath(diffSourceFiles)
   const diffCompareDocumentationPath = resolveDocumentationFilePath(diffCompareFiles)
-  const { data: diffSourceReadme } = useSkillReadme(qns, qslug, diffSourceVersion ?? undefined, diffSourceDocumentationPath, skillReady)
-  const { data: diffCompareReadme } = useSkillReadme(qns, qslug, diffCompareVersion ?? undefined, diffCompareDocumentationPath, skillReady)
+  const { data: diffSourceReadme } = useSkillReadme(qns, qslug, diffSourceVersion ?? undefined, diffSourceDocumentationPath, skillReady && canPreviewFiles)
+  const { data: diffCompareReadme } = useSkillReadme(qns, qslug, diffCompareVersion ?? undefined, diffCompareDocumentationPath, skillReady && canPreviewFiles)
   const governanceVisible = hasRole('SKILL_ADMIN') || hasRole('SUPER_ADMIN')
   const canHideSkill = hasRole('SUPER_ADMIN')
   const isPendingPreview = skill?.resolutionMode === 'OWNER_PREVIEW' && headlineVersion?.status === 'PENDING_REVIEW'
@@ -915,7 +917,17 @@ export function SkillDetailPage() {
           </TabsList>
 
           <TabsContent value="readme" className="mt-6">
-            {readme ? (
+            {!canPreviewFiles && documentationPath ? (
+              <Card className="p-8 text-center" data-testid="skill-documentation-no-download">
+                {versionSummary ? (
+                  <section className="mb-6 text-left">
+                    <p className="whitespace-pre-wrap text-base leading-7 text-muted-foreground">{versionSummary}</p>
+                  </section>
+                ) : null}
+                <div className="text-base font-semibold text-foreground">{t('skillDetail.noDownloadPreviewTitle')}</div>
+                <p className="mt-2 text-sm text-muted-foreground">{t('skillDetail.noDownloadPreviewDescription')}</p>
+              </Card>
+            ) : readme ? (
               <Card className="p-8 space-y-4">
                 {documentationPath ? (
                   <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
@@ -1620,7 +1632,9 @@ export function SkillDetailPage() {
             <div className="space-y-2">
               <div className="text-sm font-semibold text-foreground">{t('skillDetail.readmeChange')}</div>
               <div className="text-sm text-muted-foreground">
-                {diffSourceReadme !== diffCompareReadme ? t('skillDetail.readmeChanged') : t('skillDetail.readmeUnchanged')}
+                {!canPreviewFiles
+                  ? t('skillDetail.readmeChangeNoDownload')
+                  : diffSourceReadme !== diffCompareReadme ? t('skillDetail.readmeChanged') : t('skillDetail.readmeUnchanged')}
               </div>
             </div>
 

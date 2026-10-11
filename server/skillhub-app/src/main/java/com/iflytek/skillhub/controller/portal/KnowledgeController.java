@@ -328,6 +328,7 @@ public class KnowledgeController extends BaseApiController {
     /**
      * Streams a file. {@code disposition=inline} allows PDF, raster images, plain text,
      * DOCX and PPTX previews. Text is served as {@code text/plain} so it cannot execute.
+     * Previews and downloads both require the member download capability.
      */
     @GetMapping("/documents/{documentId}/content")
     @Operation(operationId = "downloadKnowledgeDocument", summary = "Download or preview a file version")

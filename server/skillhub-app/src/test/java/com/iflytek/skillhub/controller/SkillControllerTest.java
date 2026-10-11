@@ -311,4 +311,56 @@ class SkillControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value(400));
     }
+
+    @Test
+    void inlineFilePreviewShouldRequireDownloadCapability() throws Exception {
+        org.mockito.Mockito.doThrow(new DomainForbiddenException("error.member.download.denied"))
+                .when(memberAccess).check(any(), any(), any(), org.mockito.ArgumentMatchers.anyBoolean(), eq(true), org.mockito.ArgumentMatchers.anyBoolean());
+
+        for (String prefix : List.of("/api/v1", "/api/web")) {
+            mockMvc.perform(get(prefix + "/skills/team/demo/versions/1.0.0/file")
+                            .param("path", "SKILL.md")
+                            .param("disposition", "inline")
+                            .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user("viewer")))
+                    .andExpect(status().isForbidden());
+            mockMvc.perform(get(prefix + "/skills/team/demo/tags/latest/file")
+                            .param("path", "SKILL.md")
+                            .param("disposition", "inline")
+                            .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user("viewer")))
+                    .andExpect(status().isForbidden());
+        }
+        org.mockito.Mockito.verify(skillQueryService, org.mockito.Mockito.never())
+                .getFileContent(any(), any(), any(), any(), any(), any());
+        org.mockito.Mockito.verify(skillQueryService, org.mockito.Mockito.never())
+                .getFileContentByTag(any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void inlineFilePreviewShouldStreamWhenDownloadIsAllowed() throws Exception {
+        when(skillQueryService.getFileContent(eq("team"), eq("demo"), eq("1.0.0"), eq("SKILL.md"), any(), any()))
+                .thenAnswer(invocation -> new java.io.ByteArrayInputStream("# Demo".getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+
+        mockMvc.perform(get("/api/web/skills/team/demo/versions/1.0.0/file")
+                        .param("path", "SKILL.md")
+                        .param("disposition", "inline")
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user("viewer")))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content().string("# Demo"));
+
+        org.mockito.Mockito.verify(memberAccess).check(any(), any(), any(), eq(false), eq(true), eq(true));
+    }
+
+    @Test
+    void versionCompareShouldRequireDownloadCapability() throws Exception {
+        org.mockito.Mockito.doThrow(new DomainForbiddenException("error.member.download.denied"))
+                .when(memberAccess).check(any(), any(), any(), org.mockito.ArgumentMatchers.anyBoolean(), eq(true), org.mockito.ArgumentMatchers.anyBoolean());
+
+        mockMvc.perform(get("/api/web/skills/team/demo/versions/compare")
+                        .param("from", "1.0.0")
+                        .param("to", "1.1.0")
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user("viewer")))
+                .andExpect(status().isForbidden());
+        org.mockito.Mockito.verify(skillQueryService, org.mockito.Mockito.never())
+                .compareVersions(any(), any(), any(), any(), any(), any());
+    }
 }
