@@ -5,7 +5,6 @@ ARG SKILL_SCANNER_VERSION=1.0.2
 WORKDIR /app
 
 COPY backports/apply_1_0_2_llm_base_url_backport.py /tmp/apply_1_0_2_llm_base_url_backport.py
-COPY skillhub_scanner_app.py /app/skillhub_scanner_app.py
 
 RUN pip install --no-cache-dir \
         "cisco-ai-skill-scanner==${SKILL_SCANNER_VERSION}" \
@@ -16,6 +15,9 @@ RUN pip install --no-cache-dir \
     adduser -S app -G app && \
     mkdir -p /tmp/skillhub-scans && \
     chown app:app /tmp/skillhub-scans
+
+# Copied after the dependency layer so app-only changes reuse the cached pip install.
+COPY skillhub_scanner_app.py /app/skillhub_scanner_app.py
 
 USER app
 
