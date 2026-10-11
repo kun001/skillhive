@@ -213,11 +213,13 @@ docker compose --env-file .env.release -f compose.release.yml up -d --force-recr
 
 触发条件：
 
-- 推送到 `main`：发布 `edge` 与 `sha-*`
+- 推送到 `main` 且改动涉及 `server/`、`web/`、`scanner/` 或工作流本身：发布 `edge` 与 `sha-*`（只改文档等其他路径时不构建）
 - 推送 `vX.Y.Z` 标签：发布 `X.Y.Z`、`vX.Y.Z`、`latest` 与 `sha-*`
 - 手动 `workflow_dispatch`
 
 流程：分别构建 `server/Dockerfile`、`web/Dockerfile`、`scanner/Dockerfile`，推送到 `ghcr.io/<仓库所有者>/skillhive-server|skillhive-web|skillhive-scanner`。`server` / `web` 为 `linux/amd64`、`linux/arm64`、`linux/riscv64` 多架构镜像（见 [RISC-V 支持](RISCV64.md)），`scanner` 为 `linux/amd64`、`linux/arm64`。
+
+构建缓存：每个镜像在 GitHub Actions 缓存中按组件保存层缓存（`type=gha,mode=max`），后续构建只重跑改动之后的步骤，版本标签构建也能复用 `main` 的缓存。GitHub 对每个仓库的缓存上限为 10 GB，7 天未使用的缓存会被清理，届时会重新完整构建。
 
 首次发布注意：
 

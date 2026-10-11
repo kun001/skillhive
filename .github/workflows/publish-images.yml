@@ -3,12 +3,19 @@ name: Publish images
 # Builds the SkillHive server, web and scanner images and pushes them to GHCR:
 #   ghcr.io/<owner>/skillhive-server|skillhive-web|skillhive-scanner
 # Tags: `edge` + `sha-<short>` for main; `X.Y.Z`, `vX.Y.Z` and `latest` for v* tags.
+# Pushes to main that only touch docs or other non-image paths are skipped; tag pushes
+# always build (GitHub does not evaluate path filters for tags).
 # These are the defaults used by compose.release.yml, .env.release.example and the Helm chart.
 
 on:
   push:
     branches: [main]
     tags: ['v*.*.*']
+    paths:
+      - 'server/**'
+      - 'web/**'
+      - 'scanner/**'
+      - '.github/workflows/publish-images.yml'
   workflow_dispatch:
 
 concurrency:
