@@ -18,4 +18,15 @@
 - 不要手工修改 `web/src/api/generated/schema.d.ts`。
 - 编译验证：`make test-backend-app`、`make typecheck-web`、`make lint-web`。发布前还需容器回归。
 
+## 发布与部署
+
+生产环境（https://skillhive.team，宝塔服务器 `/www/skillhive`）只能按下面的流程发布，任何工具都不要自行设计其他部署方式。
+
+- 镜像只用 GitHub Actions 构建的 `ghcr.io/kun001/skillhive-{server,web,scanner}`（`.github/workflows/publish-images.yml`）。不要在本地或服务器上构建镜像，不要 `docker save` 打包、上传镜像，也不要新写一次性的发版脚本。
+- 发布版本按 `skillhive-docs/09-deployment.md` 的「6.1 发布新版本」：先提 PR 把 `charts/skillhub/Chart.yaml` 的 `appVersion` / `version` 改为新版本号并合并，再在 GitHub 创建 `vX.Y.Z` Release（同时创建标签），确认三个镜像都有该标签。版本号只用 `vX.Y.Z`；已发布的标签不移动、不删除，有问题发新的补丁版本。
+- 部署只运行 GitHub Actions 的 “Deploy production”（`.github/workflows/deploy-production.yml`，命令行：`gh workflow run deploy-production.yml -f version=vX.Y.Z`）。它在服务器上执行 `deploy/baota/deploy.sh`，负责校验镜像、备份、切换和失败回退。没有 GitHub 权限时，按 `deploy/baota/README.md` 在服务器上手动执行同一个脚本。
+- 不要直接修改服务器上的 `compose.yml`、`.env` 或容器；需要改部署方式时先改仓库里的脚本和文档，经 PR 合并后再用。回退用部署输出的备份目录，步骤见 `deploy/baota/README.md`。
+- 部署后按 `skillhive-docs/changelog-maintenance.md` 记录实际上线的日期和版本。
+- 私钥、API Token、密码等凭据只放在 GitHub Secrets 或服务器上，不写进仓库、提交信息或 PR。
+
 架构与状态说明见 `skillhive-docs/skillhive-architecture.md`。上游规则存于 `legacy-upstream/AGENTS.md`，仅在维护尚未迁出的旧 SkillHub 代码时参考。
