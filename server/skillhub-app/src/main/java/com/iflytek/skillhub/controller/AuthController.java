@@ -115,7 +115,7 @@ public class AuthController extends BaseApiController {
                     freshRoles);
             platformSessionService.establishSession(principal, request, false);
         }
-        return ok("response.success.read", authMeResponseAssembler.from(principal));
+        return ok("response.success.read", authMeResponseAssembler.from(principal, authentication));
     }
 
     /**

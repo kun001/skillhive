@@ -451,7 +451,21 @@ public class SkillQueryService {
      * Opens a single file stream from object storage after verifying that the
      * caller may inspect the requested version.
      */
+    /** A packaged file's bytes together with the skill version they were served from. */
+    public record SkillFileContent(Long skillId, Long versionId, String version, InputStream content) {
+    }
+
     public InputStream getFileContent(
+            String namespaceSlug,
+            String skillSlug,
+            String version,
+            String filePath,
+            String currentUserId,
+            Map<Long, NamespaceRole> userNsRoles) {
+        return openFileContent(namespaceSlug, skillSlug, version, filePath, currentUserId, userNsRoles).content();
+    }
+
+    public SkillFileContent openFileContent(
             String namespaceSlug,
             String skillSlug,
             String version,
@@ -467,10 +481,20 @@ public class SkillQueryService {
 
         SkillFile file = findFile(skillVersion, filePath);
 
-        return readFileContent(file);
+        return new SkillFileContent(skill.getId(), skillVersion.getId(), skillVersion.getVersion(), readFileContent(file));
     }
 
     public InputStream getFileContentByTag(
+            String namespaceSlug,
+            String skillSlug,
+            String tagName,
+            String filePath,
+            String currentUserId,
+            Map<Long, NamespaceRole> userNsRoles) {
+        return openFileContentByTag(namespaceSlug, skillSlug, tagName, filePath, currentUserId, userNsRoles).content();
+    }
+
+    public SkillFileContent openFileContentByTag(
             String namespaceSlug,
             String skillSlug,
             String tagName,
@@ -482,7 +506,7 @@ public class SkillQueryService {
         assertPublishedAccessible(namespace, skill, currentUserId, userNsRoles);
         SkillVersion skillVersion = resolveVersionEntity(skill, null, tagName, null);
         SkillFile file = findFile(skillVersion, filePath);
-        return readFileContent(file);
+        return new SkillFileContent(skill.getId(), skillVersion.getId(), skillVersion.getVersion(), readFileContent(file));
     }
 
     public Page<SkillVersion> listVersions(String namespaceSlug,

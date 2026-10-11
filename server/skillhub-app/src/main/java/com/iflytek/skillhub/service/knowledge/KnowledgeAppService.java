@@ -47,6 +47,7 @@ import com.iflytek.skillhub.dto.knowledge.UpdateKnowledgeBaseRequest;
 import com.iflytek.skillhub.dto.knowledge.UpdateKnowledgeDocumentRequest;
 import com.iflytek.skillhub.dto.knowledge.UpdateKnowledgeFolderRequest;
 import com.iflytek.skillhub.observability.RequestIdAccessor;
+import com.iflytek.skillhub.auth.rbac.PlatformPrincipal;
 import com.iflytek.skillhub.service.AuditRequestContext;
 import com.iflytek.skillhub.storage.ObjectStorageService;
 import org.springframework.data.domain.Page;
@@ -149,9 +150,28 @@ public class KnowledgeAppService {
             platformRoles = platformRoles == null ? Set.of() : platformRoles;
         }
 
+        /** Builds the caller for an authenticated principal, applying {@link #knowledgePlatformRoles}. */
+        public static Caller of(String userId, Map<Long, NamespaceRole> namespaceRoles, PlatformPrincipal principal) {
+            return new Caller(userId, namespaceRoles,
+                    knowledgePlatformRoles(principal, principal != null ? principal.platformRoles() : null));
+        }
+
         NamespaceRole roleIn(Namespace namespace) {
             return namespaceRoles.get(namespace.getId());
         }
+    }
+
+    /**
+     * Platform roles that count toward knowledge access. API tokens act with team membership only,
+     * so a platform role such as SUPER_ADMIN never widens what a token can read; administrators
+     * who need every team's knowledge use the web session.
+     */
+    public static Set<String> knowledgePlatformRoles(Object principal, Set<String> platformRoles) {
+        if (platformRoles == null
+                || principal instanceof PlatformPrincipal platformPrincipal && "api_token".equals(platformPrincipal.oauthProvider())) {
+            return Set.of();
+        }
+        return platformRoles;
     }
 
     /** An uploaded file as seen by the service; its content is opened twice (hash, then store). */
@@ -698,7 +718,10 @@ public class KnowledgeAppService {
 
     // ---------------------------------------------------------------- resolution
 
-    /** Active knowledge bases the caller can read: all of them for super admins, otherwise those in their namespaces. */
+    /**
+     * Active knowledge bases the caller can read: all of them for super admins (web sessions only, see
+     * {@link #knowledgePlatformRoles}), otherwise those in their namespaces.
+     */
     private List<BaseContext> visibleBases(Caller caller) {
         List<KnowledgeBase> bases = caller.platformRoles().contains("SUPER_ADMIN")
                 ? baseRepository.findByStatus(KnowledgeBaseStatus.ACTIVE)

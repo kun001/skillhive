@@ -30,6 +30,7 @@ import {
   DEFAULT_TOKEN_SCOPE_SELECTION,
   domainsForScopes,
   scopesForSelection,
+  type SkillAccess,
   type TokenScopeSelection,
 } from './token-scopes'
 
@@ -144,8 +145,8 @@ export function CreateTokenDialog({ children, existingNames = [] }: CreateTokenD
 
   const minDateTime = toLocalDateTimeInputValue(new Date())
 
-  const toggleScope = (domain: keyof TokenScopeSelection, checked: boolean) => {
-    setScopeSelection((current) => ({ ...current, [domain]: checked }))
+  const updateScope = (change: Partial<TokenScopeSelection>) => {
+    setScopeSelection((current) => ({ ...current, ...change }))
     setScopeError(null)
   }
 
@@ -209,24 +210,29 @@ export function CreateTokenDialog({ children, existingNames = [] }: CreateTokenD
 
               <fieldset className="space-y-2">
                 <legend className="text-sm font-medium leading-none">{t('createToken.scopeLabel')}</legend>
-                <label className="flex items-start gap-3 rounded-md border border-border/60 p-3 text-sm">
-                  <input
-                    type="checkbox"
-                    className="mt-0.5 h-4 w-4 accent-primary"
-                    checked={scopeSelection.skill}
-                    onChange={(e) => toggleScope('skill', e.target.checked)}
-                  />
-                  <span className="space-y-1">
-                    <span className="block font-medium">{t('createToken.scopeSkill')}</span>
-                    <span className="block text-xs text-muted-foreground">{t('createToken.scopeSkillHint')}</span>
-                  </span>
-                </label>
+                <div className="space-y-2 rounded-md border border-border/60 p-3 text-sm">
+                  <Label htmlFor="token-skill-access" className="block font-medium">{t('createToken.scopeSkill')}</Label>
+                  <Select
+                    value={scopeSelection.skill}
+                    onValueChange={(value) => updateScope({ skill: value as SkillAccess })}
+                  >
+                    <SelectTrigger id="token-skill-access">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="readWrite">{t('createToken.scopeSkillReadWrite')}</SelectItem>
+                      <SelectItem value="read">{t('createToken.scopeSkillRead')}</SelectItem>
+                      <SelectItem value="none">{t('createToken.scopeSkillNone')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">{t('createToken.scopeSkillHint')}</p>
+                </div>
                 <label className="flex items-start gap-3 rounded-md border border-border/60 p-3 text-sm">
                   <input
                     type="checkbox"
                     className="mt-0.5 h-4 w-4 accent-primary"
                     checked={scopeSelection.knowledge}
-                    onChange={(e) => toggleScope('knowledge', e.target.checked)}
+                    onChange={(e) => updateScope({ knowledge: e.target.checked })}
                   />
                   <span className="space-y-1">
                     <span className="block font-medium">{t('createToken.scopeKnowledge')}</span>

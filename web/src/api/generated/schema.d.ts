@@ -4391,6 +4391,7 @@ export interface components {
             oauthProvider?: string;
             canChangePassword?: boolean;
             platformRoles?: string[];
+            tokenScopes?: string[];
         };
         LocalRegisterRequest: {
             username: string;

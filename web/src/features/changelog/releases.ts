@@ -15,16 +15,17 @@ export interface ReleaseNote {
 export const releases: ReleaseNote[] = [
   {
     id: '20261011-token-scopes',
-    version: 'cloud-20261011-token-scopes',
+    version: 'cloud-20261011-mcp-readonly',
     date: '2026-10-11',
-    title: { zh: 'API Token 分为技能库与知识库两个访问范围', en: 'API tokens now have separate skill and knowledge access' },
-    summary: { zh: '创建 API Token 时可以分别选择技能库和知识库（只读）。勾选知识库的 Token 可以读取你所在团队的知识库，便于脚本和 AI 工具接入；文件的每次下载和预览都会记入审计日志。', en: 'When creating an API token you can now choose skill access and read-only knowledge access separately. Tokens with knowledge access can read your teams\' knowledge bases, so scripts and AI tools can connect, and every file download or preview is recorded in the audit log.' },
+    title: { zh: 'API Token 分为技能库与知识库访问范围，支持 MCP 只读接入', en: 'Separate skill and knowledge token access, with read-only MCP access' },
+    summary: { zh: '创建 API Token 时可以分别设置技能库（读写 / 只读）和知识库（只读）的访问范围。配合只读 Token，AI 工具可以通过 SkillHive MCP 服务读取你有权查看的技能和知识库文件，读取记录会写入审计日志。', en: 'When creating an API token you can now set skill access (read-write or read-only) and read-only knowledge access separately. With a read-only token, AI tools can read the skills and knowledge files you can see through the SkillHive MCP server, and reads are recorded in the audit log.' },
     changes: [
-      { zh: '新增“知识库（只读）”访问范围（knowledge:read）。勾选后，Token 可通过 /api/v1 查看知识库列表、文件夹、文件、搜索结果、版本和文件内容。已有 Token 和未勾选的新 Token 不能访问知识库。', en: 'New read-only knowledge access (knowledge:read). With it, a token can read knowledge base lists, folders, files, search results, versions and file content through /api/v1. Existing tokens and new tokens without it cannot reach the knowledge base.' },
+      { zh: '技能库访问可选“读写”“只读”或“不授予”，新增“知识库（只读）”访问范围。已有 Token 和未开启知识库的新 Token 不能访问知识库。', en: 'Skill access can be read-write, read-only or none, and there is a new read-only knowledge access. Existing tokens and new tokens without knowledge access cannot reach the knowledge base.' },
       { zh: '技能库与知识库互不相通：只有知识库权限的 Token 不能读取技能、我的技能、收藏和订阅；只有技能库权限的 Token 也读不到知识库。', en: 'Skill and knowledge access are kept apart: a knowledge-only token cannot read skills, My Skills, favorites or subscriptions, and a skills-only token cannot read the knowledge base.' },
       { zh: 'Token 列表新增“访问范围”一列，显示每个 Token 能访问的范围。', en: 'The token list now has an Access column showing what each token can reach.' },
-      { zh: '知识库文件的每次下载和预览都会写入审计日志，并注明来自网页登录还是哪个 API Token。', en: 'Every knowledge file download and preview is written to the audit log, noting whether it came from a web session or which API token.' },
-      { zh: 'Token 与网页登录使用同一套权限：只能看到自己所在团队的知识库，读取文件内容同样需要下载权限。知识库的新建、上传、修改和删除仍不接受 Token。', en: 'Tokens follow the same permissions as web sign-in: they only see your own teams\' knowledge bases and reading file content still requires download permission. Creating, uploading, editing and deleting knowledge content still does not accept tokens.' },
+      { zh: '新增本地 MCP 服务（仓库 mcp/ 目录），只接受只读 Token，让 AI 工具搜索和读取技能与知识库文件；PDF、Office 等文件原样传递。', en: 'A new local MCP server (the mcp/ directory) accepts read-only tokens only and lets AI tools search and read skills and knowledge files; PDF, Office and other files are passed through unchanged.' },
+      { zh: '审计：知识库文件的每次下载和预览都会记录来自网页还是哪个 Token；通过 Token 读取技能文件或下载技能包也会记录，网页和匿名访问不记录。', en: 'Audit: every knowledge file download and preview records whether it came from the web or which token, and skill file reads and package downloads made with a token are recorded too; web and anonymous skill reads are not.' },
+      { zh: 'Token 与网页登录使用同一套权限：只能看到自己所在团队的知识库，读取文件内容同样需要下载权限。平台管理员的 Token 也只能读取自己所在团队的知识库。知识库的新建、上传、修改和删除仍不接受 Token。', en: 'Tokens follow the same permissions as web sign-in: they only see your own teams\' knowledge bases and reading file content still requires download permission. Even platform administrators\' tokens only read their own teams\' knowledge. Creating, uploading, editing and deleting knowledge content still does not accept tokens.' },
     ],
   },
   {

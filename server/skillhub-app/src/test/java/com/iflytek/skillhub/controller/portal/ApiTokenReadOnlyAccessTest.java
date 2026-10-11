@@ -179,11 +179,12 @@ class ApiTokenReadOnlyAccessTest {
         verify(knowledgeAppService).listBases(caller.capture());
         assertThat(caller.getValue().userId()).isEqualTo("alice");
         assertThat(caller.getValue().namespaceRoles()).isEqualTo(Map.of(1L, NamespaceRole.MEMBER));
-        assertThat(caller.getValue().platformRoles()).containsExactly("USER");
+        // Tokens read knowledge with team membership only; platform roles never count.
+        assertThat(caller.getValue().platformRoles()).isEmpty();
 
         mockMvc.perform(get("/api/v1/knowledge/documents/100/content").with(token("alice", "knowledge:read")));
         // The member resource guard (namespace membership + download capability) runs for tokens too.
-        verify(memberResourceAccessService).check(eq(Map.of("documentId", "100")), eq("alice"), eq(Set.of("USER")),
+        verify(memberResourceAccessService).check(eq(Map.of("documentId", "100")), eq("alice"), eq(Set.of()),
                 eq(false), eq(true), eq(false));
     }
 

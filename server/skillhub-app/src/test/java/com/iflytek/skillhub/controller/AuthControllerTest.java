@@ -109,8 +109,30 @@ class AuthControllerTest {
             .andExpect(jsonPath("$.data.oauthProvider").value("github"))
             .andExpect(jsonPath("$.data.canChangePassword").value(false))
             .andExpect(jsonPath("$.data.platformRoles[0]").value("USER"))
+            .andExpect(jsonPath("$.data.tokenScopes").doesNotExist())
             .andExpect(jsonPath("$.timestamp").isNotEmpty())
             .andExpect(jsonPath("$.requestId").isNotEmpty());
+    }
+
+    @Test
+    void meShouldReportApiTokenScopes() throws Exception {
+        given(namespaceMemberRepository.findByUserId("user-42")).willReturn(List.of());
+        given(userAccountRepository.findById("user-42"))
+            .willReturn(java.util.Optional.of(new UserAccount("user-42", "tester", "tester@example.com", "")));
+        given(userRoleBindingRepository.findByUserId("user-42")).willReturn(List.of());
+
+        PlatformPrincipal principal = new PlatformPrincipal(
+            "user-42", "tester", "tester@example.com", "", "api_token", Set.of("USER"));
+        var auth = new UsernamePasswordAuthenticationToken(principal, null, List.of(
+            new SimpleGrantedAuthority("ROLE_USER"),
+            new SimpleGrantedAuthority("SCOPE_skill:read"),
+            new SimpleGrantedAuthority("SCOPE_knowledge:read")));
+
+        mockMvc.perform(get("/api/v1/auth/me").with(authentication(auth)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.oauthProvider").value("api_token"))
+            .andExpect(jsonPath("$.data.tokenScopes[0]").value("knowledge:read"))
+            .andExpect(jsonPath("$.data.tokenScopes[1]").value("skill:read"));
     }
 
     // ===== AC-P-002: Session refresh when displayName changes =====

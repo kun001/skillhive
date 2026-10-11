@@ -392,10 +392,7 @@ public class KnowledgeController extends BaseApiController {
     private static KnowledgeAppService.Caller caller(String userId,
                                                      Map<Long, NamespaceRole> userNsRoles,
                                                      PlatformPrincipal principal) {
-        Set<String> platformRoles = principal != null && principal.platformRoles() != null
-                ? principal.platformRoles()
-                : Set.of();
-        return new KnowledgeAppService.Caller(userId, userNsRoles, platformRoles);
+        return KnowledgeAppService.Caller.of(userId, userNsRoles, principal);
     }
 
     private static KnowledgeAppService.Upload toUpload(MultipartFile file) {

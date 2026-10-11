@@ -11,6 +11,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -30,6 +31,12 @@ import com.iflytek.skillhub.domain.namespace.NamespaceMemberRepository;
 import com.iflytek.skillhub.domain.namespace.NamespaceRepository;
 import com.iflytek.skillhub.domain.namespace.NamespaceRole;
 import com.iflytek.skillhub.storage.ObjectStorageService;
+import com.iflytek.skillhub.auth.rbac.PlatformPrincipal;
+import java.util.ArrayList;
+import java.util.Set;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -175,6 +182,47 @@ class ApiTokenKnowledgeIsolationTest {
         }
         verify(objectStorageService, never()).getObject(anyString());
         verifyNoInteractions(auditLogService);
+    }
+
+    @Test
+    void superAdminTokenReadsKnowledgeWithTeamMembershipOnly() throws Exception {
+        given(namespaceMemberRepository.findByUserId("root")).willReturn(List.of());
+
+        mockMvc.perform(get("/api/v1/knowledge/bases").with(principal("root", "api_token", "knowledge:read")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").isEmpty());
+        for (String path : List.of(
+                "/api/v1/knowledge/bases/team-b/secret",
+                "/api/v1/knowledge/documents/200",
+                "/api/v1/knowledge/documents/200/content",
+                "/api/v1/knowledge/documents/100/content")) {
+            mockMvc.perform(get(path).with(principal("root", "api_token", "knowledge:read")))
+                    .andExpect(status().is(org.hamcrest.Matchers.oneOf(403, 404)));
+        }
+        verify(knowledgeBaseRepository, never()).findByStatus(any());
+        verify(objectStorageService, never()).getObject(anyString());
+        verifyNoInteractions(auditLogService);
+    }
+
+    @Test
+    void superAdminWebSessionStillReadsEveryTeam() throws Exception {
+        given(namespaceMemberRepository.findByUserId("root")).willReturn(List.of());
+
+        mockMvc.perform(get("/api/web/knowledge/documents/200/content").with(principal("root", "github")))
+                .andExpect(status().isOk())
+                .andExpect(content().string("team file"));
+    }
+
+    /** A SUPER_ADMIN principal signed in through {@code provider}, with the given token scopes. */
+    private static RequestPostProcessor principal(String userId, String provider, String... scopes) {
+        PlatformPrincipal principal = new PlatformPrincipal(
+                userId, userId, userId + "@example.com", "", provider, Set.of("USER", "SUPER_ADMIN"));
+        List<SimpleGrantedAuthority> authorities = new ArrayList<>(List.of(
+                new SimpleGrantedAuthority("ROLE_USER"), new SimpleGrantedAuthority("ROLE_SUPER_ADMIN")));
+        for (String scope : scopes) {
+            authorities.add(new SimpleGrantedAuthority("SCOPE_" + scope));
+        }
+        return authentication(new UsernamePasswordAuthenticationToken(principal, null, authorities));
     }
 
     private static Namespace namespace(long id, String slug) {
