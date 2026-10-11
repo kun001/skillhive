@@ -221,10 +221,25 @@ docker compose --env-file .env.release -f compose.release.yml up -d --force-recr
 
 构建缓存：每个镜像在 GitHub Actions 缓存中按组件保存层缓存（`type=gha,mode=max`），后续构建只重跑改动之后的步骤，版本标签构建也能复用 `main` 的缓存。GitHub 对每个仓库的缓存上限为 10 GB，7 天未使用的缓存会被清理，届时会重新完整构建。
 
-首次发布注意：
+GHCR 包首次推送后默认是私有的。三个包已设为 Public，可以匿名拉取；新增镜像时同样需要在 GitHub 的 Packages 设置中改为 Public，否则部署机器需要先 `docker login ghcr.io`。
 
-- GHCR 包首次推送后默认是私有的。需要匿名拉取时，在 GitHub 的 Packages 设置中把三个包改为 Public；否则部署机器需要先 `docker login ghcr.io`。
-- `latest` 和 Helm chart 默认的 `v<appVersion>`（当前 `appVersion` 为 `0.1.0`）只在推送对应版本标签后才存在。发布第一个版本：`git tag v0.1.0 && git push origin v0.1.0`。在此之前可以使用 `SKILLHUB_VERSION=edge`。
+### 6.1 发布新版本
+
+版本号使用 `vX.Y.Z` 形式（如 `v0.2.0`）。不要使用 `v0.2.0-rc.1` 这类预发布标签：工作流会同样把它发布为 `latest`。已发布的版本标签不要移动或删除，有问题就发一个新的补丁版本。
+
+1. **准备版本号**：提一个 PR，把 `charts/skillhub/Chart.yaml` 的 `appVersion` 和 `version` 都改为 `X.Y.Z`（不带 `v`）。Helm 默认镜像标签是 `v<appVersion>`，不改的话 Chart 会继续使用旧版本镜像。合并到 `main`，等 CI 和 `main` 上的镜像发布都成功，并按 `AGENTS.md` 要求完成容器回归（可以用 `edge` 镜像验证）。
+2. **创建 Release**：在 GitHub 仓库的 Releases 页面点 “Draft a new release”：
+   - Tag：输入 `vX.Y.Z`，选 “Create new tag: vX.Y.Z on publish”；Target：`main`。
+   - Release title：`SkillHive vX.Y.Z`。
+   - Release notes：Previous tag 选上一个版本，可以点 “Generate release notes” 生成合并的 PR 列表，再补充用户可感知的改动和镜像地址。
+   - Release label 选 None，勾选 “Set as the latest release”，不需要上传附件。
+   - 点 “Publish release”，会同时创建标签并触发镜像构建。
+
+   也可以先在命令行打标签：`git tag vX.Y.Z origin/main && git push origin vX.Y.Z`，再在 Releases 页面基于这个已有标签创建 Release。
+3. **确认镜像**：在 Actions 中确认标签触发的 “Publish images” 运行成功（`main` 已构建过同一提交时缓存全部命中，通常一分钟内完成），然后检查三个镜像都有 `vX.Y.Z`、`X.Y.Z` 和 `latest`，例如 `docker manifest inspect ghcr.io/kun001/skillhive-server:vX.Y.Z`。
+4. **部署与更新日志**：部署后按 [更新日志维护](changelog-maintenance.md) 记录实际上线的日期和版本。Docker Compose 默认跟随 `latest`，需要固定版本时设置 `SKILLHUB_VERSION=vX.Y.Z`。
+
+### 6.2 自建镜像
 
 也可以自行构建并推送到自有仓库，再通过 `SKILLHUB_*_IMAGE` 覆盖默认值：
 
@@ -233,8 +248,6 @@ docker buildx build --platform linux/amd64,linux/arm64 -t <registry>/skillhive-s
 docker buildx build --platform linux/amd64,linux/arm64 -t <registry>/skillhive-web:<tag> -f web/Dockerfile web --push
 docker buildx build --platform linux/amd64,linux/arm64 -t <registry>/skillhive-scanner:<tag> -f scanner/Dockerfile scanner --push
 ```
-
-发布前按 `AGENTS.md` 要求完成容器回归。
 
 ## 7 配置管理
 
