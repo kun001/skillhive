@@ -1,17 +1,17 @@
 apiVersion: v2
 name: skillhub
-description: Self-hosted, open-source agent skill registry for enterprises.
+description: Self-hosted AI skills and knowledge hub for teams (SkillHive).
 type: application
 version: 0.1.0
-appVersion: 0.2.14
+appVersion: 0.1.0
 keywords:
-  - skillhub
+  - skillhive
   - ai
   - skills
-home: https://github.com/iflytek/skillhub
-icon: https://raw.githubusercontent.com/iflytek/skillhub/main/skillhub-logo.svg
+home: https://github.com/kun001/skillhive
+icon: https://raw.githubusercontent.com/kun001/skillhive/main/skillhive-docs/assets/skillhive-logo.svg
 sources:
-  - https://github.com/iflytek/skillhub
+  - https://github.com/kun001/skillhive
 
 dependencies:
   # PostgreSQL - Bitnami 官方 chart，支持 HA、备份、监控

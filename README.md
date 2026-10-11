@@ -202,7 +202,7 @@ SkillHive 面向在自己环境中部署的团队。所有服务都以容器运�
 | [.env.release.example](.env.release.example) | 运行参数模板，部署时复制为 `.env.release` 并修改。 |
 | [compose.release.yml](compose.release.yml) | 前端、后端、扫描器、数据库与 Redis 的容器编排。 |
 
-部署配置中的默认镜像地址需要替换为由本仓库源码构建的镜像，默认镜像并不是 SkillHive 的发布版本。完成镜像、账户、存储和密钥配置后，再按部署文档启动服务。
+部署配置默认使用由本仓库发布的镜像 `ghcr.io/kun001/skillhive-server`、`skillhive-web`、`skillhive-scanner`（推送到 `main` 发布 `edge`，推送 `vX.Y.Z` 标签发布对应版本与 `latest`），也可以替换为自建镜像。完成镜像、账户、存储和密钥配置后，再按部署文档启动服务。
 
 ## 开发与文档
 

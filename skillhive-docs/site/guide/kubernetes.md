@@ -222,13 +222,13 @@ skillhub-storage-s3-secret-key: your-secret-key
 
 ### 镜像说明
 
-> SkillHive 尚未发布官方镜像。下表是 chart 中的默认值，指向上游 SkillHub 镜像，不包含 SkillHive 的改动。部署前请从本仓库构建镜像并推送到自有仓库，再通过 `images.registry` 等值指向它们，详见 [部署架构与运维](https://github.com/kun001/skillhive/blob/main/skillhive-docs/09-deployment.md)。
+> 默认镜像由本仓库的 `.github/workflows/publish-images.yml` 发布到 GHCR；使用自建镜像时覆盖镜像地址即可。
 
 | 组件 | 镜像 |
 |---|---|
-| 后端服务 | ghcr.io/iflytek/skillhub-server:latest |
-| 前端服务 | ghcr.io/iflytek/skillhub-web:latest |
-| 扫描器 | ghcr.io/iflytek/skillhub-scanner:latest |
+| 后端服务 | ghcr.io/kun001/skillhive-server:latest |
+| 前端服务 | ghcr.io/kun001/skillhive-web:latest |
+| 扫描器 | ghcr.io/kun001/skillhive-scanner:latest |
 | PostgreSQL | postgres:16-alpine |
 | Redis | redis:7-alpine |
 

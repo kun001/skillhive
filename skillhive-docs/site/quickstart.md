@@ -6,9 +6,17 @@
 
 SkillHive 所有服务都以容器运行：Web 与后端 API、技能扫描服务、PostgreSQL、Redis，以及本地磁盘 / S3 / MinIO 文件存储。
 
-### 1. 构建镜像
+### 1. 选择镜像
 
-SkillHive 尚未发布官方镜像，`.env.release.example` 中的默认镜像指向上游 SkillHub，并不包含 SkillHive 的功能。请从本仓库构建镜像并推送到自己的镜像仓库：
+默认使用由本仓库 GitHub Actions 发布的镜像：
+
+| 组件 | 镜像 |
+|------|------|
+| 后端 | `ghcr.io/kun001/skillhive-server` |
+| 前端 | `ghcr.io/kun001/skillhive-web` |
+| 扫描器 | `ghcr.io/kun001/skillhive-scanner` |
+
+推送到 `main` 会发布 `edge`，推送 `vX.Y.Z` 标签会发布对应版本和 `latest`。也可以从本仓库自行构建并推送到自己的镜像仓库：
 
 ```bash
 docker buildx build -t <registry>/skillhive-server:<tag> -f server/Dockerfile server --push
@@ -26,8 +34,8 @@ cp .env.release.example .env.release
 
 | 变量 | 说明 |
 |------|------|
-| `SKILLHUB_SERVER_IMAGE` / `SKILLHUB_WEB_IMAGE` / `SKILLHUB_SCANNER_IMAGE` | 第 1 步推送的镜像（不含 tag） |
-| `SKILLHUB_VERSION` | 镜像 tag |
+| `SKILLHUB_VERSION` | 镜像标签：`latest`（最新正式版本）、`edge`（`main` 最新构建）或固定的 `vX.Y.Z` |
+| `SKILLHUB_SERVER_IMAGE` / `SKILLHUB_WEB_IMAGE` / `SKILLHUB_SCANNER_IMAGE` | 仅在使用自建镜像时修改（不含 tag） |
 | `SKILLHUB_PUBLIC_BASE_URL` | 最终访问地址，生产环境使用 HTTPS 域名，末尾不带 `/` |
 | `POSTGRES_PASSWORD` | 数据库密码 |
 | `BOOTSTRAP_ADMIN_PASSWORD` | 首个管理员密码，必须修改默认值 |
@@ -91,7 +99,7 @@ description: 整理会议记录，提取讨论结论与后续待办。
 
 ## 升级
 
-重新构建并推送新版本镜像，修改 `.env.release` 中的 `SKILLHUB_VERSION`，然后执行：
+修改 `.env.release` 中的 `SKILLHUB_VERSION`（使用 `latest` 或 `edge` 时无需修改），然后执行：
 
 ```bash
 docker compose --env-file .env.release -f compose.release.yml pull

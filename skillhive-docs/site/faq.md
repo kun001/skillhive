@@ -6,7 +6,7 @@ A: SkillHive 基于开源的 [SkillHub](https://github.com/iflytek/skillhub) 构
 
 ## Q: 推荐的部署方式是什么？
 
-A: 从本仓库构建镜像，再用 `compose.release.yml` 部署，步骤见 [快速开始](/quickstart)。`.env.release.example` 中的默认镜像指向上游 SkillHub，不包含 SkillHive 的功能，请务必替换为自己构建的镜像。
+A: 使用 `compose.release.yml` 部署，步骤见 [快速开始](/quickstart)。默认镜像是本仓库发布到 GHCR 的 `ghcr.io/kun001/skillhive-*`；也可以替换为自建镜像。
 
 ## Q: 如何备份数据？
 
@@ -111,7 +111,7 @@ A: SkillHive 是单实例的团队平台。团队空间是协作与授权边界�
 
 ## Q: 如何升级？
 
-A: 构建并推送新版本镜像，修改 `.env.release` 中的 `SKILLHUB_VERSION`，然后：
+A: 修改 `.env.release` 中的 `SKILLHUB_VERSION`（使用 `latest` 或 `edge` 时无需修改），然后：
 
 ```bash
 docker compose --env-file .env.release -f compose.release.yml pull
@@ -138,7 +138,7 @@ A: 登录入口是配置驱动的：`/api/v1/auth/methods` 只返回配置了真
 
 ## Q: 安全扫描使用什么？
 
-A: 扫描接入、任务编排和审计由本项目实现；底层扫描服务使用 Cisco 的 [cisco-ai-skill-scanner](https://github.com/cisco-ai-defense/skill-scanner)（Apache License 2.0）。`scanner/Dockerfile` 安装时未锁定版本，构建镜像时会拉取 PyPI 上的最新版本，如需固定可自行锁定。
+A: 扫描接入、任务编排和审计由本项目实现；底层扫描服务使用 Cisco 的 [cisco-ai-skill-scanner](https://github.com/cisco-ai-defense/skill-scanner)（Apache License 2.0）。`scanner/Dockerfile` 通过构建参数 `SKILL_SCANNER_VERSION` 固定版本（当前为 `1.0.2`），并应用了仓库内的兼容补丁；升级时请同步检查 `scanner/backports/`。
 
 ## Q: 支持 MySQL 吗？
 

@@ -222,13 +222,13 @@ When rolling back to an older manifest without this detection, keep the current 
 
 ### Image Reference
 
-> SkillHive does not publish official images yet. The table shows the chart defaults, which point to upstream SkillHub images without SkillHive's changes. Build the images from this repository, push them to your own registry, and point `images.registry` and related values at them; see [Deployment](https://github.com/kun001/skillhive/blob/main/skillhive-docs/09-deployment.md).
+> The default images are published to GHCR by `.github/workflows/publish-images.yml` in this repository; override the image addresses to use your own builds.
 
 | Component | Image |
 |---|---|
-| Backend | ghcr.io/iflytek/skillhub-server:latest |
-| Frontend | ghcr.io/iflytek/skillhub-web:latest |
-| Scanner | ghcr.io/iflytek/skillhub-scanner:latest |
+| Backend | ghcr.io/kun001/skillhive-server:latest |
+| Frontend | ghcr.io/kun001/skillhive-web:latest |
+| Scanner | ghcr.io/kun001/skillhive-scanner:latest |
 | PostgreSQL | postgres:16-alpine |
 | Redis | redis:7-alpine |
 

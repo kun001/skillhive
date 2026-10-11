@@ -6,7 +6,7 @@
 # 镜像配置
 # ============================================================================
 images:
-  registry: ghcr.io/iflytek
+  registry: ghcr.io/kun001
   tag: ""
   pullPolicy: IfNotPresent
 

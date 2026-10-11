@@ -106,7 +106,8 @@ grep -Fq "curl -fsSL file://$REPO_ROOT/scripts/runtime.sh | sh -s -- pull --vers
 home_aliyun="$tmp/aliyun"
 stdout_aliyun="$tmp/aliyun.out"
 mkdir -p "$home_aliyun"
-run_runtime "$home_aliyun" "$bin_dir" "$stdout_aliyun" --aliyun
+SKILLHUB_ALIYUN_REGISTRY=registry.example.com SKILLHUB_ALIYUN_NAMESPACE=skillhive \
+  run_runtime "$home_aliyun" "$bin_dir" "$stdout_aliyun" --aliyun
 
 grep -Fq "curl -fsSL file://$REPO_ROOT/runtime.sh | sh -s -- down --aliyun --version sha-test --home $home_aliyun --public-url http://localhost" "$stdout_aliyun" \
   || fail "Aliyun runtime should preserve the root runtime.sh URL and --aliyun source mode"

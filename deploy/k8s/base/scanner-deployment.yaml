@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: scanner
-          image: ghcr.io/iflytek/skillhub-scanner:edge
+          image: ghcr.io/kun001/skillhive-scanner:edge
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000

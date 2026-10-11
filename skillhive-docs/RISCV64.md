@@ -21,19 +21,19 @@ QEMU handler before running these commands when the host is not RISC-V:
 
 ```bash
 docker run --privileged --rm tonistiigi/binfmt --install riscv64
-docker buildx create --use --name skillhub-riscv64
+docker buildx create --use --name skillhive-riscv64
 
 docker buildx build \
   --platform linux/riscv64 \
   --file server/Dockerfile \
-  --tag skillhub-server:riscv64 \
+  --tag skillhive-server:riscv64 \
   --load \
   server
 
 docker buildx build \
   --platform linux/riscv64 \
   --file web/Dockerfile \
-  --tag skillhub-web:riscv64 \
+  --tag skillhive-web:riscv64 \
   --load \
   web
 ```

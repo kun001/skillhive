@@ -13,8 +13,8 @@ SKILLHUB_HOME_DEFAULT="${TMPDIR:-/tmp}/skillhub-runtime"
 SKILLHUB_HOME="${SKILLHUB_HOME:-$SKILLHUB_HOME_DEFAULT}"
 SKILLHUB_VERSION_VALUE="${SKILLHUB_VERSION:-}"
 SKILLHUB_PUBLIC_BASE_URL_VALUE="${SKILLHUB_PUBLIC_BASE_URL:-}"
-SKILLHUB_ALIYUN_REGISTRY="${SKILLHUB_ALIYUN_REGISTRY:-crpi-ptu2rqimrigtq0qx.cn-hangzhou.personal.cr.aliyuncs.com}"
-SKILLHUB_ALIYUN_NAMESPACE="${SKILLHUB_ALIYUN_NAMESPACE:-skill_hub}"
+SKILLHUB_ALIYUN_REGISTRY="${SKILLHUB_ALIYUN_REGISTRY:-}"
+SKILLHUB_ALIYUN_NAMESPACE="${SKILLHUB_ALIYUN_NAMESPACE:-}"
 SKILLHUB_MIRROR_REGISTRY_VALUE="${SKILLHUB_MIRROR_REGISTRY:-}"
 SKILLHUB_SERVER_IMAGE_VALUE="${SKILLHUB_SERVER_IMAGE:-}"
 SKILLHUB_WEB_IMAGE_VALUE="${SKILLHUB_WEB_IMAGE:-}"
@@ -34,7 +34,7 @@ while [ "$#" -gt 0 ]; do
       ;;
     --aliyun)
       if [ -z "$SKILLHUB_ALIYUN_REGISTRY" ] || [ -z "$SKILLHUB_ALIYUN_NAMESPACE" ]; then
-        echo "SKILLHUB_ALIYUN_REGISTRY and SKILLHUB_ALIYUN_NAMESPACE must be configured for --aliyun" >&2
+        echo "SKILLHUB_ALIYUN_REGISTRY and SKILLHUB_ALIYUN_NAMESPACE must point to your own Aliyun mirror for --aliyun" >&2
         exit 1
       fi
       SKILLHUB_MIRROR_REGISTRY_VALUE="${SKILLHUB_ALIYUN_REGISTRY%/}/${SKILLHUB_ALIYUN_NAMESPACE}"
@@ -119,11 +119,15 @@ EOF
 done
 
 if [ "$USE_ALIYUN" = "true" ]; then
-  SKILLHUB_RAW_BASE="${SKILLHUB_RAW_BASE:-https://imageless.oss-cn-beijing.aliyuncs.com}"
+  # SkillHive has no shared Aliyun mirror: point --aliyun at your own OSS copy of the runtime files.
+  if [ -z "${SKILLHUB_RAW_BASE:-}" ]; then
+    echo "SKILLHUB_RAW_BASE must point to your Aliyun OSS copy of the runtime files for --aliyun" >&2
+    exit 1
+  fi
   RUNTIME_SCRIPT_URL="$SKILLHUB_RAW_BASE/runtime.sh"
   echo "Using Aliyun OSS for runtime files: $SKILLHUB_RAW_BASE"
 else
-  SKILLHUB_RAW_BASE="${SKILLHUB_RAW_BASE:-https://raw.githubusercontent.com/iflytek/skillhub/$SKILLHUB_REF}"
+  SKILLHUB_RAW_BASE="${SKILLHUB_RAW_BASE:-https://raw.githubusercontent.com/kun001/skillhive/$SKILLHUB_REF}"
   RUNTIME_SCRIPT_URL="$SKILLHUB_RAW_BASE/scripts/runtime.sh"
   echo "Using GitHub raw for runtime files: $SKILLHUB_RAW_BASE"
 fi
@@ -325,13 +329,13 @@ prepare_runtime_files() {
       REDIS_IMAGE_VALUE="$mirror_registry/redis:7-alpine"
     fi
     if [ -z "$SKILLHUB_SERVER_IMAGE_VALUE" ]; then
-      SKILLHUB_SERVER_IMAGE_VALUE="$mirror_registry/skillhub-server"
+      SKILLHUB_SERVER_IMAGE_VALUE="$mirror_registry/skillhive-server"
     fi
     if [ -z "$SKILLHUB_WEB_IMAGE_VALUE" ]; then
-      SKILLHUB_WEB_IMAGE_VALUE="$mirror_registry/skillhub-web"
+      SKILLHUB_WEB_IMAGE_VALUE="$mirror_registry/skillhive-web"
     fi
     if [ -z "$SKILLHUB_SCANNER_IMAGE_VALUE" ]; then
-      SKILLHUB_SCANNER_IMAGE_VALUE="$mirror_registry/skillhub-scanner"
+      SKILLHUB_SCANNER_IMAGE_VALUE="$mirror_registry/skillhive-scanner"
     fi
   fi
 
