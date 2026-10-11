@@ -14,6 +14,18 @@ export interface ReleaseNote {
 // Confirm the date and image tag when deploying; Git submission is not deployment.
 export const releases: ReleaseNote[] = [
   {
+    id: '20261011-token-read-knowledge',
+    version: 'cloud-20261011-token-read',
+    date: '2026-10-11',
+    title: { zh: 'API Token 可只读访问知识库与我的空间', en: 'API tokens can read knowledge bases and personal spaces' },
+    summary: { zh: '个人中心生成的 API Token 现在可以读取知识库、我的技能和我的命名空间，便于脚本和 AI 工具接入；写操作仍需在网页中完成。', en: 'API tokens from your profile can now read knowledge bases, My Skills and My Namespaces, so scripts and AI tools can connect. Changes still have to be made on the web.' },
+    changes: [
+      { zh: 'Token 可通过 /api/v1 只读查看知识库列表、文件夹、文件、搜索结果、版本和文件内容，以及我的技能、收藏、订阅和命名空间；已有 Token 无需重新生成。', en: 'Through /api/v1, tokens can read knowledge base lists, folders, files, search results, versions and file content, plus My Skills, favorites, subscriptions and namespaces. Existing tokens work without being regenerated.' },
+      { zh: 'Token 与网页登录使用同一套权限：只能看到自己所在团队的知识库，读取文件内容同样需要下载权限。', en: 'Tokens follow the same permissions as web sign-in: they only see knowledge bases of your own teams, and reading file content still requires download permission.' },
+      { zh: '知识库的新建、上传、修改和删除仍不接受 Token，只能在网页中操作。', en: 'Creating, uploading, editing and deleting knowledge content still does not accept tokens and can only be done on the web.' },
+    ],
+  },
+  {
     id: '20261011-preview-requires-download',
     version: 'cloud-20261011-preview-download',
     date: '2026-10-11',

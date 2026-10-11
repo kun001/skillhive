@@ -89,12 +89,12 @@ class ApiTokenScopeServiceTest {
     void authorizeShouldDenyUnsupportedAuthenticatedEndpoints() {
         ApiTokenScopeService.AuthorizationDecision decision = scopeService.authorize(
             "GET",
-            "/api/v1/me/skills",
+            "/api/web/me/skills",
             Set.of("skill:read", "skill:publish")
         );
 
         assertFalse(decision.allowed());
-        assertEquals("API token cannot access endpoint: /api/v1/me/skills", decision.message());
+        assertEquals("API token cannot access endpoint: /api/web/me/skills", decision.message());
     }
 
     @Test

@@ -47,6 +47,56 @@ class RouteSecurityPolicyRegistryTest {
     }
 
     @Test
+    void authorizeApiToken_allowsReadOnlyKnowledgeAndPersonalRoutesWithoutExtraScope() {
+        for (String path : List.of(
+                "/api/v1/knowledge/bases",
+                "/api/v1/knowledge/bases/team-a/handbook",
+                "/api/v1/knowledge/bases/team-a/handbook/folders",
+                "/api/v1/knowledge/bases/team-a/handbook/documents",
+                "/api/v1/knowledge/documents/search",
+                "/api/v1/knowledge/documents/10",
+                "/api/v1/knowledge/documents/10/versions",
+                "/api/v1/knowledge/documents/10/content",
+                "/api/v1/knowledge/documents/10/images",
+                "/api/v1/knowledge/documents/10/images/2/content",
+                "/api/v1/me/skills",
+                "/api/v1/me/stars",
+                "/api/v1/me/subscriptions",
+                "/api/v1/me/namespaces",
+                "/api/v1/me/namespaces/page")) {
+            // Existing tokens keep working: the read routes need no scope beyond what any token has.
+            assertTrue(registry.authorizeApiToken("GET", path, Set.of()).allowed(), path);
+            assertTrue(registry.authorizeApiToken("GET", path, Set.of("skill:read", "skill:publish", "skill:delete")).allowed(), path);
+            assertEquals(RouteSecurityPolicyRegistry.AccessLevel.AUTHENTICATED, registry.accessLevel("GET", path), path);
+        }
+    }
+
+    @Test
+    void authorizeApiToken_keepsKnowledgeAndPersonalWritesClosed() {
+        for (String[] request : List.of(
+                new String[] {"POST", "/api/v1/knowledge/bases"},
+                new String[] {"PUT", "/api/v1/knowledge/bases/team-a/handbook"},
+                new String[] {"POST", "/api/v1/knowledge/bases/team-a/handbook/folders"},
+                new String[] {"PUT", "/api/v1/knowledge/bases/team-a/handbook/folders/3"},
+                new String[] {"DELETE", "/api/v1/knowledge/bases/team-a/handbook/folders/3"},
+                new String[] {"POST", "/api/v1/knowledge/bases/team-a/handbook/documents"},
+                new String[] {"PUT", "/api/v1/knowledge/documents/10"},
+                new String[] {"PATCH", "/api/v1/knowledge/documents/10"},
+                new String[] {"DELETE", "/api/v1/knowledge/documents/10"},
+                new String[] {"POST", "/api/v1/knowledge/documents/10/versions"},
+                new String[] {"POST", "/api/v1/knowledge/documents/10/versions/2/restore"},
+                new String[] {"POST", "/api/v1/me/skills"},
+                new String[] {"DELETE", "/api/v1/me/namespaces"},
+                new String[] {"GET", "/api/web/me/skills"},
+                new String[] {"GET", "/api/web/me/namespaces"},
+                new String[] {"GET", "/api/web/knowledge/documents/search"})) {
+            var decision = registry.authorizeApiToken(request[0], request[1], ALL_SCOPES);
+            assertFalse(decision.allowed(), request[0] + " " + request[1]);
+            assertEquals(null, decision.requiredScope(), request[0] + " " + request[1]);
+        }
+    }
+
+    @Test
     void accessLevel_respectsMethodSpecificPublicRoutesAndProtectedFallback() {
         assertEquals(RouteSecurityPolicyRegistry.AccessLevel.PERMIT_ALL,
                 registry.accessLevel("GET", "/api/web/skills"));

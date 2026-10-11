@@ -98,6 +98,25 @@ public class RouteSecurityPolicyRegistry {
             ApiTokenPolicy.allow(HttpMethod.GET, "/api/v1/namespaces/*"),
             ApiTokenPolicy.allow(HttpMethod.GET, "/api/web/namespaces"),
             ApiTokenPolicy.allow(HttpMethod.GET, "/api/web/namespaces/*"),
+            // Read-only personal and knowledge surfaces for API tokens (e.g. MCP clients). Only
+            // the versioned /api/v1 routes are opened, GET only; /api/web stays session-only and
+            // every knowledge or /me write still has no token policy. Membership, visibility and
+            // the download capability are enforced by the same services web sessions use.
+            ApiTokenPolicy.allow(HttpMethod.GET, "/api/v1/me/skills"),
+            ApiTokenPolicy.allow(HttpMethod.GET, "/api/v1/me/stars"),
+            ApiTokenPolicy.allow(HttpMethod.GET, "/api/v1/me/subscriptions"),
+            ApiTokenPolicy.allow(HttpMethod.GET, "/api/v1/me/namespaces"),
+            ApiTokenPolicy.allow(HttpMethod.GET, "/api/v1/me/namespaces/page"),
+            ApiTokenPolicy.allow(HttpMethod.GET, "/api/v1/knowledge/bases"),
+            ApiTokenPolicy.allow(HttpMethod.GET, "/api/v1/knowledge/bases/*/*"),
+            ApiTokenPolicy.allow(HttpMethod.GET, "/api/v1/knowledge/bases/*/*/folders"),
+            ApiTokenPolicy.allow(HttpMethod.GET, "/api/v1/knowledge/bases/*/*/documents"),
+            ApiTokenPolicy.allow(HttpMethod.GET, "/api/v1/knowledge/documents/search"),
+            ApiTokenPolicy.allow(HttpMethod.GET, "/api/v1/knowledge/documents/*"),
+            ApiTokenPolicy.allow(HttpMethod.GET, "/api/v1/knowledge/documents/*/versions"),
+            ApiTokenPolicy.allow(HttpMethod.GET, "/api/v1/knowledge/documents/*/content"),
+            ApiTokenPolicy.allow(HttpMethod.GET, "/api/v1/knowledge/documents/*/images"),
+            ApiTokenPolicy.allow(HttpMethod.GET, "/api/v1/knowledge/documents/*/images/*/content"),
             ApiTokenPolicy.allow(null, "/actuator/health"),
             ApiTokenPolicy.allow(null, "/v3/api-docs/**"),
             ApiTokenPolicy.allow(null, "/swagger-ui/**"),
