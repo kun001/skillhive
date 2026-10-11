@@ -18,4 +18,4 @@
 - 不要手工修改 `web/src/api/generated/schema.d.ts`。
 - 编译验证：`make test-backend-app`、`make typecheck-web`、`make lint-web`。发布前还需容器回归。
 
-架构与状态说明见 `docs/skillhive-architecture.md`。上游规则存于 `legacy-upstream/AGENTS.md`，仅在维护尚未迁出的旧 SkillHub 代码时参考。
+架构与状态说明见 `skillhive-docs/skillhive-architecture.md`。上游规则存于 `legacy-upstream/AGENTS.md`，仅在维护尚未迁出的旧 SkillHub 代码时参考。

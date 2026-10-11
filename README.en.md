@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="skillhub-docs/assets/skillhive-logo.svg" alt="SkillHive" width="360" />
+  <img src="skillhive-docs/assets/skillhive-logo.svg" alt="SkillHive" width="360" />
 </p>
 
 <h3 align="center">A self-hosted home for your team's AI skills and work files</h3>
@@ -49,7 +49,7 @@
     </td>
     <td valign="top">
       <strong>Works with any AI tool</strong><br /><br />
-      Skills use the common <code>SKILL.md</code> format. Members download them and use them with whichever AI tool they prefer; the platform never runs skill scripts itself.
+      Skills use the common <code>SKILL.md</code> format. Members download them and use them with whichever AI tool they prefer, or let an AI tool read skills and files directly through the local <a href="mcp/README.md">MCP server</a> with a read-only token. The platform never runs skill scripts itself.
     </td>
   </tr>
 </table>
@@ -98,14 +98,14 @@ On the [sign-in page](https://skillhive.team/login), use any account below. They
 
 Open a folder in a knowledge base, preview a document, then view and download the version you need.
 
-![Knowledge base: folders, document preview and version history](skillhub-docs/assets/demos/knowledge-tour.gif)
+![Knowledge base: folders, document preview and version history](skillhive-docs/assets/demos/knowledge-tour.gif)
 
 <details>
 <summary><strong>Read a skill's instructions, bundled files and published versions</strong></summary>
 
 Find a skill in the library, read its instructions, preview `SKILL.md` among the bundled files, then check its published versions.
 
-![Skill library: instructions, file preview and versions](skillhub-docs/assets/demos/skill-tour.gif)
+![Skill library: instructions, file preview and versions](skillhive-docs/assets/demos/skill-tour.gif)
 
 </details>
 
@@ -114,7 +114,7 @@ Find a skill in the library, read its instructions, preview `SKILL.md` among the
 
 Click “Publish skill” in the skill library, choose the target space and visibility, and upload the package. Each submitted version is validated, scanned and reviewed before it is published.
 
-![Web publishing: entry point, target space and visibility](skillhub-docs/assets/demos/publish-tour.gif)
+![Web publishing: entry point, target space and visibility](skillhive-docs/assets/demos/publish-tour.gif)
 
 </details>
 
@@ -196,7 +196,9 @@ The live demo runs all services on a single 2-core, 4 GB server, with a memory l
 
 | Configuration in this repository | Purpose |
 | --- | --- |
-| [Deployment configuration](skillhub-docs/09-deployment.md) | Authentication, database, storage and environment variables. |
+| [Deployment configuration](skillhive-docs/09-deployment.md) | Authentication, database, storage and environment variables. |
+| [Design docs](skillhive-docs/skillhive-architecture.md) | Product scope, architecture and an index of topic docs (in Chinese). |
+| [MCP server](mcp/README.md) | Let AI tools read the skill library and knowledge base with a read-only token. |
 | [.env.release.example](.env.release.example) | Runtime template; copy it to `.env.release` and edit it. |
 | [compose.release.yml](compose.release.yml) | Containers for the frontend, backend, scanner, database and Redis. |
 
@@ -236,7 +238,7 @@ Run these from the repository root in a Linux / WSL environment with the develop
 | `make build-frontend` | Build frontend production assets. |
 | `make generate-api` | Generate frontend OpenAPI types from a running backend. |
 
-Run `make generate-api` after changing backend API contracts, and do not edit `web/src/api/generated/schema.d.ts` by hand. Database changes only add new Flyway migrations and never modify existing ones. Before a release, run container regression covering skill publishing and downloads, knowledge file permissions, uploads, previews and versions. See [changelog maintenance](skillhub-docs/changelog-maintenance.md) for how release notes are kept.
+Run `make generate-api` after changing backend API contracts, and do not edit `web/src/api/generated/schema.d.ts` by hand. Database changes only add new Flyway migrations and never modify existing ones. Before a release, run container regression covering skill publishing and downloads, knowledge file permissions, uploads, previews and versions. See [changelog maintenance](skillhive-docs/changelog-maintenance.md) for how release notes are kept.
 
 ### Roadmap
 

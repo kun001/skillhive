@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="skillhub-docs/assets/skillhive-logo.svg" alt="SkillHive" width="360" />
+  <img src="skillhive-docs/assets/skillhive-logo.svg" alt="SkillHive" width="360" />
 </p>
 
 <h3 align="center">私有部署的团队 AI 技能与资料共享中心</h3>
@@ -49,7 +49,7 @@
     </td>
     <td valign="top">
       <strong>不绑定任何 AI 工具</strong><br /><br />
-      技能采用通用的 <code>SKILL.md</code> 格式。成员下载后交给自己习惯的 AI 工具使用，平台本身不执行技能脚本。
+      技能采用通用的 <code>SKILL.md</code> 格式。成员下载后交给自己习惯的 AI 工具使用，也可以用只读 Token 通过本地 <a href="mcp/README.md">MCP 服务</a>让 AI 工具直接查阅技能和资料。平台本身不执行技能脚本。
     </td>
   </tr>
 </table>
@@ -98,14 +98,14 @@ flowchart LR
 
 从知识库进入文件夹，打开文档预览，再查看和下载需要的历史版本。
 
-![知识库：文件夹、文档预览和版本历史](skillhub-docs/assets/demos/knowledge-tour.gif)
+![知识库：文件夹、文档预览和版本历史](skillhive-docs/assets/demos/knowledge-tour.gif)
 
 <details>
 <summary><strong>查看技能说明、包内文件和已发布版本</strong></summary>
 
 在技能库找到技能，阅读说明，切换到包内文件预览 `SKILL.md`，再查看已发布版本。
 
-![技能库：技能说明、文件预览和版本](skillhub-docs/assets/demos/skill-tour.gif)
+![技能库：技能说明、文件预览和版本](skillhive-docs/assets/demos/skill-tour.gif)
 
 </details>
 
@@ -114,7 +114,7 @@ flowchart LR
 
 从技能库点击“发布技能”，选择目标空间和可见范围，再上传技能包。提交的版本经过校验、安全扫描和审核后发布。
 
-![Web 发布：入口、目标空间和可见性](skillhub-docs/assets/demos/publish-tour.gif)
+![Web 发布：入口、目标空间和可见性](skillhive-docs/assets/demos/publish-tour.gif)
 
 </details>
 
@@ -196,7 +196,9 @@ SkillHive 面向在自己环境中部署的团队。所有服务都以容器运�
 
 | 仓库内配置 | 用途 |
 | --- | --- |
-| [部署配置](skillhub-docs/09-deployment.md) | 认证、数据库、存储与环境变量配置。 |
+| [部署配置](skillhive-docs/09-deployment.md) | 认证、数据库、存储与环境变量配置。 |
+| [设计文档](skillhive-docs/skillhive-architecture.md) | 产品边界、架构与各专题文档的导航。 |
+| [MCP 服务](mcp/README.md) | 让 AI 工具用只读 Token 访问技能库和知识库。 |
 | [.env.release.example](.env.release.example) | 运行参数模板，部署时复制为 `.env.release` 并修改。 |
 | [compose.release.yml](compose.release.yml) | 前端、后端、扫描器、数据库与 Redis 的容器编排。 |
 
@@ -236,7 +238,7 @@ flowchart TB
 | `make build-frontend` | 构建前端生产资源。 |
 | `make generate-api` | 从运行中的后端生成前端 OpenAPI 类型。 |
 
-后端接口契约改变后运行 `make generate-api`，不要手工修改 `web/src/api/generated/schema.d.ts`。数据库变更只新增 Flyway 迁移，不修改既有迁移。发布前需进行容器回归，覆盖技能发布与下载、知识文件权限、上传、预览和版本操作。更新日志的维护方式见 [更新日志维护](skillhub-docs/changelog-maintenance.md)。
+后端接口契约改变后运行 `make generate-api`，不要手工修改 `web/src/api/generated/schema.d.ts`。数据库变更只新增 Flyway 迁移，不修改既有迁移。发布前需进行容器回归，覆盖技能发布与下载、知识文件权限、上传、预览和版本操作。更新日志的维护方式见 [更新日志维护](skillhive-docs/changelog-maintenance.md)。
 
 ### 扩展方向
 

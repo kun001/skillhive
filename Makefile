@@ -376,13 +376,13 @@ parallel-down: ## 在 integration worktree 停止联调环境
 	./scripts/parallel-down.sh
 
 docs-dev: ## 启动文档开发服务器
-	cd docs/skillhub && npm run dev
+	cd skillhive-docs/site && npm run dev
 
 docs-build: ## 构建文档站点
-	cd docs/skillhub && npm run build
+	cd skillhive-docs/site && npm run build
 
 docs-preview: ## 预览构建后的文档站点
-	cd docs/skillhub && npm run preview
+	cd skillhive-docs/site && npm run preview
 
 test-redis-cluster: ## 使用真实 Redis Cluster 验证 Spring Data、Session 和 Redisson Stream
 	./scripts/redis-cluster-integration-test.sh

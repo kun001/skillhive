@@ -1,6 +1,6 @@
 # SkillHive MCP 服务
 
-本地 stdio MCP 服务：让 Claude Code、Cursor 等 MCP 客户端用你自己的 API Token 只读访问 SkillHive 的技能库和知识库。设计与权限模型见 [skillhub-docs/26-mcp-server.md](../skillhub-docs/26-mcp-server.md)。
+本地 stdio MCP 服务：让 Claude Code、Cursor 等 MCP 客户端用你自己的 API Token 只读访问 SkillHive 的技能库和知识库。设计与权限模型见 [skillhive-docs/26-mcp-server.md](../skillhive-docs/26-mcp-server.md)。
 
 - 只读：不能发布、修改或删除任何内容。
 - 权限与网页一致：只能看到你所在团队的内容，读取知识库文件需要该团队的下载权限。
