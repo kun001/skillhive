@@ -4002,6 +4002,7 @@ export interface components {
             createdAt?: string;
             expiresAt?: string;
             lastUsedAt?: string;
+            scopes?: string[];
         };
         AdminUserStatusUpdateRequest: {
             status: string;
@@ -4368,6 +4369,7 @@ export interface components {
             tokenPrefix?: string;
             createdAt?: string;
             expiresAt?: string;
+            scopes?: string[];
         };
         SessionBootstrapRequest: {
             provider: string;

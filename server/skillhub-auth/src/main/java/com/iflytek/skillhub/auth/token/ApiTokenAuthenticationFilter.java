@@ -34,6 +34,9 @@ import java.util.stream.Collectors;
 @Component
 public class ApiTokenAuthenticationFilter extends OncePerRequestFilter {
 
+    /** Request attribute holding the id of the token that authenticated the request, for audit. */
+    public static final String API_TOKEN_ID_ATTRIBUTE = "apiTokenId";
+
     private static final String AUTH_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
 
@@ -108,6 +111,7 @@ public class ApiTokenAuthenticationFilter extends OncePerRequestFilter {
                 .toList());
             var auth = new UsernamePasswordAuthenticationToken(principal, null, authorities);
             SecurityContextHolder.getContext().setAuthentication(auth);
+            request.setAttribute(API_TOKEN_ID_ATTRIBUTE, apiToken.getId());
             apiTokenService.touchLastUsed(apiToken);
         }
         filterChain.doFilter(request, response);

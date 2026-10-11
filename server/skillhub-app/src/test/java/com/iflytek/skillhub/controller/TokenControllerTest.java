@@ -143,6 +143,55 @@ class TokenControllerTest {
     }
 
     @Test
+    void create_passesRequestedKnowledgeScopeToService() throws Exception {
+        PlatformPrincipal principal = new PlatformPrincipal(
+                "user-42", "tester", "tester@example.com", "", "github", Set.of("USER")
+        );
+        var auth = new UsernamePasswordAuthenticationToken(
+                principal, null, List.of(new SimpleGrantedAuthority("ROLE_USER"))
+        );
+        var token = new com.iflytek.skillhub.auth.entity.ApiToken("user-42", "mcp", "sk_123456", "hash-1",
+                "[\"knowledge:read\"]");
+        org.springframework.test.util.ReflectionTestUtils.setField(token, "id", 9L);
+
+        given(apiTokenService.rotateToken("user-42", "mcp", "[\"knowledge:read\"]", null))
+                .willReturn(new ApiTokenService.TokenCreateResult("sk_raw", token));
+
+        mockMvc.perform(post("/api/v1/tokens")
+                        .with(authentication(auth))
+                        .with(csrf())
+                        .contentType("application/json")
+                        .content("""
+                                {"name":"mcp","scopes":["knowledge:read"]}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.scopes[0]").value("knowledge:read"));
+    }
+
+    @Test
+    void create_rejectsUnsupportedScopes() throws Exception {
+        PlatformPrincipal principal = new PlatformPrincipal(
+                "user-42", "tester", "tester@example.com", "", "github", Set.of("USER")
+        );
+        var auth = new UsernamePasswordAuthenticationToken(
+                principal, null, List.of(new SimpleGrantedAuthority("ROLE_USER"))
+        );
+
+        mockMvc.perform(post("/api/v1/tokens")
+                        .with(authentication(auth))
+                        .with(csrf())
+                        .contentType("application/json")
+                        .content("""
+                                {"name":"mcp","scopes":["knowledge:write"]}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(400));
+
+        org.mockito.Mockito.verifyNoInteractions(apiTokenService);
+    }
+
+    @Test
     void list_returns_paginated_tokens() throws Exception {
         PlatformPrincipal principal = new PlatformPrincipal(
                 "user-42", "tester", "tester@example.com", "", "github", Set.of("USER")
@@ -153,7 +202,8 @@ class TokenControllerTest {
         var tokenPage = new PageImpl<>(
                 List.of(
                         new com.iflytek.skillhub.auth.entity.ApiToken("user-42", "cli", "sk_123456", "hash-1", "[]"),
-                        new com.iflytek.skillhub.auth.entity.ApiToken("user-42", "deploy", "sk_654321", "hash-2", "[]")
+                        new com.iflytek.skillhub.auth.entity.ApiToken("user-42", "deploy", "sk_654321", "hash-2",
+                                "[\"skill:read\",\"knowledge:read\"]")
                 ),
                 PageRequest.of(1, 10),
                 12
@@ -175,6 +225,8 @@ class TokenControllerTest {
                 .andExpect(jsonPath("$.code").value(0))
                 .andExpect(jsonPath("$.data.items[0].name").value("cli"))
                 .andExpect(jsonPath("$.data.items[1].name").value("deploy"))
+                .andExpect(jsonPath("$.data.items[1].scopes[0]").value("knowledge:read"))
+                .andExpect(jsonPath("$.data.items[1].scopes[1]").value("skill:read"))
                 .andExpect(jsonPath("$.data.total").value(12))
                 .andExpect(jsonPath("$.data.page").value(1))
                 .andExpect(jsonPath("$.data.size").value(10));

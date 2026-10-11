@@ -49,6 +49,7 @@ import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import com.iflytek.skillhub.service.AuditRequestContext;
 import org.mockito.ArgumentCaptor;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -249,12 +250,12 @@ class KnowledgeAppServiceTest {
         when(versionRepository.findByDocumentIdAndVersionNumber(21L, 4)).thenReturn(Optional.of(pptx));
 
         // Members can download by default, so previews and downloads both work.
-        assertThat(service.openContent(21L, 1, member("alice"), true).filename()).isEqualTo("a.docx");
-        assertThat(service.openContent(21L, null, member("alice"), true).previewKind()).isEqualTo(KnowledgePreviewKind.OFFICE);
-        assertThat(service.openContent(21L, 2, member("alice"), false).filename()).isEqualTo("a.docx");
-        assertThat(service.openContent(21L, 4, member("alice"), true).previewKind()).isEqualTo(KnowledgePreviewKind.OFFICE);
-        assertThatThrownBy(() -> service.openContent(21L, 3, member("alice"), true)).isInstanceOf(DomainNotFoundException.class);
-        assertThatThrownBy(() -> service.openContent(21L, 1, new KnowledgeAppService.Caller("outsider", Map.of(), Set.of()), true))
+        assertThat(service.openContent(21L, 1, member("alice"), true, null).filename()).isEqualTo("a.docx");
+        assertThat(service.openContent(21L, null, member("alice"), true, null).previewKind()).isEqualTo(KnowledgePreviewKind.OFFICE);
+        assertThat(service.openContent(21L, 2, member("alice"), false, null).filename()).isEqualTo("a.docx");
+        assertThat(service.openContent(21L, 4, member("alice"), true, null).previewKind()).isEqualTo(KnowledgePreviewKind.OFFICE);
+        assertThatThrownBy(() -> service.openContent(21L, 3, member("alice"), true, null)).isInstanceOf(DomainNotFoundException.class);
+        assertThatThrownBy(() -> service.openContent(21L, 1, new KnowledgeAppService.Caller("outsider", Map.of(), Set.of()), true, null))
                 .isInstanceOf(DomainNotFoundException.class);
 
         // Without the download capability, inline previews are refused just like downloads.
@@ -262,10 +263,33 @@ class KnowledgeAppServiceTest {
         readOnly.setCanDownload(false);
         when(members.findByNamespaceIdAndUserId(NAMESPACE_ID, "bob")).thenReturn(Optional.of(readOnly));
         for (Integer version : java.util.Arrays.asList(1, null, 4)) {
-            assertThatThrownBy(() -> service.openContent(21L, version, member("bob"), true)).isInstanceOf(DomainForbiddenException.class);
-            assertThatThrownBy(() -> service.openContent(21L, version, member("bob"), false)).isInstanceOf(DomainForbiddenException.class);
+            assertThatThrownBy(() -> service.openContent(21L, version, member("bob"), true, null)).isInstanceOf(DomainForbiddenException.class);
+            assertThatThrownBy(() -> service.openContent(21L, version, member("bob"), false, null)).isInstanceOf(DomainForbiddenException.class);
         }
         verify(storageService, never()).getObject(anyString());
+        // Only granted reads are audited; refused ones never reach the audit log.
+        verify(auditLogService, never()).record(eq("bob"), anyString(), anyString(), anyLong(), any(), any(), any(), any());
+    }
+
+    @Test
+    void openContent_auditsDownloadsAndPreviewsWithTheirAuthMethod() throws Exception {
+        KnowledgeDocument document = withId(new KnowledgeDocument(11L, null, "guide", "Guide", null, "alice"), 21L);
+        KnowledgeDocumentVersion first = withId(new KnowledgeDocumentVersion(21L, 1, "key", "application/msword", "a.docx", 1, "sha", null, "alice"), 31L);
+        first.publishDirectly("alice");
+        document.publish(first, "docx");
+        when(documentRepository.findById(21L)).thenReturn(Optional.of(document));
+        when(versionRepository.findById(31L)).thenReturn(Optional.of(first));
+
+        service.openContent(21L, null, member("alice"), false, new AuditRequestContext("10.0.0.1", "browser"));
+        service.openContent(21L, null, member("alice"), true, new AuditRequestContext("10.0.0.2", "mcp", 42L));
+
+        ArgumentCaptor<String> detail = ArgumentCaptor.forClass(String.class);
+        verify(auditLogService).record(eq("alice"), eq("KNOWLEDGE_DOCUMENT_DOWNLOAD"), eq("KNOWLEDGE_DOCUMENT"),
+                eq(21L), any(), eq("10.0.0.1"), eq("browser"), detail.capture());
+        assertThat(detail.getValue()).contains("\"authMethod\":\"session\"").doesNotContain("apiTokenId");
+        verify(auditLogService).record(eq("alice"), eq("KNOWLEDGE_DOCUMENT_PREVIEW"), eq("KNOWLEDGE_DOCUMENT"),
+                eq(21L), any(), eq("10.0.0.2"), eq("mcp"), detail.capture());
+        assertThat(detail.getValue()).contains("\"authMethod\":\"api_token\"").contains("\"apiTokenId\":42");
     }
 
     @Test
@@ -279,11 +303,11 @@ class KnowledgeAppServiceTest {
             when(documentRepository.findById(21L)).thenReturn(Optional.of(document));
             when(versionRepository.findById(31L)).thenReturn(Optional.of(version));
             when(versionRepository.findByDocumentIdAndVersionNumber(21L, 1)).thenReturn(Optional.of(version));
-            assertThat(service.openContent(21L, 1, member("alice"), true).filename()).isEqualTo(filename);
+            assertThat(service.openContent(21L, 1, member("alice"), true, null).filename()).isEqualTo(filename);
             var readOnly = new com.iflytek.skillhub.domain.namespace.NamespaceMember(NAMESPACE_ID, "bob", NamespaceRole.MEMBER);
             readOnly.setCanDownload(false);
             when(members.findByNamespaceIdAndUserId(NAMESPACE_ID, "bob")).thenReturn(Optional.of(readOnly));
-            assertThatThrownBy(() -> service.openContent(21L, 1, member("bob"), true)).isInstanceOf(DomainForbiddenException.class);
+            assertThatThrownBy(() -> service.openContent(21L, 1, member("bob"), true, null)).isInstanceOf(DomainForbiddenException.class);
         }
         verify(storageService, never()).getObject(anyString());
     }
@@ -303,7 +327,7 @@ class KnowledgeAppServiceTest {
             var readOnly = new com.iflytek.skillhub.domain.namespace.NamespaceMember(NAMESPACE_ID, "bob", NamespaceRole.MEMBER);
             readOnly.setCanDownload(false);
             when(members.findByNamespaceIdAndUserId(NAMESPACE_ID, "bob")).thenReturn(Optional.of(readOnly));
-            assertThatThrownBy(() -> service.openContent(21L, 1, member("bob"), true)).isInstanceOf(DomainForbiddenException.class);
+            assertThatThrownBy(() -> service.openContent(21L, 1, member("bob"), true, null)).isInstanceOf(DomainForbiddenException.class);
 
         }
         verify(storageService, never()).getObject(anyString());

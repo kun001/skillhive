@@ -461,12 +461,16 @@ API Token 仍保留，但定位从“CLI 唯一认证方式”调整为“平台
 - 存储：只存 SHA-256 哈希，明文只展示一次
 - 校验：从 `Authorization: Bearer <token>` 提取 → 哈希比对 → 加载关联用户 → 检查用户状态
 - 失败闭合与身份优先级：共享认证过滤器只识别 Bearer scheme。有效 Bearer 覆盖已加载的 Web Session 身份；Bearer 为空、格式错误、未知、过期、已吊销、用户缺失或用户禁用时立即返回 401，即使存在有效 Session 也不得回退。缺少 `Authorization` 头或使用 Basic/其他非 Bearer scheme 时保留有效 Session；若无 Session，公共读接口按匿名访问，`whoami` 返回 401
-- 作用域：`skill:read`, `skill:publish`, `skill:delete`, `token:manage`
-- 默认权限：Web 自助创建和 CLI Device Flow 均签发 `skill:read`、`skill:publish`、`skill:delete`；`token:manage` 仅在调用方显式请求时授予
-- 只读访问知识库与个人数据：API Token 可以用 GET 调用 `/api/v1` 下的知识库与“我的”接口，无需额外作用域（已签发的 Token 直接可用）：
-  - 知识库：`/api/v1/knowledge/bases`、`/bases/{namespace}/{base}`、`/bases/{namespace}/{base}/folders`、`/bases/{namespace}/{base}/documents`、`/documents/search`、`/documents/{id}`、`/documents/{id}/versions`、`/documents/{id}/content`、`/documents/{id}/images`、`/documents/{id}/images/{imageId}/content`
-  - 我的：`/api/v1/me/skills`、`/me/stars`、`/me/subscriptions`、`/me/namespaces`、`/me/namespaces/page`
-  - 这些请求与网页会话走同一套服务端校验：只能看到自己所在团队的知识库，读取文件内容（含预览）需要成员下载权限。知识库与“我的”接口的写操作（POST/PUT/PATCH/DELETE）以及整个 `/api/web/**` 仍然不接受 API Token。
+- 作用域：`skill:read`, `skill:publish`, `skill:delete`, `knowledge:read`, `token:manage`。创建 Token 时只接受这些值，其他值返回 400
+- 领域隔离：技能库与知识库是两个独立的作用域领域，持有一个领域的 Token 访问不到另一个领域
+  - 技能库：技能读取（`/api/v1/skills/**`、`/api/web/skills`、`/api/web/skills/**` 的 GET）、收藏/取消收藏，以及 `/api/v1/me/skills`、`/me/stars`、`/me/subscriptions` 需要 `skill:read`；发布、归档、删除等写操作仍分别需要 `skill:publish` / `skill:delete`
+  - 知识库（只读）：需要 `knowledge:read`
+  - 两个领域都可访问：`/api/v1/me/namespaces`、`/me/namespaces/page`、命名空间发现接口和标签目录
+- 默认权限：未指定作用域时签发 `skill:read`、`skill:publish`、`skill:delete`，不含 `knowledge:read`；`knowledge:read` 和 `token:manage` 只在调用方显式请求时授予。Web 端创建 Token 时可分别勾选“技能库”和“知识库（只读）”，Token 列表会显示每个 Token 的访问范围
+- 只读访问知识库：持有 `knowledge:read` 的 Token 可以用 GET 调用以下 `/api/v1` 接口：
+  - `/api/v1/knowledge/bases`、`/bases/{namespace}/{base}`、`/bases/{namespace}/{base}/folders`、`/bases/{namespace}/{base}/documents`、`/documents/search`、`/documents/{id}`、`/documents/{id}/versions`、`/documents/{id}/content`、`/documents/{id}/images`、`/documents/{id}/images/{imageId}/content`
+  - 这些请求与网页会话走同一套服务端校验：只能看到自己所在团队的知识库，读取文件内容（含预览）需要成员下载权限。知识库与“我的”接口的写操作（POST/PUT/PATCH/DELETE）以及整个 `/api/web/**` 仍然不接受 API Token
+- 下载审计：每次获准读取知识库文件内容都会写入审计日志，下载记为 `KNOWLEDGE_DOCUMENT_DOWNLOAD`，预览（`disposition=inline`）记为 `KNOWLEDGE_DOCUMENT_PREVIEW`。详情包含版本号、文件名、大小、`authMethod`（`session` 或 `api_token`），通过 Token 访问时还包含 `apiTokenId`。被拒绝的读取不写审计；Markdown 内嵌图片不单独审计
 - 拒绝原因：API Token 缺少作用域或不能访问某个接口时，403 响应返回本地化的安全原因和 `requestId`；其他授权失败仍返回通用信息，避免暴露内部异常
 
 > **一期作用域说明（非最小权限）**：一期 Token 作用域为粗粒度动作级别，不与 namespace 绑定。Token 继承用户的全部权限——如果用户是某个 namespace 的 MEMBER，则该用户的任何 Token（只要包含 `skill:publish` scope）都可以向该 namespace 发布技能。这是有意的一期简化，不满足最小权限原则。后续版本计划引入 namespace 级别的 Token 作用域限定（如 `namespace:ai-team:skill:publish`），或通过 `api_token_scope` 子表实现 Token 与 namespace 的绑定。

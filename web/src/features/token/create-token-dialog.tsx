@@ -26,6 +26,12 @@ import { centeredToastOptions, toast } from '@/shared/lib/toast'
 import { formatLocalDateTime } from '@/shared/lib/date-time'
 import type { CreateTokenRequest, CreateTokenResponse } from '@/api/types'
 import { resolveTokenExpiresAt, toLocalDateTimeInputValue, type TokenExpirationMode } from './token-expiration'
+import {
+  DEFAULT_TOKEN_SCOPE_SELECTION,
+  domainsForScopes,
+  scopesForSelection,
+  type TokenScopeSelection,
+} from './token-scopes'
 
 interface CreateTokenDialogProps {
   children: React.ReactNode
@@ -47,6 +53,8 @@ export function CreateTokenDialog({ children, existingNames = [] }: CreateTokenD
   const [expirationMode, setExpirationMode] = useState<TokenExpirationMode>('never')
   const [customExpiresAt, setCustomExpiresAt] = useState('')
   const [expiresAtError, setExpiresAtError] = useState<string | null>(null)
+  const [scopeSelection, setScopeSelection] = useState<TokenScopeSelection>(DEFAULT_TOKEN_SCOPE_SELECTION)
+  const [scopeError, setScopeError] = useState<string | null>(null)
   const [, copy] = useCopyToClipboard()
   const queryClient = useQueryClient()
 
@@ -64,6 +72,8 @@ export function CreateTokenDialog({ children, existingNames = [] }: CreateTokenD
       setExpirationMode('never')
       setCustomExpiresAt('')
       setExpiresAtError(null)
+      setScopeSelection(DEFAULT_TOKEN_SCOPE_SELECTION)
+      setScopeError(null)
       queryClient.invalidateQueries({ queryKey: ['tokens'] })
     },
   })
@@ -82,6 +92,12 @@ export function CreateTokenDialog({ children, existingNames = [] }: CreateTokenD
       return
     }
 
+    const scopes = scopesForSelection(scopeSelection)
+    if (scopes.length === 0) {
+      setScopeError(t('createToken.scopeRequired'))
+      return
+    }
+
     const expiresAt = resolveTokenExpiresAt(expirationMode, customExpiresAt)
     if (expirationMode === 'custom' && !expiresAt) {
       setExpiresAtError(t('createToken.expiresAtRequired'))
@@ -90,7 +106,8 @@ export function CreateTokenDialog({ children, existingNames = [] }: CreateTokenD
 
     setNameError(null)
     setExpiresAtError(null)
-    createMutation.mutate({ name: normalizedName, expiresAt })
+    setScopeError(null)
+    createMutation.mutate({ name: normalizedName, scopes, expiresAt })
   }
 
   const handleClose = () => {
@@ -101,6 +118,8 @@ export function CreateTokenDialog({ children, existingNames = [] }: CreateTokenD
     setExpirationMode('never')
     setCustomExpiresAt('')
     setExpiresAtError(null)
+    setScopeSelection(DEFAULT_TOKEN_SCOPE_SELECTION)
+    setScopeError(null)
     createMutation.reset()
   }
 
@@ -125,6 +144,11 @@ export function CreateTokenDialog({ children, existingNames = [] }: CreateTokenD
 
   const minDateTime = toLocalDateTimeInputValue(new Date())
 
+  const toggleScope = (domain: keyof TokenScopeSelection, checked: boolean) => {
+    setScopeSelection((current) => ({ ...current, [domain]: checked }))
+    setScopeError(null)
+  }
+
   return (
     // Reopening the dialog resets transient creation state because the raw token
     // is only meant to be shown once, immediately after a successful create call.
@@ -136,6 +160,8 @@ export function CreateTokenDialog({ children, existingNames = [] }: CreateTokenD
         setExpirationMode('never')
         setCustomExpiresAt('')
         setExpiresAtError(null)
+        setScopeSelection(DEFAULT_TOKEN_SCOPE_SELECTION)
+        setScopeError(null)
         createMutation.reset()
       }
       setOpen(nextOpen)
@@ -180,6 +206,35 @@ export function CreateTokenDialog({ children, existingNames = [] }: CreateTokenD
                   </span>
                 </div>
               </div>
+
+              <fieldset className="space-y-2">
+                <legend className="text-sm font-medium leading-none">{t('createToken.scopeLabel')}</legend>
+                <label className="flex items-start gap-3 rounded-md border border-border/60 p-3 text-sm">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5 h-4 w-4 accent-primary"
+                    checked={scopeSelection.skill}
+                    onChange={(e) => toggleScope('skill', e.target.checked)}
+                  />
+                  <span className="space-y-1">
+                    <span className="block font-medium">{t('createToken.scopeSkill')}</span>
+                    <span className="block text-xs text-muted-foreground">{t('createToken.scopeSkillHint')}</span>
+                  </span>
+                </label>
+                <label className="flex items-start gap-3 rounded-md border border-border/60 p-3 text-sm">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5 h-4 w-4 accent-primary"
+                    checked={scopeSelection.knowledge}
+                    onChange={(e) => toggleScope('knowledge', e.target.checked)}
+                  />
+                  <span className="space-y-1">
+                    <span className="block font-medium">{t('createToken.scopeKnowledge')}</span>
+                    <span className="block text-xs text-muted-foreground">{t('createToken.scopeKnowledgeHint')}</span>
+                  </span>
+                </label>
+                {scopeError ? <p className="text-xs text-red-600">{scopeError}</p> : null}
+              </fieldset>
 
               <div className="space-y-2">
                 <Label htmlFor="token-expiration">{t('createToken.expirationLabel')}</Label>
@@ -231,7 +286,8 @@ export function CreateTokenDialog({ children, existingNames = [] }: CreateTokenD
               </Button>
               <Button
                 onClick={handleCreate}
-                disabled={!normalizedName || hasDuplicateName || createMutation.isPending}
+                disabled={!normalizedName || hasDuplicateName || createMutation.isPending
+                  || scopesForSelection(scopeSelection).length === 0}
               >
                 {createMutation.isPending ? t('createToken.creating') : t('createToken.create')}
               </Button>
@@ -255,6 +311,12 @@ export function CreateTokenDialog({ children, existingNames = [] }: CreateTokenD
               <div className="space-y-2">
                 <Label>{t('createToken.nameDisplay')}</Label>
                 <div className="text-sm break-all">{createdToken.name}</div>
+              </div>
+              <div className="space-y-2">
+                <Label>{t('createToken.scopeLabel')}</Label>
+                <div className="text-sm">
+                  {domainsForScopes(createdToken.scopes).map((domain) => t(`token.scopeDomain.${domain}`)).join(t('token.scopeSeparator'))}
+                </div>
               </div>
               <div className="space-y-2">
                 <Label>{t('createToken.expiresAtDisplay')}</Label>

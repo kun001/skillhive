@@ -599,13 +599,18 @@ public class KnowledgeAppService {
         return toVersionResponse(restored, userNames(List.of(caller.userId())), restored.getId());
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public FileContent openContent(Long documentId, Integer versionNumber, Caller caller) {
-        return openContent(documentId, versionNumber, caller, false);
+        return openContent(documentId, versionNumber, caller, false, null);
     }
 
-    @Transactional(readOnly = true)
-    public FileContent openContent(Long documentId, Integer versionNumber, Caller caller, boolean inline) {
+    /**
+     * Opens a file version for download or inline preview. Every granted read is audited with
+     * the version, the mode and whether a web session or an API token made it.
+     */
+    @Transactional
+    public FileContent openContent(Long documentId, Integer versionNumber, Caller caller, boolean inline,
+                                   AuditRequestContext audit) {
         DocumentContext context = resolveDocument(documentId, caller);
         KnowledgeDocument document = context.document();
         KnowledgeDocumentVersion version = versionNumber == null
@@ -617,6 +622,16 @@ public class KnowledgeAppService {
         String extension = filePolicy.extensionOf(filename);
         // Previews stream the original file to the browser, so they are bound to the download capability.
         memberPolicy.assertDownload(context.baseContext().namespace().getId(), caller.userId(), caller.platformRoles());
+        Long apiTokenId = audit != null ? audit.apiTokenId() : null;
+        recordAudit(caller, inline ? "KNOWLEDGE_DOCUMENT_PREVIEW" : "KNOWLEDGE_DOCUMENT_DOWNLOAD",
+                TARGET_DOCUMENT, document.getId(), audit,
+                AuditDetail.builder()
+                        .put("version", version.getVersionNumber())
+                        .put("fileName", filename)
+                        .put("sizeBytes", version.getSizeBytes())
+                        .put("authMethod", apiTokenId != null ? "api_token" : "session")
+                        .put("apiTokenId", apiTokenId)
+                        .build());
         String objectKey = version.getContentObjectKey();
         return new FileContent(filename, version.getContentType(), version.getSizeBytes(),
                 filePolicy.previewKindFor(extension), () -> storageService.getObject(objectKey));

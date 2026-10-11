@@ -1,18 +1,23 @@
 package com.iflytek.skillhub.controller.portal;
 
 import static com.iflytek.skillhub.controller.portal.ApiTokenReadOnlyAccessTest.token;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.containsString;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.iflytek.skillhub.TestRedisConfig;
+import com.iflytek.skillhub.domain.audit.AuditLogService;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeBase;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeBaseRepository;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeDocument;
@@ -31,6 +36,7 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -74,6 +80,9 @@ class ApiTokenKnowledgeIsolationTest {
     @MockBean
     private ObjectStorageService objectStorageService;
 
+    @MockBean
+    private AuditLogService auditLogService;
+
     private NamespaceMember aliceInTeamA;
 
     @BeforeEach
@@ -108,10 +117,30 @@ class ApiTokenKnowledgeIsolationTest {
     }
 
     @Test
-    void tokenReadsOwnTeamFileContent() throws Exception {
-        mockMvc.perform(get("/api/v1/knowledge/documents/100/content").with(token("alice")))
+    void tokenReadsOwnTeamFileContentAndIsAudited() throws Exception {
+        mockMvc.perform(get("/api/v1/knowledge/documents/100/content")
+                        .with(token("alice", "knowledge:read"))
+                        .requestAttr("apiTokenId", 7L))
                 .andExpect(status().isOk())
                 .andExpect(content().string("team file"));
+
+        ArgumentCaptor<String> detail = ArgumentCaptor.forClass(String.class);
+        verify(auditLogService).record(eq("alice"), eq("KNOWLEDGE_DOCUMENT_DOWNLOAD"), eq("KNOWLEDGE_DOCUMENT"),
+                eq(100L), any(), any(), any(), detail.capture());
+        assertThat(detail.getValue())
+                .contains("\"authMethod\":\"api_token\"")
+                .contains("\"apiTokenId\":7")
+                .contains("\"version\":1");
+    }
+
+    @Test
+    void tokenPreviewIsAuditedAsPreview() throws Exception {
+        mockMvc.perform(get("/api/v1/knowledge/documents/100/content?disposition=inline")
+                        .with(token("alice", "knowledge:read")))
+                .andExpect(status().isOk());
+
+        verify(auditLogService).record(eq("alice"), eq("KNOWLEDGE_DOCUMENT_PREVIEW"), eq("KNOWLEDGE_DOCUMENT"),
+                eq(100L), any(), any(), any(), anyString());
     }
 
     @Test
@@ -123,13 +152,14 @@ class ApiTokenKnowledgeIsolationTest {
                 "/api/v1/knowledge/documents/200",
                 "/api/v1/knowledge/documents/200/versions",
                 "/api/v1/knowledge/documents/200/content")) {
-            mockMvc.perform(get(path).with(token("alice")))
+            mockMvc.perform(get(path).with(token("alice", "knowledge:read")))
                     .andExpect(status().is4xxClientError())
                     .andExpect(status().is(org.hamcrest.Matchers.oneOf(403, 404)))
                     // Rejected by the membership check, not by the token route policy.
                     .andExpect(jsonPath("$.msg").value(not(containsString("API"))));
         }
         verify(objectStorageService, never()).getObject(anyString());
+        verifyNoInteractions(auditLogService);
     }
 
     @Test
@@ -139,11 +169,12 @@ class ApiTokenKnowledgeIsolationTest {
         for (String path : List.of(
                 "/api/v1/knowledge/documents/100/content",
                 "/api/v1/knowledge/documents/100/content?disposition=inline")) {
-            mockMvc.perform(get(path).with(token("alice")))
+            mockMvc.perform(get(path).with(token("alice", "knowledge:read")))
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.msg").value(not(containsString("API"))));
         }
         verify(objectStorageService, never()).getObject(anyString());
+        verifyNoInteractions(auditLogService);
     }
 
     private static Namespace namespace(long id, String slug) {

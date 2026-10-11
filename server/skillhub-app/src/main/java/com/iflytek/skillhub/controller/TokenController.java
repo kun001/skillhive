@@ -1,10 +1,9 @@
 package com.iflytek.skillhub.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.iflytek.skillhub.auth.entity.ApiToken;
 import com.iflytek.skillhub.auth.rbac.PlatformPrincipal;
 import com.iflytek.skillhub.auth.token.ApiTokenService;
-import com.iflytek.skillhub.auth.token.ApiTokenScopes;
+import com.iflytek.skillhub.auth.token.ApiTokenScopeService;
 import com.iflytek.skillhub.dto.ApiResponse;
 import com.iflytek.skillhub.dto.ApiResponseFactory;
 import com.iflytek.skillhub.dto.PageResponse;
@@ -28,28 +27,21 @@ import java.util.List;
 public class TokenController extends BaseApiController {
 
     private final ApiTokenService apiTokenService;
-    private final ObjectMapper objectMapper;
+    private final ApiTokenScopeService apiTokenScopeService;
 
-    public TokenController(ApiTokenService apiTokenService, ApiResponseFactory responseFactory, ObjectMapper objectMapper) {
+    public TokenController(ApiTokenService apiTokenService,
+                           ApiTokenScopeService apiTokenScopeService,
+                           ApiResponseFactory responseFactory) {
         super(responseFactory);
         this.apiTokenService = apiTokenService;
-        this.objectMapper = objectMapper;
+        this.apiTokenScopeService = apiTokenScopeService;
     }
 
     @PostMapping
     public ApiResponse<TokenCreateResponse> create(
             @AuthenticationPrincipal PlatformPrincipal principal,
             @Valid @RequestBody TokenCreateRequest request) {
-        String scopeJson;
-        if (request.scopes() == null || request.scopes().isEmpty()) {
-            scopeJson = ApiTokenScopes.DEFAULT_USER_SCOPE_JSON;
-        } else {
-            try {
-                scopeJson = objectMapper.writeValueAsString(request.scopes());
-            } catch (JsonProcessingException e) {
-                scopeJson = ApiTokenScopes.DEFAULT_USER_SCOPE_JSON;
-            }
-        }
+        String scopeJson = apiTokenScopeService.toScopeJson(request.scopes());
 
         var result = apiTokenService.rotateToken(principal.userId(), request.name(), scopeJson, request.expiresAt());
         return ok("response.success.created", new TokenCreateResponse(
@@ -58,7 +50,8 @@ public class TokenController extends BaseApiController {
                 result.entity().getName(),
                 result.entity().getTokenPrefix(),
                 formatInstant(result.entity().getCreatedAt()),
-                formatInstant(result.entity().getExpiresAt())
+                formatInstant(result.entity().getExpiresAt()),
+                scopesOf(result.entity())
         ));
     }
 
@@ -74,7 +67,8 @@ public class TokenController extends BaseApiController {
             t.getTokenPrefix(),
             formatInstant(t.getCreatedAt()),
             formatInstant(t.getExpiresAt()),
-            formatInstant(t.getLastUsedAt())
+            formatInstant(t.getLastUsedAt()),
+            scopesOf(t)
         ));
         return ok("response.success.read", PageResponse.from(result));
     }
@@ -99,8 +93,13 @@ public class TokenController extends BaseApiController {
                 token.getTokenPrefix(),
                 formatInstant(token.getCreatedAt()),
                 formatInstant(token.getExpiresAt()),
-                formatInstant(token.getLastUsedAt())
+                formatInstant(token.getLastUsedAt()),
+                scopesOf(token)
         ));
+    }
+
+    private List<String> scopesOf(ApiToken token) {
+        return apiTokenScopeService.parseScopes(token.getScopeJson()).stream().sorted().toList();
     }
 
     private String formatInstant(Instant value) {

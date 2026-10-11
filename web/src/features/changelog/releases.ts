@@ -14,15 +14,17 @@ export interface ReleaseNote {
 // Confirm the date and image tag when deploying; Git submission is not deployment.
 export const releases: ReleaseNote[] = [
   {
-    id: '20261011-token-read-knowledge',
-    version: 'cloud-20261011-token-read',
+    id: '20261011-token-scopes',
+    version: 'cloud-20261011-token-scopes',
     date: '2026-10-11',
-    title: { zh: 'API Token 可只读访问知识库与我的空间', en: 'API tokens can read knowledge bases and personal spaces' },
-    summary: { zh: '个人中心生成的 API Token 现在可以读取知识库、我的技能和我的命名空间，便于脚本和 AI 工具接入；写操作仍需在网页中完成。', en: 'API tokens from your profile can now read knowledge bases, My Skills and My Namespaces, so scripts and AI tools can connect. Changes still have to be made on the web.' },
+    title: { zh: 'API Token 分为技能库与知识库两个访问范围', en: 'API tokens now have separate skill and knowledge access' },
+    summary: { zh: '创建 API Token 时可以分别选择技能库和知识库（只读）。勾选知识库的 Token 可以读取你所在团队的知识库，便于脚本和 AI 工具接入；文件的每次下载和预览都会记入审计日志。', en: 'When creating an API token you can now choose skill access and read-only knowledge access separately. Tokens with knowledge access can read your teams\' knowledge bases, so scripts and AI tools can connect, and every file download or preview is recorded in the audit log.' },
     changes: [
-      { zh: 'Token 可通过 /api/v1 只读查看知识库列表、文件夹、文件、搜索结果、版本和文件内容，以及我的技能、收藏、订阅和命名空间；已有 Token 无需重新生成。', en: 'Through /api/v1, tokens can read knowledge base lists, folders, files, search results, versions and file content, plus My Skills, favorites, subscriptions and namespaces. Existing tokens work without being regenerated.' },
-      { zh: 'Token 与网页登录使用同一套权限：只能看到自己所在团队的知识库，读取文件内容同样需要下载权限。', en: 'Tokens follow the same permissions as web sign-in: they only see knowledge bases of your own teams, and reading file content still requires download permission.' },
-      { zh: '知识库的新建、上传、修改和删除仍不接受 Token，只能在网页中操作。', en: 'Creating, uploading, editing and deleting knowledge content still does not accept tokens and can only be done on the web.' },
+      { zh: '新增“知识库（只读）”访问范围（knowledge:read）。勾选后，Token 可通过 /api/v1 查看知识库列表、文件夹、文件、搜索结果、版本和文件内容。已有 Token 和未勾选的新 Token 不能访问知识库。', en: 'New read-only knowledge access (knowledge:read). With it, a token can read knowledge base lists, folders, files, search results, versions and file content through /api/v1. Existing tokens and new tokens without it cannot reach the knowledge base.' },
+      { zh: '技能库与知识库互不相通：只有知识库权限的 Token 不能读取技能、我的技能、收藏和订阅；只有技能库权限的 Token 也读不到知识库。', en: 'Skill and knowledge access are kept apart: a knowledge-only token cannot read skills, My Skills, favorites or subscriptions, and a skills-only token cannot read the knowledge base.' },
+      { zh: 'Token 列表新增“访问范围”一列，显示每个 Token 能访问的范围。', en: 'The token list now has an Access column showing what each token can reach.' },
+      { zh: '知识库文件的每次下载和预览都会写入审计日志，并注明来自网页登录还是哪个 API Token。', en: 'Every knowledge file download and preview is written to the audit log, noting whether it came from a web session or which API token.' },
+      { zh: 'Token 与网页登录使用同一套权限：只能看到自己所在团队的知识库，读取文件内容同样需要下载权限。知识库的新建、上传、修改和删除仍不接受 Token。', en: 'Tokens follow the same permissions as web sign-in: they only see your own teams\' knowledge bases and reading file content still requires download permission. Creating, uploading, editing and deleting knowledge content still does not accept tokens.' },
     ],
   },
   {

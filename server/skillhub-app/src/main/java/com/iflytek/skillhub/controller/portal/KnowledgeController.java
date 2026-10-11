@@ -339,9 +339,11 @@ public class KnowledgeController extends BaseApiController {
             @RequestParam(defaultValue = "attachment") String disposition,
             @RequestAttribute("userId") String userId,
             @RequestAttribute(value = "userNsRoles", required = false) Map<Long, NamespaceRole> userNsRoles,
-            @AuthenticationPrincipal PlatformPrincipal principal) throws IOException {
+            @AuthenticationPrincipal PlatformPrincipal principal,
+            HttpServletRequest httpRequest) throws IOException {
         KnowledgeAppService.FileContent content = knowledgeAppService.openContent(
-                documentId, version, caller(userId, userNsRoles, principal), "inline".equalsIgnoreCase(disposition));
+                documentId, version, caller(userId, userNsRoles, principal), "inline".equalsIgnoreCase(disposition),
+                AuditRequestContext.from(httpRequest));
         return streamContent(content, disposition);
     }
 

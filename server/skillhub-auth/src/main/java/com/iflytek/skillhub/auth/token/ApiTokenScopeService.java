@@ -2,7 +2,9 @@ package com.iflytek.skillhub.auth.token;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.iflytek.skillhub.auth.policy.RouteSecurityPolicyRegistry;
+import com.iflytek.skillhub.domain.shared.exception.DomainBadRequestException;
 import org.springframework.stereotype.Service;
 
 import java.util.LinkedHashSet;
@@ -47,6 +49,30 @@ public class ApiTokenScopeService {
             return Set.copyOf(normalized);
         } catch (Exception e) {
             return Set.of();
+        }
+    }
+
+    /**
+     * Normalizes the scopes requested for a new token into stored JSON. No request means the
+     * default skill profile; anything outside {@link ApiTokenScopes#SUPPORTED} is rejected so a
+     * mistyped scope never yields a token that silently lacks the access it was meant to have.
+     */
+    public String toScopeJson(List<String> requestedScopes) {
+        if (requestedScopes == null || requestedScopes.isEmpty()) {
+            return ApiTokenScopes.DEFAULT_USER_SCOPE_JSON;
+        }
+        Set<String> normalized = new LinkedHashSet<>();
+        for (String scope : requestedScopes) {
+            String trimmed = scope == null ? "" : scope.trim();
+            if (!ApiTokenScopes.SUPPORTED.contains(trimmed)) {
+                throw new DomainBadRequestException("error.token.scope.unsupported", trimmed);
+            }
+            normalized.add(trimmed);
+        }
+        try {
+            return objectMapper.writeValueAsString(normalized);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Failed to serialize token scopes", e);
         }
     }
 
