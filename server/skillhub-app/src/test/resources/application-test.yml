@@ -13,6 +13,12 @@ spring:
     hibernate:
       ddl-auto: create
     database-platform: org.hibernate.dialect.H2Dialect
+    properties:
+      hibernate:
+        # application.yml pins hibernate.dialect=PostgreSQLDialect (it wins over
+        # database-platform). Since Hibernate 6.5 that dialect emits INSERT ... RETURNING,
+        # which H2 cannot parse, so tests use a PostgreSQL dialect without RETURNING.
+        dialect: com.iflytek.skillhub.H2CompatiblePostgreSQLDialect
   flyway:
     enabled: false
   data:
