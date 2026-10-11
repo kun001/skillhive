@@ -506,6 +506,8 @@ Chart 默认使用 `.github/workflows/publish-images.yml` 发布的镜像
 `ghcr.io/kun001/skillhive-server|skillhive-web|skillhive-scanner`，标签为 `v<appVersion>`；
 推送 `vX.Y.Z` Git 标签后才会生成对应的版本镜像。使用自建镜像时覆盖 `images.registry` / `images.tag`。
 
+发布新版本前，先把 `Chart.yaml` 的 `appVersion` 和 `version` 改为新版本号（如 `0.2.0`），否则 Chart 默认仍使用旧版本镜像。完整步骤见 [部署文档 6.1 发布新版本](../../skillhive-docs/09-deployment.md#61-发布新版本)。
+
 ## 卸载
 
 ```bash
