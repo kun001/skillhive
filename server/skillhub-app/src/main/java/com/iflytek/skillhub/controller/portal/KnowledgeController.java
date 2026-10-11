@@ -339,9 +339,11 @@ public class KnowledgeController extends BaseApiController {
             @RequestParam(defaultValue = "attachment") String disposition,
             @RequestAttribute("userId") String userId,
             @RequestAttribute(value = "userNsRoles", required = false) Map<Long, NamespaceRole> userNsRoles,
-            @AuthenticationPrincipal PlatformPrincipal principal) throws IOException {
+            @AuthenticationPrincipal PlatformPrincipal principal,
+            HttpServletRequest httpRequest) throws IOException {
         KnowledgeAppService.FileContent content = knowledgeAppService.openContent(
-                documentId, version, caller(userId, userNsRoles, principal), "inline".equalsIgnoreCase(disposition));
+                documentId, version, caller(userId, userNsRoles, principal), "inline".equalsIgnoreCase(disposition),
+                AuditRequestContext.from(httpRequest));
         return streamContent(content, disposition);
     }
 
@@ -390,10 +392,7 @@ public class KnowledgeController extends BaseApiController {
     private static KnowledgeAppService.Caller caller(String userId,
                                                      Map<Long, NamespaceRole> userNsRoles,
                                                      PlatformPrincipal principal) {
-        Set<String> platformRoles = principal != null && principal.platformRoles() != null
-                ? principal.platformRoles()
-                : Set.of();
-        return new KnowledgeAppService.Caller(userId, userNsRoles, platformRoles);
+        return KnowledgeAppService.Caller.of(userId, userNsRoles, principal);
     }
 
     private static KnowledgeAppService.Upload toUpload(MultipartFile file) {

@@ -24,6 +24,6 @@ wsl -d Ubuntu-22.04 -- bash /mnt/e/MyProjects/skillhive/scripts/status-local-wsl
 
 更改后端源码后，需要重新构建 `server/skillhub-app/target/skillhub-app-0.1.0.jar` 并重启 SkillHive；前端源码由 Vite 自动更新。不要使用 `/opt/skillhub-deps/start.sh` 启动此项目，该脚本固定指向原 SkillHub。
 
-技能文件保存在 `~/skillhive-data/storage`；可用 `python3 /mnt/e/MyProjects/skillhive/scripts/verify-imported-skills.py` 验证已导入的技能与文件。原库迁入记录见 `docs/skill-import-2026-09-24.md`。
+技能文件保存在 `~/skillhive-data/storage`；可用 `python3 /mnt/e/MyProjects/skillhive/scripts/verify-imported-skills.py` 验证已导入的技能与文件。原库迁入记录见 `skillhive-docs/skill-import-2026-09-24.md`。
 
 2026-09-24 启动验证：SkillHive 的 Web、API、扫描器均返回 HTTP 200；4 个容器健康，Flyway 到版本 66，知识库 4 张基础表已创建。旧套件与 CLI 接口不在当前 OpenAPI 清单中，带本地测试身份访问返回 HTTP 404。旧 SkillHub 进程已停止，旧数据卷仍保留。

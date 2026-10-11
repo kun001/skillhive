@@ -70,14 +70,30 @@ public class SkillDownloadService {
         this.skillSlugResolutionService = skillSlugResolutionService;
     }
 
+    /**
+     * A package ready to deliver. {@code skillId}, {@code versionId} and {@code version} identify
+     * what was served, for auditing; they are {@code null} only in results built outside this service.
+     */
     public record DownloadResult(
             Supplier<InputStream> contentSupplier,
             String filename,
             long contentLength,
             String contentType,
             String presignedUrl,
-            boolean fallbackBundle
+            boolean fallbackBundle,
+            Long skillId,
+            Long versionId,
+            String version
     ) {
+        public DownloadResult(Supplier<InputStream> contentSupplier,
+                              String filename,
+                              long contentLength,
+                              String contentType,
+                              String presignedUrl,
+                              boolean fallbackBundle) {
+            this(contentSupplier, filename, contentLength, contentType, presignedUrl, fallbackBundle, null, null, null);
+        }
+
         public InputStream openContent() {
             return contentSupplier.get();
         }
@@ -198,7 +214,10 @@ public class SkillDownloadService {
                     metadata.size(),
                     metadata.contentType(),
                     presignedUrl,
-                    false
+                    false,
+                    skill.getId(),
+                    version.getId(),
+                    version.getVersion()
             );
         } else {
             log.warn(
@@ -232,7 +251,10 @@ public class SkillDownloadService {
                 bundle.length,
                 "application/zip",
                 null,
-                true
+                true,
+                skill.getId(),
+                version.getId(),
+                version.getVersion()
         );
     }
 

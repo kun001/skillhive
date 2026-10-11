@@ -27,7 +27,7 @@ Enum `SkillStatus` (`domain/skill/SkillStatus.java`):
 | `HIDDEN` | Skill hidden by platform governance (design doc says prefer boolean `hidden` flag instead) |
 | `ARCHIVED` | Skill archived by owner/namespace admin, cannot publish new versions |
 
-**Design-vs-code note**: `docs/14-skill-lifecycle.md` specifies `hidden` should be a governance
+**Design-vs-code note**: `skillhive-docs/14-skill-lifecycle.md` specifies `hidden` should be a governance
 overlay (boolean flag) rather than a lifecycle enum state. The current code still defines
 `SkillStatus.HIDDEN`. New code should use the `skill.hidden` boolean field, not the enum value.
 

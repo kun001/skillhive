@@ -2,12 +2,15 @@ package com.iflytek.skillhub.auth.token;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.iflytek.skillhub.auth.policy.RouteSecurityPolicyRegistry;
+import com.iflytek.skillhub.domain.shared.exception.DomainBadRequestException;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ApiTokenScopeServiceTest {
@@ -89,12 +92,12 @@ class ApiTokenScopeServiceTest {
     void authorizeShouldDenyUnsupportedAuthenticatedEndpoints() {
         ApiTokenScopeService.AuthorizationDecision decision = scopeService.authorize(
             "GET",
-            "/api/v1/me/skills",
+            "/api/web/me/skills",
             Set.of("skill:read", "skill:publish")
         );
 
         assertFalse(decision.allowed());
-        assertEquals("API token cannot access endpoint: /api/v1/me/skills", decision.message());
+        assertEquals("API token cannot access endpoint: /api/web/me/skills", decision.message());
     }
 
     @Test
@@ -117,5 +120,26 @@ class ApiTokenScopeServiceTest {
         );
 
         assertTrue(decision.allowed());
+    }
+
+    @Test
+    void toScopeJsonShouldDefaultToSkillScopesOnly() {
+        assertEquals(ApiTokenScopes.DEFAULT_USER_SCOPE_JSON, scopeService.toScopeJson(null));
+        assertEquals(ApiTokenScopes.DEFAULT_USER_SCOPE_JSON, scopeService.toScopeJson(List.of()));
+        assertFalse(scopeService.parseScopes(ApiTokenScopes.DEFAULT_USER_SCOPE_JSON).contains("knowledge:read"));
+    }
+
+    @Test
+    void toScopeJsonShouldKeepRequestedSupportedScopes() {
+        String json = scopeService.toScopeJson(List.of(" knowledge:read ", "skill:read", "knowledge:read"));
+
+        assertEquals(Set.of("knowledge:read", "skill:read"), scopeService.parseScopes(json));
+    }
+
+    @Test
+    void toScopeJsonShouldRejectUnknownScopes() {
+        assertThrows(
+                DomainBadRequestException.class,
+                () -> scopeService.toScopeJson(List.of("knowledge:read", "knowledge:write")));
     }
 }

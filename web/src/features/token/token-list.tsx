@@ -29,6 +29,7 @@ import {
 import { Input } from '@/shared/ui/input'
 import type { ApiToken } from '@/api/types'
 import { resolveTokenExpiresAt, toLocalDateTimeInputValue, type TokenExpirationMode } from './token-expiration'
+import { domainsForScopes } from './token-scopes'
 import { TOKEN_TABLE_ACTIONS_HEAD_CLASS_NAME, TOKEN_TABLE_HEAD_CLASS_NAME } from './token-table-style'
 
 const PAGE_SIZE = 10
@@ -210,6 +211,7 @@ export function TokenList() {
               <TableRow>
                 <TableHead className={TOKEN_TABLE_HEAD_CLASS_NAME}>{t('token.name')}</TableHead>
                 <TableHead className={TOKEN_TABLE_HEAD_CLASS_NAME}>{t('token.prefix')}</TableHead>
+                <TableHead className={TOKEN_TABLE_HEAD_CLASS_NAME}>{t('token.scopes')}</TableHead>
                 <TableHead className={TOKEN_TABLE_HEAD_CLASS_NAME}>{t('token.createdAt')}</TableHead>
                 <TableHead className={TOKEN_TABLE_HEAD_CLASS_NAME}>{t('token.lastUsed')}</TableHead>
                 <TableHead className={TOKEN_TABLE_HEAD_CLASS_NAME}>{t('token.expiresAt')}</TableHead>
@@ -224,6 +226,15 @@ export function TokenList() {
                     <code className="text-sm bg-muted px-2 py-1 rounded">
                       {token.tokenPrefix}...
                     </code>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                      {domainsForScopes(token.scopes).map((domain) => (
+                        <span key={domain} className="whitespace-nowrap rounded bg-muted px-2 py-0.5 text-xs">
+                          {t(`token.scopeDomain.${domain}`)}
+                        </span>
+                      ))}
+                    </div>
                   </TableCell>
                   <TableCell>{formatDate(token.createdAt)}</TableCell>
                   <TableCell>{formatDate(token.lastUsedAt)}</TableCell>

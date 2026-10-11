@@ -2,6 +2,7 @@ package com.iflytek.skillhub.dto;
 
 import com.iflytek.skillhub.auth.rbac.PlatformPrincipal;
 
+import java.util.List;
 import java.util.Set;
 
 public record AuthMeResponse(
@@ -11,9 +12,15 @@ public record AuthMeResponse(
         String avatarUrl,
         String oauthProvider,
         boolean canChangePassword,
-        Set<String> platformRoles
+        Set<String> platformRoles,
+        // Scopes of the API token that authenticated the request; null for web sessions.
+        List<String> tokenScopes
 ) {
     public static AuthMeResponse from(PlatformPrincipal principal, boolean canChangePassword) {
+        return from(principal, canChangePassword, null);
+    }
+
+    public static AuthMeResponse from(PlatformPrincipal principal, boolean canChangePassword, List<String> tokenScopes) {
         return new AuthMeResponse(
                 principal.userId(),
                 principal.displayName(),
@@ -21,7 +28,8 @@ public record AuthMeResponse(
                 principal.avatarUrl() != null ? principal.avatarUrl() : "",
                 principal.oauthProvider(),
                 canChangePassword,
-                principal.platformRoles()
+                principal.platformRoles(),
+                tokenScopes
         );
     }
 }

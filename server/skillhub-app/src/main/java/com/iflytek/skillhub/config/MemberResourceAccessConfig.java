@@ -1,6 +1,9 @@
 package com.iflytek.skillhub.config;
 
 import com.iflytek.skillhub.service.MemberResourceAccessService;
+import com.iflytek.skillhub.service.knowledge.KnowledgeAppService;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.Map;
@@ -27,6 +30,11 @@ public class MemberResourceAccessConfig implements WebMvcConfigurer {
                 if (pattern == null || !(pattern.contains("/skills/") || pattern.contains("/knowledge/"))) return true;
                 Map<String, String> coordinates = (Map<String, String>) request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
                 Set<String> roles = (Set<String>) request.getAttribute("platformRoles");
+                if (pattern.contains("/knowledge/")) {
+                    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+                    roles = KnowledgeAppService.knowledgePlatformRoles(
+                            authentication != null ? authentication.getPrincipal() : null, roles);
+                }
                 boolean read = Set.of("GET", "HEAD", "OPTIONS").contains(request.getMethod());
                 // Personal reactions do not modify team resources.
                 boolean reaction = pattern.endsWith("/star") || pattern.endsWith("/subscription") || pattern.endsWith("/rating")

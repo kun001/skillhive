@@ -330,15 +330,16 @@ class SkillControllerTest {
                     .andExpect(status().isForbidden());
         }
         org.mockito.Mockito.verify(skillQueryService, org.mockito.Mockito.never())
-                .getFileContent(any(), any(), any(), any(), any(), any());
+                .openFileContent(any(), any(), any(), any(), any(), any());
         org.mockito.Mockito.verify(skillQueryService, org.mockito.Mockito.never())
-                .getFileContentByTag(any(), any(), any(), any(), any(), any());
+                .openFileContentByTag(any(), any(), any(), any(), any(), any());
     }
 
     @Test
     void inlineFilePreviewShouldStreamWhenDownloadIsAllowed() throws Exception {
-        when(skillQueryService.getFileContent(eq("team"), eq("demo"), eq("1.0.0"), eq("SKILL.md"), any(), any()))
-                .thenAnswer(invocation -> new java.io.ByteArrayInputStream("# Demo".getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+        when(skillQueryService.openFileContent(eq("team"), eq("demo"), eq("1.0.0"), eq("SKILL.md"), any(), any()))
+                .thenAnswer(invocation -> new SkillQueryService.SkillFileContent(1L, 2L, "1.0.0",
+                        new java.io.ByteArrayInputStream("# Demo".getBytes(java.nio.charset.StandardCharsets.UTF_8))));
 
         mockMvc.perform(get("/api/web/skills/team/demo/versions/1.0.0/file")
                         .param("path", "SKILL.md")

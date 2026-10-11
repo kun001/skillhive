@@ -1,4 +1,4 @@
-.PHONY: build build-backend build-backend-app build-builtin-skills build-frontend build-web check clean db-reset dev dev-all dev-all-down dev-all-reset dev-down dev-logs dev-server dev-server-restart dev-status dev-web docs-build docs-dev docs-preview generate-api help lint-web namespace-smoke parallel-down parallel-init parallel-sync parallel-up pr staging staging-down staging-logs test test-backend test-backend-app test-builtin-skills test-e2e-frontend test-e2e-smoke-frontend test-frontend test-redis-cluster test-web typecheck-web validate-release-config web-deps web-install web-install-ci
+.PHONY: build build-backend build-backend-app build-builtin-skills build-frontend build-mcp build-web check clean db-reset dev dev-all dev-all-down dev-all-reset dev-down dev-logs dev-server dev-server-restart dev-status dev-web docs-build docs-dev docs-preview generate-api help lint-web namespace-smoke parallel-down parallel-init parallel-sync parallel-up pr staging staging-down staging-logs test test-backend test-backend-app test-builtin-skills test-e2e-frontend test-e2e-smoke-frontend test-frontend test-mcp test-redis-cluster test-web typecheck-mcp typecheck-web validate-release-config web-deps web-install web-install-ci
 
 DEV_DIR := .dev
 DEV_SERVER_PID := $(DEV_DIR)/server.pid
@@ -268,6 +268,15 @@ typecheck-web: ## 前端类型检查
 lint-web: ## 前端代码检查
 	cd web && pnpm run lint
 
+build-mcp: ## 构建本地 stdio MCP 服务（mcp/dist）
+	cd mcp && pnpm install --frozen-lockfile && pnpm run build
+
+test-mcp: ## 运行 MCP 服务单元测试
+	cd mcp && pnpm install --frozen-lockfile && pnpm run test
+
+typecheck-mcp: ## MCP 服务类型检查
+	cd mcp && pnpm install --frozen-lockfile && pnpm run typecheck
+
 db-reset: ## 重置数据库
 	$(DEV_COMPOSE) down -v --remove-orphans
 	$(DEV_COMPOSE) up -d --wait --remove-orphans postgres
@@ -367,13 +376,13 @@ parallel-down: ## 在 integration worktree 停止联调环境
 	./scripts/parallel-down.sh
 
 docs-dev: ## 启动文档开发服务器
-	cd docs/skillhub && npm run dev
+	cd skillhive-docs/site && npm run dev
 
 docs-build: ## 构建文档站点
-	cd docs/skillhub && npm run build
+	cd skillhive-docs/site && npm run build
 
 docs-preview: ## 预览构建后的文档站点
-	cd docs/skillhub && npm run preview
+	cd skillhive-docs/site && npm run preview
 
 test-redis-cluster: ## 使用真实 Redis Cluster 验证 Spring Data、Session 和 Redisson Stream
 	./scripts/redis-cluster-integration-test.sh

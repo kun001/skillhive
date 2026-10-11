@@ -26,6 +26,8 @@ import com.iflytek.skillhub.ratelimit.RateLimit;
 import com.iflytek.skillhub.service.SkillLabelAppService;
 import com.iflytek.skillhub.service.ComplianceSnapshotProjectionService;
 import com.iflytek.skillhub.service.SkillIntroductionService;
+import com.iflytek.skillhub.service.AuditRequestContext;
+import com.iflytek.skillhub.service.SkillContentAppService;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -54,7 +56,7 @@ public class SkillController extends BaseApiController {
 
     private final com.iflytek.skillhub.service.MemberResourceAccessService memberAccess;
     private final SkillQueryService skillQueryService;
-    private final SkillDownloadService skillDownloadService;
+    private final SkillContentAppService skillContentAppService;
     private final SkillLabelAppService skillLabelAppService;
     private final ComplianceSnapshotProjectionService complianceSnapshotProjectionService;
     private final SkillHubMetrics metrics;
@@ -62,7 +64,7 @@ public class SkillController extends BaseApiController {
 
     public SkillController(
             SkillQueryService skillQueryService,
-            SkillDownloadService skillDownloadService,
+            SkillContentAppService skillContentAppService,
             SkillLabelAppService skillLabelAppService,
             ComplianceSnapshotProjectionService complianceSnapshotProjectionService,
             SkillHubMetrics metrics,
@@ -72,7 +74,7 @@ public class SkillController extends BaseApiController {
         super(responseFactory);
         this.memberAccess = memberAccess;
         this.skillQueryService = skillQueryService;
-        this.skillDownloadService = skillDownloadService;
+        this.skillContentAppService = skillContentAppService;
         this.skillLabelAppService = skillLabelAppService;
         this.complianceSnapshotProjectionService = complianceSnapshotProjectionService;
         this.metrics = metrics;
@@ -292,16 +294,18 @@ public class SkillController extends BaseApiController {
             @PathVariable String version,
             @RequestParam("path") String path,
             @RequestParam(defaultValue = "attachment") String disposition,
+            HttpServletRequest request,
             @RequestAttribute(value = "userId", required = false) String userId,
             @RequestAttribute(value = "userNsRoles", required = false) Map<Long, NamespaceRole> userNsRoles) {
 
-        InputStream content = skillQueryService.getFileContent(
+        InputStream content = skillContentAppService.fileContent(
                 namespace,
                 slug,
                 version,
                 path,
                 userId,
-                userNsRoles != null ? userNsRoles : Map.of()
+                userNsRoles != null ? userNsRoles : Map.of(),
+                AuditRequestContext.from(request)
         );
 
         return ResponseEntity.ok()
@@ -318,16 +322,18 @@ public class SkillController extends BaseApiController {
             @PathVariable String tagName,
             @RequestParam("path") String path,
             @RequestParam(defaultValue = "attachment") String disposition,
+            HttpServletRequest request,
             @RequestAttribute(value = "userId", required = false) String userId,
             @RequestAttribute(value = "userNsRoles", required = false) Map<Long, NamespaceRole> userNsRoles) {
 
-        InputStream content = skillQueryService.getFileContentByTag(
+        InputStream content = skillContentAppService.fileContentByTag(
                 namespace,
                 slug,
                 tagName,
                 path,
                 userId,
-                userNsRoles != null ? userNsRoles : Map.of()
+                userNsRoles != null ? userNsRoles : Map.of(),
+                AuditRequestContext.from(request)
         );
 
         return ResponseEntity.ok()
@@ -384,8 +390,8 @@ public class SkillController extends BaseApiController {
             @RequestAttribute(value = "userId", required = false) String userId,
             @RequestAttribute(value = "userNsRoles", required = false) Map<Long, NamespaceRole> userNsRoles) {
 
-        SkillDownloadService.DownloadResult result = skillDownloadService.downloadLatest(
-                namespace, slug, userId, userNsRoles != null ? userNsRoles : Map.of());
+        SkillDownloadService.DownloadResult result = skillContentAppService.downloadLatest(
+                namespace, slug, userId, userNsRoles != null ? userNsRoles : Map.of(), AuditRequestContext.from(request));
 
         return buildDownloadResponse(request, result);
     }
@@ -400,8 +406,8 @@ public class SkillController extends BaseApiController {
             @RequestAttribute(value = "userId", required = false) String userId,
             @RequestAttribute(value = "userNsRoles", required = false) Map<Long, NamespaceRole> userNsRoles) {
 
-        SkillDownloadService.DownloadResult result = skillDownloadService.downloadVersion(
-                namespace, slug, version, userId, userNsRoles != null ? userNsRoles : Map.of());
+        SkillDownloadService.DownloadResult result = skillContentAppService.downloadVersion(
+                namespace, slug, version, userId, userNsRoles != null ? userNsRoles : Map.of(), AuditRequestContext.from(request));
 
         return buildDownloadResponse(request, result);
     }
@@ -416,8 +422,8 @@ public class SkillController extends BaseApiController {
             @RequestAttribute(value = "userId", required = false) String userId,
             @RequestAttribute(value = "userNsRoles", required = false) Map<Long, NamespaceRole> userNsRoles) {
 
-        SkillDownloadService.DownloadResult result = skillDownloadService.downloadByTag(
-                namespace, slug, tagName, userId, userNsRoles != null ? userNsRoles : Map.of());
+        SkillDownloadService.DownloadResult result = skillContentAppService.downloadByTag(
+                namespace, slug, tagName, userId, userNsRoles != null ? userNsRoles : Map.of(), AuditRequestContext.from(request));
 
         return buildDownloadResponse(request, result);
     }

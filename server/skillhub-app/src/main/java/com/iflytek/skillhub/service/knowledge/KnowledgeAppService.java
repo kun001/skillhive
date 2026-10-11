@@ -47,6 +47,7 @@ import com.iflytek.skillhub.dto.knowledge.UpdateKnowledgeBaseRequest;
 import com.iflytek.skillhub.dto.knowledge.UpdateKnowledgeDocumentRequest;
 import com.iflytek.skillhub.dto.knowledge.UpdateKnowledgeFolderRequest;
 import com.iflytek.skillhub.observability.RequestIdAccessor;
+import com.iflytek.skillhub.auth.rbac.PlatformPrincipal;
 import com.iflytek.skillhub.service.AuditRequestContext;
 import com.iflytek.skillhub.storage.ObjectStorageService;
 import org.springframework.data.domain.Page;
@@ -149,9 +150,28 @@ public class KnowledgeAppService {
             platformRoles = platformRoles == null ? Set.of() : platformRoles;
         }
 
+        /** Builds the caller for an authenticated principal, applying {@link #knowledgePlatformRoles}. */
+        public static Caller of(String userId, Map<Long, NamespaceRole> namespaceRoles, PlatformPrincipal principal) {
+            return new Caller(userId, namespaceRoles,
+                    knowledgePlatformRoles(principal, principal != null ? principal.platformRoles() : null));
+        }
+
         NamespaceRole roleIn(Namespace namespace) {
             return namespaceRoles.get(namespace.getId());
         }
+    }
+
+    /**
+     * Platform roles that count toward knowledge access. API tokens act with team membership only,
+     * so a platform role such as SUPER_ADMIN never widens what a token can read; administrators
+     * who need every team's knowledge use the web session.
+     */
+    public static Set<String> knowledgePlatformRoles(Object principal, Set<String> platformRoles) {
+        if (platformRoles == null
+                || principal instanceof PlatformPrincipal platformPrincipal && "api_token".equals(platformPrincipal.oauthProvider())) {
+            return Set.of();
+        }
+        return platformRoles;
     }
 
     /** An uploaded file as seen by the service; its content is opened twice (hash, then store). */
@@ -599,13 +619,18 @@ public class KnowledgeAppService {
         return toVersionResponse(restored, userNames(List.of(caller.userId())), restored.getId());
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public FileContent openContent(Long documentId, Integer versionNumber, Caller caller) {
-        return openContent(documentId, versionNumber, caller, false);
+        return openContent(documentId, versionNumber, caller, false, null);
     }
 
-    @Transactional(readOnly = true)
-    public FileContent openContent(Long documentId, Integer versionNumber, Caller caller, boolean inline) {
+    /**
+     * Opens a file version for download or inline preview. Every granted read is audited with
+     * the version, the mode and whether a web session or an API token made it.
+     */
+    @Transactional
+    public FileContent openContent(Long documentId, Integer versionNumber, Caller caller, boolean inline,
+                                   AuditRequestContext audit) {
         DocumentContext context = resolveDocument(documentId, caller);
         KnowledgeDocument document = context.document();
         KnowledgeDocumentVersion version = versionNumber == null
@@ -617,6 +642,16 @@ public class KnowledgeAppService {
         String extension = filePolicy.extensionOf(filename);
         // Previews stream the original file to the browser, so they are bound to the download capability.
         memberPolicy.assertDownload(context.baseContext().namespace().getId(), caller.userId(), caller.platformRoles());
+        Long apiTokenId = audit != null ? audit.apiTokenId() : null;
+        recordAudit(caller, inline ? "KNOWLEDGE_DOCUMENT_PREVIEW" : "KNOWLEDGE_DOCUMENT_DOWNLOAD",
+                TARGET_DOCUMENT, document.getId(), audit,
+                AuditDetail.builder()
+                        .put("version", version.getVersionNumber())
+                        .put("fileName", filename)
+                        .put("sizeBytes", version.getSizeBytes())
+                        .put("authMethod", apiTokenId != null ? "api_token" : "session")
+                        .put("apiTokenId", apiTokenId)
+                        .build());
         String objectKey = version.getContentObjectKey();
         return new FileContent(filename, version.getContentType(), version.getSizeBytes(),
                 filePolicy.previewKindFor(extension), () -> storageService.getObject(objectKey));
@@ -683,7 +718,10 @@ public class KnowledgeAppService {
 
     // ---------------------------------------------------------------- resolution
 
-    /** Active knowledge bases the caller can read: all of them for super admins, otherwise those in their namespaces. */
+    /**
+     * Active knowledge bases the caller can read: all of them for super admins (web sessions only, see
+     * {@link #knowledgePlatformRoles}), otherwise those in their namespaces.
+     */
     private List<BaseContext> visibleBases(Caller caller) {
         List<KnowledgeBase> bases = caller.platformRoles().contains("SUPER_ADMIN")
                 ? baseRepository.findByStatus(KnowledgeBaseStatus.ACTIVE)

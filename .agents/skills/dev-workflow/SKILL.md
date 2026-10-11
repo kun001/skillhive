@@ -162,7 +162,7 @@ make parallel-up SOURCES="feat1 feat2"         # Merge + start dev environment
 make parallel-down                             # Stop parallel environment
 ```
 
-See `docs/13-parallel-workflow.md` for full details.
+See `skillhive-docs/13-parallel-workflow.md` for full details.
 
 ### Commit Style
 
