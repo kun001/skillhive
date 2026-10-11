@@ -1,0 +1,74 @@
+name: Deploy production
+
+# Deploys a published release (vX.Y.Z, see publish-images.yml) to the BaoTa
+# production host by running deploy/baota/deploy.sh there over SSH.
+# Secrets: DEPLOY_HOST, DEPLOY_SSH_KEY, DEPLOY_KNOWN_HOSTS; optional DEPLOY_USER
+# (default root) and DEPLOY_PORT (default 22). Setup: deploy/baota/README.md.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release tag to deploy (vX.Y.Z)
+        required: true
+        type: string
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy ${{ inputs.version }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    steps:
+      - name: Validate version
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::version must look like v1.2.3"; exit 1; }
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Resolve release commit
+        id: release
+        env:
+          VERSION: ${{ inputs.version }}
+        run: echo "sha=$(git rev-parse "refs/tags/$VERSION^{commit}")" >> "$GITHUB_OUTPUT"
+
+      - name: Configure SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/deploy_key ~/.ssh/known_hosts
+
+      - name: Deploy
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          VERSION: ${{ inputs.version }}
+          REVISION: ${{ steps.release.outputs.sha }}
+        run: |
+          ssh_cmd=(ssh -i "$HOME/.ssh/deploy_key" -p "${DEPLOY_PORT:-22}" -o BatchMode=yes -o IdentitiesOnly=yes
+            -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$HOME/.ssh/known_hosts" "${DEPLOY_USER:-root}@$DEPLOY_HOST")
+          remote_script="/tmp/skillhive-deploy-$GITHUB_RUN_ID.sh"
+          # Copy the script first: streaming it into `bash -s` would let commands that read stdin consume it.
+          "${ssh_cmd[@]}" "cat > $remote_script" < deploy/baota/deploy.sh
+          "${ssh_cmd[@]}" "EXPECTED_REVISION=$REVISION bash $remote_script $VERSION; rc=\$?; rm -f $remote_script; exit \$rc"
+
+      - name: Remove SSH key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key

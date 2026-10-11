@@ -237,7 +237,7 @@ GHCR 包首次推送后默认是私有的。三个包已设为 Public，可以�
 
    也可以先在命令行打标签：`git tag vX.Y.Z origin/main && git push origin vX.Y.Z`，再在 Releases 页面基于这个已有标签创建 Release。
 3. **确认镜像**：在 Actions 中确认标签触发的 “Publish images” 运行成功（`main` 已构建过同一提交时缓存全部命中，通常一分钟内完成），然后检查三个镜像都有 `vX.Y.Z`、`X.Y.Z` 和 `latest`，例如 `docker manifest inspect ghcr.io/kun001/skillhive-server:vX.Y.Z`。
-4. **部署与更新日志**：部署后按 [更新日志维护](changelog-maintenance.md) 记录实际上线的日期和版本。Docker Compose 默认跟随 `latest`，需要固定版本时设置 `SKILLHUB_VERSION=vX.Y.Z`。
+4. **部署与更新日志**：生产环境（宝塔服务器）在 GitHub Actions 中运行 “Deploy production” 并填入版本号，配置与手动部署见 [deploy/baota/README.md](../deploy/baota/README.md)。部署后按 [更新日志维护](changelog-maintenance.md) 记录实际上线的日期和版本。Docker Compose 默认跟随 `latest`，需要固定版本时设置 `SKILLHUB_VERSION=vX.Y.Z`。
 
 ### 6.2 自建镜像
 
