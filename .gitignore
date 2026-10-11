@@ -97,4 +97,8 @@ charts/skillhub/charts/*.tgz
 
 # Kept locally for reference, not part of the SkillHive source release
 legacy-upstream/
-.github/
+.github/*
+# SkillHive's own CI workflow is tracked; other upstream .github files stay local
+!.github/workflows/
+.github/workflows/*
+!.github/workflows/ci.yml
