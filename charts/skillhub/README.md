@@ -500,10 +500,11 @@ helm -n skillhub upgrade -i skillhub ./charts/skillhub \
 
 ## 发布
 
-`.github/workflows/publish-chart.yml` 在 GitHub Release 发布后或手动
-`workflow_dispatch` 时运行。Release tag 必须使用 `vX.Y.Z`、`chart-vX.Y.Z` 或
-`helm-vX.Y.Z`；手动运行时显式输入 `X.Y.Z`。工作流按该版本打包 Chart，并推送到
-`oci://ghcr.io/iflytek/charts`，同时保留构建 artifact。
+SkillHive 目前不发布 Chart 包，直接从仓库使用 `charts/skillhub`（或 `helm package charts/skillhub` 后自行推送到 OCI 仓库）。
+
+Chart 默认使用 `.github/workflows/publish-images.yml` 发布的镜像
+`ghcr.io/kun001/skillhive-server|skillhive-web|skillhive-scanner`，标签为 `v<appVersion>`；
+推送 `vX.Y.Z` Git 标签后才会生成对应的版本镜像。使用自建镜像时覆盖 `images.registry` / `images.tag`。
 
 ## 卸载
 

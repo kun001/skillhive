@@ -202,7 +202,7 @@ The live demo runs all services on a single 2-core, 4 GB server, with a memory l
 | [.env.release.example](.env.release.example) | Runtime template; copy it to `.env.release` and edit it. |
 | [compose.release.yml](compose.release.yml) | Containers for the frontend, backend, scanner, database and Redis. |
 
-Replace the default image addresses in the deployment configuration with images built from this repository; the default images are not SkillHive releases. Configure images, accounts, storage and secrets, then start the services as described in the deployment guide.
+The deployment configuration uses the images published from this repository by default: `ghcr.io/kun001/skillhive-server`, `skillhive-web` and `skillhive-scanner` (pushes to `main` publish `edge`; `vX.Y.Z` tags publish that version and `latest`). You can also substitute your own builds. Configure images, accounts, storage and secrets, then start the services as described in the deployment guide.
 
 ## Development and documentation
 

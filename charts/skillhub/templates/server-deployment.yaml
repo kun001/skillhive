@@ -63,7 +63,7 @@ spec:
               echo "Redis is ready!"
       containers:
         - name: server
-          image: {{ .Values.server.image.registry | default .Values.images.registry }}/skillhub-server:{{ .Values.server.image.tag | default .Values.images.tag | default (printf "v%s" .Chart.AppVersion) }}
+          image: {{ .Values.server.image.registry | default .Values.images.registry }}/skillhive-server:{{ .Values.server.image.tag | default .Values.images.tag | default (printf "v%s" .Chart.AppVersion) }}
           imagePullPolicy: {{ .Values.images.pullPolicy }}
           ports:
             - containerPort: {{ .Values.server.service.port }}

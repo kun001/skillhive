@@ -2,7 +2,7 @@
 
 > 环境变量、Helm chart、数据库名等仍沿用上游的 `SKILLHUB_*` / `skillhub` 命名，这是实际配置项，不要改名。
 >
-> **镜像来源**：`compose.release.yml` 与 `charts/skillhub` 的默认镜像仍指向上游 `ghcr.io/iflytek/skillhub-*`，这些镜像不包含 SkillHive 的知识库、Token 作用域等改动。部署 SkillHive 时请从本仓库构建 `server` / `web` / `scanner` 镜像，推送到自有仓库，并通过 `SKILLHUB_SERVER_IMAGE`、`SKILLHUB_WEB_IMAGE`、`SKILLHUB_SCANNER_IMAGE`（Helm 用 `images.registry` 等值）指向它们。
+> **镜像来源**：`compose.release.yml`、`.env.release.example`、`charts/skillhub` 和 `deploy/k8s` 默认使用 SkillHive 的镜像 `ghcr.io/kun001/skillhive-server`、`ghcr.io/kun001/skillhive-web`、`ghcr.io/kun001/skillhive-scanner`，由 `.github/workflows/publish-images.yml` 构建发布（见第 6 节）。使用自建镜像时，通过 `SKILLHUB_SERVER_IMAGE`、`SKILLHUB_WEB_IMAGE`、`SKILLHUB_SCANNER_IMAGE`（Helm 用 `images.registry`）覆盖。
 
 ## 1 运行模型
 
@@ -193,11 +193,13 @@ docker compose --env-file .env.release -f compose.release.yml up -d --force-recr
 - `edge`
   - `main` 分支最新构建
   - 用于内部持续验证
-- `vX.Y.Z`
-  - 对应 Git tag
-  - 用于稳定版本交付
+- `vX.Y.Z` / `X.Y.Z`
+  - 对应 Git tag `vX.Y.Z`
+  - 用于稳定版本交付；Helm chart 默认使用 `v<appVersion>`
 - `latest`
-  - 仅在语义化版本 tag 发布时更新
+  - 仅在语义化版本 tag 发布时更新；`compose.release.yml` 默认使用
+- `sha-<短提交号>`
+  - 每次构建都会生成，便于精确回溯
 
 推荐：
 
@@ -207,14 +209,30 @@ docker compose --env-file .env.release -f compose.release.yml up -d --force-recr
 
 ## 6 镜像构建与发布
 
-SkillHive 仓库目前只有 CI 工作流（`.github/workflows/ci.yml`：前端、后端、MCP、扫描器测试），没有镜像发布工作流。镜像需要自行构建并推送到自有仓库：
+镜像发布工作流：`.github/workflows/publish-images.yml`
+
+触发条件：
+
+- 推送到 `main`：发布 `edge` 与 `sha-*`
+- 推送 `vX.Y.Z` 标签：发布 `X.Y.Z`、`vX.Y.Z`、`latest` 与 `sha-*`
+- 手动 `workflow_dispatch`
+
+流程：分别构建 `server/Dockerfile`、`web/Dockerfile`、`scanner/Dockerfile`，推送到 `ghcr.io/<仓库所有者>/skillhive-server|skillhive-web|skillhive-scanner`。`server` / `web` 为 `linux/amd64`、`linux/arm64`、`linux/riscv64` 多架构镜像（见 [RISC-V 支持](RISCV64.md)），`scanner` 为 `linux/amd64`、`linux/arm64`。
+
+首次发布注意：
+
+- GHCR 包首次推送后默认是私有的。需要匿名拉取时，在 GitHub 的 Packages 设置中把三个包改为 Public；否则部署机器需要先 `docker login ghcr.io`。
+- `latest` 和 Helm chart 默认的 `v<appVersion>`（当前 `appVersion` 为 `0.1.0`）只在推送对应版本标签后才存在。发布第一个版本：`git tag v0.1.0 && git push origin v0.1.0`。在此之前可以使用 `SKILLHUB_VERSION=edge`。
+
+也可以自行构建并推送到自有仓库，再通过 `SKILLHUB_*_IMAGE` 覆盖默认值：
 
 ```bash
 docker buildx build --platform linux/amd64,linux/arm64 -t <registry>/skillhive-server:<tag> -f server/Dockerfile server --push
 docker buildx build --platform linux/amd64,linux/arm64 -t <registry>/skillhive-web:<tag> -f web/Dockerfile web --push
+docker buildx build --platform linux/amd64,linux/arm64 -t <registry>/skillhive-scanner:<tag> -f scanner/Dockerfile scanner --push
 ```
 
-`server` / `web` 的 Dockerfile 也支持 `linux/riscv64`，见 [RISC-V 支持](RISCV64.md)。发布前按 `AGENTS.md` 要求完成容器回归。
+发布前按 `AGENTS.md` 要求完成容器回归。
 
 ## 7 配置管理
 
@@ -436,7 +454,7 @@ stringData:
 
 ```yaml
 images:
-  registry: ghcr.io/iflytek
+  registry: ghcr.io/kun001
   tag: <固定发布版本>
   pullPolicy: IfNotPresent
 publicBaseUrl: https://skills.example.com

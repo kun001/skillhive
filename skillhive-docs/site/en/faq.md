@@ -6,7 +6,7 @@ A: SkillHive is built on the open-source [SkillHub](https://github.com/iflytek/s
 
 ## Q: What is the recommended deployment method?
 
-A: Build the images from this repository and deploy with `compose.release.yml`; see [Quick Start](/en/quickstart). The default images in `.env.release.example` point to upstream SkillHub and do not contain SkillHive's features, so replace them with your own builds.
+A: Deploy with `compose.release.yml`; see [Quick Start](/en/quickstart). The default images are `ghcr.io/kun001/skillhive-*`, published to GHCR from this repository; you can also substitute your own builds.
 
 ## Q: How do I back up data?
 
@@ -111,7 +111,7 @@ A: SkillHive is a single-instance team platform. Team spaces are collaboration a
 
 ## Q: How do I upgrade?
 
-A: Build and push new images, update `SKILLHUB_VERSION` in `.env.release`, then:
+A: Update `SKILLHUB_VERSION` in `.env.release` (not needed for `latest` or `edge`), then:
 
 ```bash
 docker compose --env-file .env.release -f compose.release.yml pull
@@ -135,7 +135,7 @@ So there are two ways to hide one:
 
 ## Q: What powers security scanning?
 
-A: Scanner integration, task orchestration and auditing are implemented in this project; the scanning engine is Cisco's [cisco-ai-skill-scanner](https://github.com/cisco-ai-defense/skill-scanner) (Apache License 2.0). `scanner/Dockerfile` installs it without a pinned version, so image builds pull the latest release from PyPI; pin it yourself if needed.
+A: Scanner integration, task orchestration and auditing are implemented in this project; the scanning engine is Cisco's [cisco-ai-skill-scanner](https://github.com/cisco-ai-defense/skill-scanner) (Apache License 2.0). `scanner/Dockerfile` pins it with the `SKILL_SCANNER_VERSION` build argument (currently `1.0.2`) and applies a compatibility patch from the repository; check `scanner/backports/` when upgrading.
 
 ## Q: Is MySQL supported?
 

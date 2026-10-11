@@ -6,9 +6,17 @@ This page shows how to deploy SkillHive and get started: create a team space, pu
 
 Every SkillHive service runs in a container: the web app and backend API, the skill scanner, PostgreSQL, Redis, and file storage on local disk, S3 or MinIO.
 
-### 1. Build the images
+### 1. Choose the images
 
-SkillHive does not publish official images yet. The default images in `.env.release.example` point to upstream SkillHub and do not contain SkillHive's features. Build the images from this repository and push them to your own registry:
+By default SkillHive uses the images published by this repository's GitHub Actions:
+
+| Component | Image |
+|-----------|-------|
+| Backend | `ghcr.io/kun001/skillhive-server` |
+| Frontend | `ghcr.io/kun001/skillhive-web` |
+| Scanner | `ghcr.io/kun001/skillhive-scanner` |
+
+Pushes to `main` publish `edge`; `vX.Y.Z` tags publish that version and `latest`. You can also build from this repository and push to your own registry:
 
 ```bash
 docker buildx build -t <registry>/skillhive-server:<tag> -f server/Dockerfile server --push
@@ -26,8 +34,8 @@ Change at least:
 
 | Variable | Description |
 |----------|-------------|
-| `SKILLHUB_SERVER_IMAGE` / `SKILLHUB_WEB_IMAGE` / `SKILLHUB_SCANNER_IMAGE` | Images pushed in step 1 (without tag) |
-| `SKILLHUB_VERSION` | Image tag |
+| `SKILLHUB_VERSION` | Image tag: `latest` (latest release), `edge` (latest `main` build) or a fixed `vX.Y.Z` |
+| `SKILLHUB_SERVER_IMAGE` / `SKILLHUB_WEB_IMAGE` / `SKILLHUB_SCANNER_IMAGE` | Change only when using your own builds (without tag) |
 | `SKILLHUB_PUBLIC_BASE_URL` | Final public URL; use an HTTPS domain in production, no trailing `/` |
 | `POSTGRES_PASSWORD` | Database password |
 | `BOOTSTRAP_ADMIN_PASSWORD` | First administrator's password; the default must be changed |
@@ -91,7 +99,7 @@ Create a read-only token under Profile → Tokens and configure the local MCP se
 
 ## Upgrade
 
-Build and push new images, update `SKILLHUB_VERSION` in `.env.release`, then run:
+Update `SKILLHUB_VERSION` in `.env.release` (not needed for `latest` or `edge`), then run:
 
 ```bash
 docker compose --env-file .env.release -f compose.release.yml pull

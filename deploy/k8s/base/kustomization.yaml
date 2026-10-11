@@ -13,11 +13,11 @@ resources:
   - ingress.yaml
 
 images:
-  - name: ghcr.io/iflytek/skillhub-server
+  - name: ghcr.io/kun001/skillhive-server
     newTag: latest
-  - name: ghcr.io/iflytek/skillhub-web
+  - name: ghcr.io/kun001/skillhive-web
     newTag: latest
-  - name: ghcr.io/iflytek/skillhub-scanner
+  - name: ghcr.io/kun001/skillhive-scanner
     newTag: latest
 
 labels:
