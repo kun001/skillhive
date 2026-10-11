@@ -470,6 +470,9 @@ API Token 仍保留，但定位从“CLI 唯一认证方式”调整为“平台
 - 只读访问知识库：持有 `knowledge:read` 的 Token 可以用 GET 调用以下 `/api/v1` 接口：
   - `/api/v1/knowledge/bases`、`/bases/{namespace}/{base}`、`/bases/{namespace}/{base}/folders`、`/bases/{namespace}/{base}/documents`、`/documents/search`、`/documents/{id}`、`/documents/{id}/versions`、`/documents/{id}/content`、`/documents/{id}/images`、`/documents/{id}/images/{imageId}/content`
   - 这些请求与网页会话走同一套服务端校验：只能看到自己所在团队的知识库，读取文件内容（含预览）需要成员下载权限。知识库与“我的”接口的写操作（POST/PUT/PATCH/DELETE）以及整个 `/api/web/**` 仍然不接受 API Token
+- 平台角色不扩大 Token 的知识库访问：通过 Token 访问知识库时只按团队成员身份判断，`SUPER_ADMIN` 等平台角色不参与放行（网页会话不受影响）。管理员的 Token 也只能读自己所在团队的知识库
+- Token 自查：`GET /api/v1/auth/me` 对 Token 请求返回 `tokenScopes`（网页会话为 `null`），供 MCP 服务等客户端检查自身权限
+- 技能读取审计：通过 Token 读取技能包内文件或下载技能包时写入审计日志，分别记为 `SKILL_FILE_READ` / `SKILL_DOWNLOAD`（目标为 `SKILL_VERSION`，详情含命名空间、技能、版本、标签、文件路径和 `apiTokenId`）；网页会话和匿名访问不记录
 - 下载审计：每次获准读取知识库文件内容都会写入审计日志，下载记为 `KNOWLEDGE_DOCUMENT_DOWNLOAD`，预览（`disposition=inline`）记为 `KNOWLEDGE_DOCUMENT_PREVIEW`。详情包含版本号、文件名、大小、`authMethod`（`session` 或 `api_token`），通过 Token 访问时还包含 `apiTokenId`。被拒绝的读取不写审计；Markdown 内嵌图片不单独审计
 - 拒绝原因：API Token 缺少作用域或不能访问某个接口时，403 响应返回本地化的安全原因和 `requestId`；其他授权失败仍返回通用信息，避免暴露内部异常
 

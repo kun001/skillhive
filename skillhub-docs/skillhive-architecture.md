@@ -10,6 +10,8 @@
 
 Global 是平台共用空间，不为每个用户创建副本。普通成员的空间列表和知识库列表不展示 Global，直接访问其管理空间或知识资料也会拒绝。平台管理员（`SUPER_ADMIN`、`SKILL_ADMIN`、`USER_ADMIN`）可查看 Global；公共技能读取与 Global 管理入口分别授权，隐藏管理入口不影响公共技能使用。
 
+仓库根目录的 `mcp/` 是本地 stdio MCP 服务，让 AI 客户端用用户自己的只读 API Token 读取技能库和知识库。它只调用现有 `/api/v1` 接口、原样传递文件，不自建权限；设计与权限模型见 [MCP 服务设计](26-mcp-server.md)。
+
 管理员在团队成员管理中为普通成员设置“只读 / 可编辑”，并单独设置“允许下载”。只读可以浏览、搜索与预览，可编辑在原有归属规则内上传、维护文件和技能；下载开关控制原文件、技能包及其历史版本下载。团队管理员和所有者保留完整权限。后端同时保护 Web 与 API v1 接口，每次请求读取当前成员权限；撤销下载不影响合法的预览读取。
 
 V70 增加成员编辑和下载权限，原有成员默认保留已有能力。V69、V70 迁移保留。V71 将 Global 中已发布、正常展示的 `NAMESPACE_ONLY` 技能恢复为 `PUBLIC`，并同步搜索索引；团队技能、私有技能和知识资料不变。技能查询使用 `library=public|team`，范围过滤先于分页与总数计算；切换技能库时清空分页并保留搜索、标签和排序，缓存占位数据不跨技能库复用。管理员发布到 Global 时可选择公开，团队发布仍使用团队可见或私有。
@@ -26,7 +28,7 @@ V70 增加成员编辑和下载权限，原有成员默认保留已有能力。V
 
 ## 已删除的上游能力
 
-技能套件（含 Suite Bundle）、CLI 接口（`/api/cli/v1`）、ClawHub 兼容层（`/api/v1/search`、`/api/v1/resolve`、`/api/v1/download` 等）、设备码登录（`/api/v1/auth/device`）和 `/.well-known/clawhub.json` 发现端点的后端、前端代码与测试均已删除，`skillhive-legacy` profile 不再存在。API Token 保留为平台级机器接入能力，可访问 `/api/v1` 与 `/api/web` 下的 Skill 接口。
+技能套件（含 Suite Bundle）、CLI 接口（`/api/cli/v1`）、ClawHub 兼容层（`/api/v1/search`、`/api/v1/resolve`、`/api/v1/download` 等）、设备码登录（`/api/v1/auth/device`）和 `/.well-known/clawhub.json` 发现端点的后端、前端代码与测试均已删除，`skillhive-legacy` profile 不再存在。API Token 保留为平台级机器接入能力：持有 `skill:read` 可访问 `/api/v1` 与 `/api/web` 下的 Skill 读取接口，持有 `knowledge:read` 可只读访问 `/api/v1` 下的知识库接口，两个领域互相隔离；知识库写操作和 `/api/web/knowledge/**` 不接受 Token。
 
 历史 Flyway 迁移和数据表保留，**不通过迁移清除套件数据**。`review_task` 中可能残留 `SUITE_VERSION` 类型的旧审核记录：它们不会出现在审核列表、审核进度或详情中，按“不存在”处理。`ReviewSubjectType.SUITE_VERSION` 枚举值仅为读取这些旧行而保留。内置技能清单中已移除 CLI 助手 `skillhub-cli`。
 

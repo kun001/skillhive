@@ -1,0 +1,32 @@
+{
+  "name": "@skillhive/mcp-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Read-only MCP server that lets AI clients read SkillHive skills and knowledge bases with a personal API token",
+  "type": "module",
+  "bin": {
+    "skillhive-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.30.1",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0",
+    "vitest": "^4.1.11"
+  }
+}
