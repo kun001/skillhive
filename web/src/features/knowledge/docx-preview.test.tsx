@@ -38,11 +38,27 @@ describe('Word full preview', () => {
     expect(mocks.officeContent).toHaveBeenCalledWith(42, 2, expect.any(AbortSignal))
     expect(screen.getByRole('link').getAttribute('href')).toBe('/original')
   })
-  it('renders the same browser preview for members without download permission', async () => {
+  it('shows a no-permission message instead of fetching the file for members without download permission', () => {
     mount({ ...file, canDownload: false })
-    expect(await screen.findByText('Complete document')).toBeTruthy()
-    expect(mocks.officeContent).toHaveBeenCalledWith(42, 2, expect.any(AbortSignal))
+    expect(screen.getByText('knowledge.preview.noDownloadTitle')).toBeTruthy()
+    expect(screen.queryByText('Complete document')).toBeNull()
+    expect(mocks.officeContent).not.toHaveBeenCalled()
+    expect(mocks.renderAsync).not.toHaveBeenCalled()
     expect(screen.queryByRole('link')).toBeNull()
+  })
+  it.each([
+    ['md', 'MARKDOWN'],
+    ['txt', 'TEXT'],
+    ['pdf', 'PDF'],
+    ['png', 'IMAGE'],
+  ] as const)('does not request %s content without download permission', (extension, previewKind) => {
+    const fetchSpy = vi.fn()
+    vi.stubGlobal('fetch', fetchSpy)
+    mount({ ...file, fileExtension: extension, previewKind, sizeBytes: 10, canDownload: false })
+    expect(screen.getByText('knowledge.preview.noDownloadTitle')).toBeTruthy()
+    expect(fetchSpy).not.toHaveBeenCalled()
+    expect(document.querySelector('img')).toBeNull()
+    expect(document.querySelector('iframe')).toBeNull()
   })
   it.each(['doc', 'ppt'])('offers download only for legacy %s, including stale Office metadata', async (extension) => {
     mount({ ...file, fileExtension: extension })
@@ -53,7 +69,7 @@ describe('Word full preview', () => {
   })
   it.each(['doc', 'ppt'])('hides the download action for restricted legacy %s', (extension) => {
     mount({ ...file, fileExtension: extension, previewKind: 'NONE', canDownload: false })
-    expect(screen.getByText('knowledge.preview.unsupportedTitle')).toBeTruthy()
+    expect(screen.getByText('knowledge.preview.noDownloadTitle')).toBeTruthy()
     expect(screen.queryByRole('link')).toBeNull()
   })
   it('keeps download and retry available if retrieving the original fails', async () => {

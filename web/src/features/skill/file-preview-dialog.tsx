@@ -186,7 +186,12 @@ export function FilePreviewDialog({
 
         {/* Content area: loading, error, office, non-previewable, or actual content */}
         <div className="overflow-auto p-6 bg-card flex-1 min-h-0">
-          {isOffice && contentUrl ? (
+          {!canDownload ? (
+            <div className="text-center py-12" data-testid="file-preview-no-download">
+              <p className="text-sm font-medium text-foreground">{t('filePreview.noDownloadTitle')}</p>
+              <p className="text-sm text-muted-foreground mt-2">{t('filePreview.noDownloadDescription')}</p>
+            </div>
+          ) : isOffice && contentUrl ? (
             <SkillOfficePreview url={contentUrl} fileName={node.name} title={node.name} />
           ) : isLoading ? (
             <div className="flex items-center justify-center py-12">

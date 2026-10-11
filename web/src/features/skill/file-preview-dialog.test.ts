@@ -94,6 +94,26 @@ describe('FilePreviewDialog', () => {
     expect(html).toContain('animate-spin')
   })
 
+  it.each([
+    ['markdown', 'SKILL.md', null],
+    ['word', 'guide.docx', '/api/web/skills/team/demo/versions/1.0.0/file?disposition=inline&path=guide.docx'],
+    ['powerpoint', 'deck.pptx', '/api/web/skills/team/demo/versions/1.0.0/file?disposition=inline&path=deck.pptx'],
+  ])('shows the no-download message instead of a %s preview without download permission', (_kind, name, contentUrl) => {
+    const html = renderDialog({
+      canDownload: false,
+      content: null,
+      contentUrl,
+      node: createNode({ name, path: `root/${name}` }),
+    })
+
+    expect(html).toContain('file-preview-no-download')
+    expect(html).toContain('filePreview.noDownloadTitle')
+    expect(html).not.toContain('markdown-renderer')
+    expect(html).not.toContain('docx-canvas')
+    expect(html).not.toContain('pptx-canvas')
+    expect(html).not.toContain('role="status"')
+  })
+
   it('renders the error state with the server message', () => {
     const html = renderDialog({
       content: null,

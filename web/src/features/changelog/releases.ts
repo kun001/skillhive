@@ -14,6 +14,18 @@ export interface ReleaseNote {
 // Confirm the date and image tag when deploying; Git submission is not deployment.
 export const releases: ReleaseNote[] = [
   {
+    id: '20261011-preview-requires-download',
+    version: 'cloud-20261011-preview-download',
+    date: '2026-10-11',
+    title: { zh: '预览与下载权限统一', en: 'Preview now follows download permission' },
+    summary: { zh: '在线预览会把原文件交给浏览器，现在预览与下载使用同一项权限：能下载才能预览，成员默认允许下载。', en: 'Online previews hand the original file to the browser, so preview and download now share one permission: members who can download can preview, and members can download by default.' },
+    changes: [
+      { zh: '团队技能的文件预览、SKILL.md 文档和版本对比，以及知识库的 PDF、图片、文本、Markdown 和 Word / PPT 预览，都需要下载权限；网页和 API 两条通道同样生效。', en: 'Team skill file previews, SKILL.md documentation and version comparisons, plus knowledge base PDF, image, text, Markdown and Word / PowerPoint previews, now require download permission on both the web and API surfaces.' },
+      { zh: '没有下载权限的成员会看到“无下载权限，无法预览”的提示，不再出现加载失败或空白预览；技能简介、文件列表和文档信息照常显示。', en: 'Members without download permission see a clear "No download permission, preview unavailable" message instead of a failed or blank preview. Skill summaries, file lists and document details remain visible.' },
+      { zh: '新成员默认允许下载，已有成员的下载设置保持不变；管理员仍可在成员管理中按人关闭下载。', en: 'New members can download by default and existing member settings are unchanged. Admins can still turn off downloads per member in member management.' },
+    ],
+  },
+  {
     id: '20261010-security-ux',
     version: 'cloud-20261010-security-ux',
     date: '2026-10-10',

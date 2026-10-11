@@ -61,13 +61,14 @@ export function KnowledgeFilePreview({ document }: { document: KnowledgeDocument
   const content = useQuery({
     queryKey: [...knowledgeKeys.document(document.id), 'preview', document.currentVersion, user?.userId ?? 'guest'],
     queryFn: () => fetchPreview(url, isText ? 'text' : 'blob'),
-    enabled: (isText && !textTooLarge) || kind === 'PDF',
+    // Preview streams the original file, so it shares the download permission.
+    enabled: !!document.canDownload && ((isText && !textTooLarge) || kind === 'PDF'),
     staleTime: Infinity,
   })
   const images = useQuery({
     queryKey: [...knowledgeKeys.document(document.id), 'images', document.currentVersion, user?.userId ?? 'guest'],
     queryFn: () => knowledgeApi.listImages(document.id, document.currentVersion),
-    enabled: kind === 'MARKDOWN' && !textTooLarge,
+    enabled: !!document.canDownload && kind === 'MARKDOWN' && !textTooLarge,
     staleTime: Infinity,
   })
 
@@ -82,6 +83,15 @@ export function KnowledgeFilePreview({ document }: { document: KnowledgeDocument
     return () => URL.revokeObjectURL(objectUrl)
   }, [kind, content.data])
 
+  if (!document.canDownload) {
+    return (
+      <PreviewMessage
+        document={document}
+        title={t('knowledge.preview.noDownloadTitle')}
+        description={t('knowledge.preview.noDownloadDescription')}
+      />
+    )
+  }
   if (kind === 'NONE' || (kind === 'OFFICE' && !['docx', 'pptx'].includes(document.fileExtension?.toLowerCase() ?? ''))) {
     return (
       <PreviewMessage

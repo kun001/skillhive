@@ -757,6 +757,9 @@
     "noReadme": "No README",
     "readmeUnavailable": "README is temporarily unavailable. Please try again later or re-upload this skill version.",
     "documentationSource": "Source: {{path}}",
+    "noDownloadPreviewTitle": "No download permission, preview unavailable",
+    "noDownloadPreviewDescription": "SKILL.md and other file contents use the same permission as download. Ask a team admin to enable downloads for you.",
+    "readmeChangeNoDownload": "No download permission, documentation cannot be compared",
     "documentationUnavailableTitle": "Documentation is unavailable",
     "documentationUnavailable": "The documentation file could not be loaded. You can still inspect the package contents in the file list.",
     "packageLinkMissingTitle": "File not found",
@@ -1195,6 +1198,8 @@
     "title": "Files"
   },
   "filePreview": {
+    "noDownloadTitle": "No download permission, preview unavailable",
+    "noDownloadDescription": "Preview uses the same permission as download. Ask a team admin to enable downloads for you.",
     "loadError": "Failed to load file",
     "tooLarge": "File is too large to preview",
     "binaryFile": "Binary files cannot be previewed",

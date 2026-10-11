@@ -615,11 +615,8 @@ public class KnowledgeAppService {
                 ? version.getSourceFilename()
                 : document.getTitle();
         String extension = filePolicy.extensionOf(filename);
-        KnowledgePreviewKind kind = filePolicy.previewKindFor(extension);
-        if (!inline || !Set.of(KnowledgePreviewKind.PDF, KnowledgePreviewKind.IMAGE,
-                KnowledgePreviewKind.MARKDOWN, KnowledgePreviewKind.TEXT, KnowledgePreviewKind.OFFICE).contains(kind)) {
-            memberPolicy.assertDownload(context.baseContext().namespace().getId(), caller.userId(), caller.platformRoles());
-        }
+        // Previews stream the original file to the browser, so they are bound to the download capability.
+        memberPolicy.assertDownload(context.baseContext().namespace().getId(), caller.userId(), caller.platformRoles());
         String objectKey = version.getContentObjectKey();
         return new FileContent(filename, version.getContentType(), version.getSizeBytes(),
                 filePolicy.previewKindFor(extension), () -> storageService.getObject(objectKey));
@@ -636,7 +633,10 @@ public class KnowledgeAppService {
 
     @Transactional(readOnly = true)
     public FileContent openImage(Long documentId, Long imageId, Integer versionNumber, Caller caller) {
-        KnowledgeDocument document = resolveDocument(documentId, caller).document();
+        DocumentContext context = resolveDocument(documentId, caller);
+        KnowledgeDocument document = context.document();
+        // Markdown images are part of the document content and follow the same download capability.
+        memberPolicy.assertDownload(context.baseContext().namespace().getId(), caller.userId(), caller.platformRoles());
         KnowledgeDocumentVersion version = versionNumber == null ? currentVersion(document) : findPublishedVersion(document, versionNumber);
         KnowledgeAttachment image = attachmentRepository.findById(imageId)
                 .filter(candidate -> candidate.getDocumentVersionId().equals(version.getId()))
