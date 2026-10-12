@@ -98,7 +98,10 @@ export function useKnowledgeVersions(documentId: number, enabled = true) {
 /** Refreshes everything that shows file lists, counts or details after a change. */
 export function useInvalidateKnowledge() {
   const queryClient = useQueryClient()
-  return () => queryClient.invalidateQueries({ queryKey: knowledgeKeys.all })
+  return () => Promise.all([
+    queryClient.invalidateQueries({ queryKey: knowledgeKeys.all }),
+    queryClient.invalidateQueries({ queryKey: ['namespaces', 'my'] }),
+  ])
 }
 
 export function useCreateKnowledgeBase() {

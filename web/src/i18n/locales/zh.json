@@ -365,7 +365,7 @@
     "restoreConfirmTitle": "确认恢复命名空间",
     "restoreConfirmDescription": "恢复后“{{name}}”会重新进入可运营状态。",
     "deleteConfirmTitle": "确认删除命名空间",
-    "deleteConfirmDescription": "删除后会永久移除“{{name}}”，且无法恢复。",
+    "deleteConfirmDescription": "删除后会永久移除“{{name}}”、其知识库及已删除文件的版本历史和附件，且无法恢复。",
     "freezeSuccessTitle": "命名空间已冻结",
     "freezeSuccessDescription": "“{{name}}”已切换为只读状态。",
     "freezeErrorTitle": "冻结命名空间失败",

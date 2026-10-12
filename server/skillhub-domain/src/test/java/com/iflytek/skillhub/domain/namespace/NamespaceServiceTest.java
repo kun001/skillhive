@@ -5,6 +5,9 @@ import com.iflytek.skillhub.domain.shared.exception.DomainForbiddenException;
 import com.iflytek.skillhub.domain.review.PromotionRequestRepository;
 import com.iflytek.skillhub.domain.review.ReviewTaskRepository;
 import com.iflytek.skillhub.domain.skill.SkillRepository;
+import com.iflytek.skillhub.domain.knowledge.KnowledgeNamespaceRepository;
+import com.iflytek.skillhub.domain.event.NamespaceDeletedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -41,6 +44,12 @@ class NamespaceServiceTest {
 
     @InjectMocks
     private NamespaceService namespaceService;
+
+    @Mock
+    private KnowledgeNamespaceRepository knowledgeNamespaceRepository;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @Test
     void createNamespace_shouldCreateNamespaceAndOwnerMember() {
@@ -296,5 +305,43 @@ class NamespaceServiceTest {
         } catch (ReflectiveOperationException e) {
             fail(e);
         }
+    }
+
+    @Test
+    void activeKnowledgeBlocksBothDeleteCapabilityAndMutation() {
+        Namespace namespace = new Namespace("team-a", "Team A", "owner");
+        setField(namespace, "id", 1L);
+        when(namespaceRepository.findById(1L)).thenReturn(Optional.of(namespace));
+        when(namespaceMemberRepository.findByNamespaceIdAndUserId(1L, "owner"))
+                .thenReturn(Optional.of(new NamespaceMember(1L, "owner", NamespaceRole.OWNER)));
+        when(namespaceAccessPolicy.canDelete(namespace, NamespaceRole.OWNER)).thenReturn(true);
+        when(knowledgeNamespaceRepository.hasActiveDocuments(1L)).thenReturn(true);
+
+        assertFalse(namespaceService.canDelete(namespace, NamespaceRole.OWNER));
+        assertThrows(DomainBadRequestException.class, () -> namespaceService.deleteNamespace(1L, "owner"));
+        verify(knowledgeNamespaceRepository, never()).deleteArchivedContent(any());
+        verify(namespaceRepository, never()).delete(any());
+        verifyNoInteractions(eventPublisher);
+    }
+
+    @Test
+    void ownerDeletionPurgesArchivedKnowledgeAndQueuesItsObjects() {
+        Namespace namespace = new Namespace("team-a", "Team A", "owner");
+        namespace.setStatus(NamespaceStatus.ARCHIVED);
+        when(namespaceRepository.findById(1L)).thenReturn(Optional.of(namespace));
+        when(namespaceMemberRepository.findByNamespaceIdAndUserId(1L, "owner"))
+                .thenReturn(Optional.of(new NamespaceMember(1L, "owner", NamespaceRole.OWNER)));
+        when(namespaceAccessPolicy.canDelete(namespace, NamespaceRole.OWNER)).thenReturn(true);
+        when(knowledgeNamespaceRepository.deleteArchivedContent(1L)).thenReturn(java.util.List.of("file", "image"));
+
+        namespaceService.deleteNamespace(1L, "owner");
+
+        var order = inOrder(knowledgeNamespaceRepository, namespaceMemberRepository, namespaceRepository, eventPublisher);
+        order.verify(knowledgeNamespaceRepository).lockContent(1L);
+        order.verify(knowledgeNamespaceRepository).hasActiveDocuments(1L);
+        order.verify(knowledgeNamespaceRepository).deleteArchivedContent(1L);
+        order.verify(namespaceMemberRepository).deleteByNamespaceId(1L);
+        order.verify(namespaceRepository).delete(namespace);
+        order.verify(eventPublisher).publishEvent(new NamespaceDeletedEvent("team-a", java.util.List.of("file", "image")));
     }
 }
