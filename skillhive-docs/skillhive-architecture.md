@@ -32,6 +32,14 @@ V70 增加成员编辑和下载权限，原有成员默认保留已有能力。V
 
 `review_task` 已有 `subject_type`、`subject_id`、`subject_version_id`。下一阶段将补充知识审核主体和专用状态变更服务，复用队列及审计，不让既有 `ReviewService` 直接处理知识文档。审核权限要显式决定是否允许团队管理员自审；建议默认禁止，管理员例外单独审计。
 
+## 命名空间删除
+
+团队命名空间只有 OWNER 可以永久删除；Global 与个人空间仍不可删除。空间中存在技能、治理记录或未删除的知识文件时，列表不提供删除操作，直接调用删除接口也会返回业务错误。隐藏的文件和已归档知识库中的未删除文件仍算依赖。
+
+知识文件的普通删除仍为归档。OWNER 确认删除已清空文件的命名空间时，系统在同一事务中清理知识库、文件夹、已归档文件、全部版本和附件记录，再删除空间及成员关系；并发上传不能进入正在删除的空间。对象存储清理写入现有持久化重试队列，只在事务提交后执行；数据库回滚不会删除存储文件。
+
+运行 `scripts/namespace-knowledge-delete-smoke-test.py <base-url>` 可验证实际接口流程。它使用 `SMOKE_ADMIN_USERNAME` / `SMOKE_ADMIN_PASSWORD` 登录，创建唯一命名的测试空间，并检查未删除文件阻止删除、文件归档后可删除空间及其他空间的资料不受影响。只在授权的测试环境中运行。
+
 ## 已删除的上游能力
 
 技能套件（含 Suite Bundle）、CLI 接口（`/api/cli/v1`）、ClawHub 兼容层（`/api/v1/search`、`/api/v1/resolve`、`/api/v1/download` 等）、设备码登录（`/api/v1/auth/device`）和 `/.well-known/clawhub.json` 发现端点的后端、前端代码与测试均已删除，`skillhive-legacy` profile 不再存在。API Token 保留为平台级机器接入能力：持有 `skill:read` 可访问 `/api/v1` 与 `/api/web` 下的 Skill 读取接口，持有 `knowledge:read` 可只读访问 `/api/v1` 下的知识库接口，两个领域互相隔离；知识库写操作和 `/api/web/knowledge/**` 不接受 Token。

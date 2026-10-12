@@ -1,11 +1,14 @@
 package com.iflytek.skillhub.domain.namespace;
 
+import com.iflytek.skillhub.domain.event.NamespaceDeletedEvent;
+import com.iflytek.skillhub.domain.knowledge.KnowledgeNamespaceRepository;
 import com.iflytek.skillhub.domain.review.PromotionRequestRepository;
 import com.iflytek.skillhub.domain.review.ReviewTaskRepository;
 import com.iflytek.skillhub.domain.shared.exception.DomainBadRequestException;
 import com.iflytek.skillhub.domain.shared.exception.DomainForbiddenException;
 import com.iflytek.skillhub.domain.skill.SkillRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
@@ -22,19 +25,25 @@ public class NamespaceService {
     private final SkillRepository skillRepository;
     private final ReviewTaskRepository reviewTaskRepository;
     private final PromotionRequestRepository promotionRequestRepository;
+    private final KnowledgeNamespaceRepository knowledgeNamespaceRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public NamespaceService(NamespaceRepository namespaceRepository,
                            NamespaceMemberRepository namespaceMemberRepository,
                            NamespaceAccessPolicy namespaceAccessPolicy,
                            SkillRepository skillRepository,
                            ReviewTaskRepository reviewTaskRepository,
-                           PromotionRequestRepository promotionRequestRepository) {
+                           PromotionRequestRepository promotionRequestRepository,
+                           KnowledgeNamespaceRepository knowledgeNamespaceRepository,
+                           ApplicationEventPublisher eventPublisher) {
         this.namespaceRepository = namespaceRepository;
         this.namespaceMemberRepository = namespaceMemberRepository;
         this.namespaceAccessPolicy = namespaceAccessPolicy;
         this.skillRepository = skillRepository;
         this.reviewTaskRepository = reviewTaskRepository;
         this.promotionRequestRepository = promotionRequestRepository;
+        this.knowledgeNamespaceRepository = knowledgeNamespaceRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     /**
@@ -126,10 +135,15 @@ public class NamespaceService {
         if (!namespaceAccessPolicy.canDelete(namespace, role)) {
             throw new DomainForbiddenException("error.namespace.owner.required");
         }
+        knowledgeNamespaceRepository.lockContent(namespaceId);
         assertNoDependentData(namespaceId);
 
+        var storageKeys = knowledgeNamespaceRepository.deleteArchivedContent(namespaceId);
         namespaceMemberRepository.deleteByNamespaceId(namespaceId);
         namespaceRepository.delete(namespace);
+        if (!storageKeys.isEmpty()) {
+            eventPublisher.publishEvent(new NamespaceDeletedEvent(namespace.getSlug(), storageKeys));
+        }
     }
 
     public boolean canDelete(Namespace namespace, NamespaceRole role) {
@@ -181,7 +195,8 @@ public class NamespaceService {
     private boolean hasDependentData(Long namespaceId) {
         return skillRepository.existsByNamespaceId(namespaceId)
                 || reviewTaskRepository.existsByNamespaceId(namespaceId)
-                || promotionRequestRepository.existsByTargetNamespaceId(namespaceId);
+                || promotionRequestRepository.existsByTargetNamespaceId(namespaceId)
+                || knowledgeNamespaceRepository.hasActiveDocuments(namespaceId);
     }
 
     private void assertWritable(Namespace namespace) {

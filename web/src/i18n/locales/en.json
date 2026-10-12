@@ -365,7 +365,7 @@
     "restoreConfirmTitle": "Restore namespace",
     "restoreConfirmDescription": "\"{{name}}\" will return to an active operating state.",
     "deleteConfirmTitle": "Delete namespace",
-    "deleteConfirmDescription": "\"{{name}}\" will be permanently deleted. This cannot be undone.",
+    "deleteConfirmDescription": "\"{{name}}\", its knowledge bases, and the version history and attachments of deleted files will be permanently removed. This cannot be undone.",
     "freezeSuccessTitle": "Namespace frozen",
     "freezeSuccessDescription": "\"{{name}}\" is now read-only.",
     "freezeErrorTitle": "Failed to freeze namespace",

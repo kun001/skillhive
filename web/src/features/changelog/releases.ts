@@ -14,6 +14,18 @@ export interface ReleaseNote {
 // Confirm the date and image tag when deploying; Git submission is not deployment.
 export const releases: ReleaseNote[] = [
   {
+    id: '20261012-namespace-knowledge-delete',
+    version: 'v0.1.1',
+    date: '2026-10-12',
+    title: { zh: '修复清空知识文件后删除团队空间失败', en: 'Delete empty team spaces after removing knowledge files' },
+    summary: { zh: '知识文件全部删除后，空间所有者可以删除团队空间；存在未删除文件时会明确阻止删除。', en: 'Space owners can delete team spaces after deleting all knowledge files. Spaces with undeleted files remain protected.' },
+    changes: [
+      { zh: '修复知识库记录导致删除命名空间出现“服务器内部错误”的问题。', en: 'Fixed an internal server error caused by knowledge base records when deleting a namespace.' },
+      { zh: '删除空间会同时清理知识库、文件夹及已删除文件的版本历史和附件，并重试存储文件清理。', en: 'Deleting a space also removes its knowledge bases, folders, and deleted file history and attachments, with retryable storage cleanup.' },
+      { zh: '存在未删除的知识文件时禁止删除空间；其他空间的文件和权限不受影响。', en: 'Undeleted knowledge files prevent space deletion. Other spaces retain their files and permissions.' },
+    ],
+  },
+  {
     id: '20261011-token-scopes',
     version: 'cloud-20261011-mcp-readonly',
     date: '2026-10-11',

@@ -259,6 +259,7 @@ export function useDeleteNamespace() {
     onSuccess: (_data, variables) => {
       invalidateNamespaceQueries(queryClient, variables.slug)
       queryClient.invalidateQueries({ queryKey: ['namespaces'] })
+      queryClient.invalidateQueries({ queryKey: ['knowledge'] })
     },
   })
 }

@@ -29,6 +29,12 @@ public class SkillStorageDeletionCompensationService {
     }
 
     @Transactional
+    public void enqueueDeletion(String namespace, String slug, List<String> storageKeys) {
+        repository.save(new SkillStorageDeletionCompensation(
+                null, namespace, slug, serialize(storageKeys), null));
+    }
+
+    @Transactional
     public void recordFailure(Long skillId,
                               String namespace,
                               String slug,
