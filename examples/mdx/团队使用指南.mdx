@@ -1,0 +1,91 @@
+---
+title: 团队文件中心使用指南
+---
+
+# 团队文件中心使用指南
+
+这份示例展示 SkillHive 的 MDX 受控预览。请将本文与 `images/workflow.png` 一起上传。
+
+<Callout type="info" title="资料共享范围">
+
+文档与配图按团队权限访问。预览原文件需要下载权限。
+
+</Callout>
+
+<Tip title="上传小提示">
+
+文件夹上传先核对目录和目标位置，再确认开始上传。
+
+</Tip>
+
+<Steps>
+<Step title="选择资料">
+
+选择文档与配图，或选择整个本地文件夹。
+
+</Step>
+<Step title="核对并确认">
+
+检查文件类型、目录层级和共享空间，再确认上传。
+
+</Step>
+<Step title="查看与更新">
+
+打开预览；上传新版本后，旧版本仍可下载和恢复。
+
+</Step>
+</Steps>
+
+<Figure caption="三个步骤：选择资料 → 核对确认 → 查看与更新">
+<Image src="images/workflow.png" alt="团队文件上传与预览流程" />
+</Figure>
+
+## 常见问题
+
+<AccordionGroup>
+<Accordion title="预览会执行文档里的代码吗？">
+
+不会。JavaScript、模块导入和自定义组件都会保留为源码。
+
+</Accordion>
+<Accordion title="哪些图片可以显示？">
+
+随文档上传的 PNG、JPEG、GIF、WebP 配图。远程图片不会加载。
+
+</Accordion>
+</AccordionGroup>
+
+<Tabs>
+<TabItem label="普通文件上传">
+
+正文和配图一起选择；图片以文档附件保存。
+
+</TabItem>
+<TabItem label="文件夹上传">
+
+保留顶层文件夹和子目录，配图还会保留为独立文件。
+
+</TabItem>
+</Tabs>
+
+<CardGroup>
+<Card title="文件中心" description="多层目录、在线预览、下载与版本历史。" />
+<Card title="MCP 接入" description="Agent 使用个人 Token，读取权限范围内的技能和知识文件。" />
+</CardGroup>
+
+| 内容 | 预览方式 |
+| --- | --- |
+| Markdown 表格与代码 | 静态渲染 |
+| 内置组件 | 平台生成界面 |
+| 自定义程序 | 源码占位 |
+
+```javascript
+// 代码块只显示，不执行。
+console.log('Hello, SkillHive')
+```
+
+## 不支持语法示例
+
+<CustomComponent title="自定义组件不会执行" />
+
+{1 + 1}

@@ -91,6 +91,10 @@ public class KnowledgeFilePolicy {
         return type == null ? "application/octet-stream" : type.contentType();
     }
 
+    public boolean supportsImageAttachments(String extension) {
+        return "mdx".equalsIgnoreCase(extension) || previewKindFor(extension) == KnowledgePreviewKind.MARKDOWN;
+    }
+
     public KnowledgePreviewKind previewKindFor(String extension) {
         FileType type = FILE_TYPES.get(normalizeExtension(extension));
         return type == null ? KnowledgePreviewKind.NONE : type.previewKind();

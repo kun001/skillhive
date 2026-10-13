@@ -18,7 +18,7 @@ public class KnowledgeMarkdownPolicy {
     public String validate(String filename, long sizeBytes, String sourcePath, List<Image> images) {
         String path = validatePath(sourcePath == null ? filename : sourcePath);
         if (!basename(path).equals(filename)) throw invalidPath();
-        if (!images.isEmpty() && filePolicy.previewKindFor(filePolicy.extensionOf(filename)) != KnowledgePreviewKind.MARKDOWN) {
+        if (!images.isEmpty() && !filePolicy.supportsImageAttachments(filePolicy.extensionOf(filename))) {
             throw new DomainBadRequestException("error.knowledge.markdown.required");
         }
         if (images.size() > MAX_IMAGES) throw new DomainBadRequestException("error.knowledge.markdown.tooManyImages", MAX_IMAGES);

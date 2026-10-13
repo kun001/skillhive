@@ -3131,7 +3131,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Display an image from a published Markdown version */
+        /** Display an image from a published Markdown or MDX version */
         get: operations["downloadKnowledgeMarkdownImage"];
         put?: never;
         post?: never;
@@ -3148,7 +3148,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Display an image from a published Markdown version */
+        /** Display an image from a published Markdown or MDX version */
         get: operations["downloadKnowledgeMarkdownImage_1"];
         put?: never;
         post?: never;
@@ -3165,7 +3165,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List the images bound to a Markdown version */
+        /** List the images bound to a Markdown or MDX version */
         get: operations["listKnowledgeMarkdownImages"];
         put?: never;
         post?: never;
@@ -3182,7 +3182,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List the images bound to a Markdown version */
+        /** List the images bound to a Markdown or MDX version */
         get: operations["listKnowledgeMarkdownImages_1"];
         put?: never;
         post?: never;

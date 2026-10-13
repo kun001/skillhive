@@ -10,6 +10,16 @@ function file(name: string, content = 'image', path?: string) {
 }
 
 describe('Markdown image uploads', () => {
+  it('bundles static MDX images and inherits attachments for the next version', async () => {
+    const content = '<Image src="../images/flow.png" alt="Flow" />\n\n<img src="../images/detail.webp" />\n\n<Image src={remoteUrl} />'
+    const plan = await planUploads(createUploadItems([file('guide.mdx', content, 'pack/docs/guide.mdx'), file('flow.png', 'png', 'pack/images/flow.png'), file('detail.webp', 'webp', 'pack/images/detail.webp')]))
+    expect(plan).toHaveLength(1)
+    expect(plan[0].bundle.images.map((image) => image.path)).toEqual(['pack/images/flow.png', 'pack/images/detail.webp'])
+    expect(plan[0].error).toBeUndefined()
+    const inherited = await planUploads(createUploadItems([file('guide.mdx', content)]), { sourcePath: 'pack/docs/guide.mdx', paths: ['pack/images/flow.png', 'pack/images/detail.webp'] })
+    expect(inherited[0].error).toBeUndefined()
+    expect(inherited[0].bundle.images).toHaveLength(0)
+  })
   it('recognizes inline and reference images, ignoring fenced code and ordinary links', () => {
     expect(markdownImageUrls('![x](a.png)\n![y][flow]\n\n[flow]: b.png\n\n[link](c.png)\n```md\n![example](not-real.png)\n```'))
       .toEqual(['a.png', 'b.png'])

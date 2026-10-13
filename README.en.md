@@ -44,7 +44,7 @@ This branch adds **MDX, folder uploads that preserve the directory hierarchy, an
   <tr>
     <td valign="top">
       <strong>Preview files, trace every change</strong><br /><br />
-      View PDFs, images and Markdown (with its images) online, display MDX safely as source text, and preview Word / PowerPoint files in the browser. Every update keeps a version you can download or restore.
+      View PDFs, images and Markdown (with its images) online, preview MDX with built-in components and a source toggle, and preview Word / PowerPoint files in the browser. Every update keeps a version you can download or restore.
     </td>
     <td valign="top">
       <strong>Permissions down to each member</strong><br /><br />
@@ -187,7 +187,7 @@ These recordings were made in a local Web interface; the knowledge base files ar
 | Area | What you can do |
 | --- | --- |
 | **Skill library** | Upload packages containing `SKILL.md`; read instructions, bundled files and version history; publish after validation, security scanning and review; star and subscribe; browse by keyword, label and sort order; unpublish and hide. |
-| **Knowledge bases** | Nested folders; batch file or folder uploads that preserve the directory hierarchy and require a second confirmation; progress and retry; Markdown images and MDX source previews; version history, download or restore a chosen version; title and description search across knowledge bases. |
+| **Knowledge bases** | Nested folders; batch file or folder uploads that preserve the directory hierarchy and require a second confirmation; progress and retry; Markdown images and controlled MDX previews; version history, download or restore a chosen version; title and description search across knowledge bases. |
 | **Team spaces** | One page shows the space's skills and knowledge bases; member management with per-member read-only, editable and download permissions that apply immediately. |
 | **AI access** | Remote HTTP / local stdio MCP for reading skills and knowledge files with personal read-only tokens; copy connection configuration from your profile and grant skill and knowledge access separately. |
 | **Governance** | Platform and space roles; notifications; audit log of key operations, including knowledge file downloads and previews and token reads of skills and files. |
@@ -233,13 +233,15 @@ Files are organized as **team space → knowledge base → folder → file**, up
 | PDF | `.pdf` | Preview online, download the original. |
 | Images | `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp` | Preview online, download the original. |
 | Markdown / text | `.md`, `.markdown`, `.txt` | Read online; Markdown can be uploaded and shown with its local images. |
-| MDX | `.mdx` | Upload, download and version management; previews show source text without executing JSX, JavaScript or imports. |
+| MDX | `.mdx` | Upload, download and version management; Markdown, built-in callouts/accordions/tabs/steps/cards and local images, with a source toggle. Document code is never executed. |
 | Word / PowerPoint | `.docx`, `.pptx` | Full document preview in the browser; original download. |
 | Legacy Word / PowerPoint | `.doc`, `.ppt` | Upload, download and version management; no online preview. |
 | Spreadsheets / data | `.xls`, `.xlsx`, `.csv`, `.json` | Upload, download and version management. |
 | Archives | `.zip`, `.rar`, `.7z` | Upload, download and version management. |
 
 Uploaded files are available to authorized members immediately and are not open to anonymous visitors by default. DOCX and PPTX render in the browser; layout may differ from Microsoft Office. Members with download permission can download originals if preview fails. Browser previews require file bytes: download permission controls download actions and the regular download endpoint, but cannot prevent extracting preview data from the browser.
+
+See [controlled MDX previews](skillhive-docs/mdx-preview.md) for supported syntax and security boundaries. Upload the [sample document](examples/mdx/团队使用指南.mdx) together with its [image](examples/mdx/images/workflow.png).
 
 To upload a folder, choose **Upload files → Select folder**, check the destination and directory preview, then confirm the upload. The selected top folder and its subdirectories are retained; existing folders with the same name are not merged. Retry failed files in the same dialog. Browsers cannot upload empty folders. See [folder uploads and MDX](skillhive-docs/folder-upload-mdx.md) for details (in Chinese).
 

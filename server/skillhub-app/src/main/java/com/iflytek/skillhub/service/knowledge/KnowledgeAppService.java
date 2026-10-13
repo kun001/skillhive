@@ -553,7 +553,7 @@ public class KnowledgeAppService {
                     markdown.images(), markdown.imagePaths());
         }
         String sourcePath = validateMarkdownUpload(upload, markdown);
-        if (filePolicy.previewKindFor(extension) == KnowledgePreviewKind.MARKDOWN) {
+        if (filePolicy.supportsImageAttachments(extension)) {
             var combined = new ArrayList<KnowledgeMarkdownPolicy.Image>();
             var replaced = Set.copyOf(markdown.imagePaths());
             attachmentRepository.findByDocumentVersionId(previous.getId()).stream()
@@ -568,7 +568,7 @@ public class KnowledgeAppService {
         KnowledgeDocumentVersion version = storeVersion(context.baseContext().base(), document, nextVersionNumber(document),
                 upload, filename, extension, filePolicy.normalizeChangeNote(changeNote), caller);
         version.setSourcePath(sourcePath);
-        if (filePolicy.previewKindFor(extension) == KnowledgePreviewKind.MARKDOWN) {
+        if (filePolicy.supportsImageAttachments(extension)) {
             copyImages(previous, version, Set.copyOf(markdown.imagePaths()));
         }
         storeImages(version, markdown);
@@ -659,7 +659,9 @@ public class KnowledgeAppService {
 
     @Transactional(readOnly = true)
     public KnowledgeMarkdownImagesResponse listImages(Long documentId, Integer versionNumber, Caller caller) {
-        KnowledgeDocument document = resolveDocument(documentId, caller).document();
+        DocumentContext context = resolveDocument(documentId, caller);
+        memberPolicy.assertDownload(context.baseContext().namespace().getId(), caller.userId(), caller.platformRoles());
+        KnowledgeDocument document = context.document();
         KnowledgeDocumentVersion version = versionNumber == null ? currentVersion(document) : findPublishedVersion(document, versionNumber);
         return new KnowledgeMarkdownImagesResponse(version.getSourcePath(),
                 attachmentRepository.findByDocumentVersionId(version.getId()).stream()
@@ -670,7 +672,7 @@ public class KnowledgeAppService {
     public FileContent openImage(Long documentId, Long imageId, Integer versionNumber, Caller caller) {
         DocumentContext context = resolveDocument(documentId, caller);
         KnowledgeDocument document = context.document();
-        // Markdown images are part of the document content and follow the same download capability.
+        // Markdown and MDX images are document content and follow the same download capability.
         memberPolicy.assertDownload(context.baseContext().namespace().getId(), caller.userId(), caller.platformRoles());
         KnowledgeDocumentVersion version = versionNumber == null ? currentVersion(document) : findPublishedVersion(document, versionNumber);
         KnowledgeAttachment image = attachmentRepository.findById(imageId)

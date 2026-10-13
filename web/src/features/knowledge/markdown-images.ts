@@ -2,12 +2,13 @@ import { fromMarkdown } from 'mdast-util-from-markdown'
 import { visit } from 'unist-util-visit'
 import { fileExtension, KNOWLEDGE_MAX_FILE_SIZE_BYTES, validateKnowledgeFile } from './file-types'
 import type { UploadItem } from './upload-queue'
+import { prepareMdxDocument } from './mdx-document'
 
 export interface MarkdownImageUpload { file: File; path: string; itemId: string }
 export interface MarkdownUploadBundle { sourcePath: string; images: MarkdownImageUpload[] }
 export interface UploadPlanEntry { item: UploadItem; bundle: MarkdownUploadBundle; error?: { key: string; path?: string } }
 
-export function isMarkdown(file: File) { return ['md', 'markdown'].includes(fileExtension(file.name)) }
+export function isMarkdown(file: File) { return ['md', 'markdown', 'mdx'].includes(fileExtension(file.name)) }
 export function uploadPath(file: File) { return file.webkitRelativePath || file.name }
 
 /** Resolve local image URLs against a logical package path, without touching remote URLs. */
@@ -58,7 +59,8 @@ export async function planUploads(items: UploadItem[], existing?: { sourcePath: 
     const fileError = validateKnowledgeFile(item.file)
     try {
       if (fileError) entry.error = { key: fileError }
-      const urls = fileError ? [] : markdownImageUrls(await item.file.text())
+      const content = fileError ? '' : await item.file.text()
+      const urls = fileExtension(item.file.name) === 'mdx' ? prepareMdxDocument(content).imageUrls : markdownImageUrls(content)
       const attached = new Set<string>()
       for (const url of urls) {
         if (/^(?:[a-z][a-z\d+.-]*:|\/|#)/i.test(url)) continue
