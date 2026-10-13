@@ -2,12 +2,13 @@ import { fromMarkdown } from 'mdast-util-from-markdown'
 import { visit } from 'unist-util-visit'
 import { fileExtension, KNOWLEDGE_MAX_FILE_SIZE_BYTES, validateKnowledgeFile } from './file-types'
 import type { UploadItem } from './upload-queue'
+import { prepareMdxDocument } from './mdx-document'
 
 export interface MarkdownImageUpload { file: File; path: string; itemId: string }
 export interface MarkdownUploadBundle { sourcePath: string; images: MarkdownImageUpload[] }
 export interface UploadPlanEntry { item: UploadItem; bundle: MarkdownUploadBundle; error?: { key: string; path?: string } }
 
-export function isMarkdown(file: File) { return ['md', 'markdown'].includes(fileExtension(file.name)) }
+export function isMarkdown(file: File) { return ['md', 'markdown', 'mdx'].includes(fileExtension(file.name)) }
 export function uploadPath(file: File) { return file.webkitRelativePath || file.name }
 
 /** Resolve local image URLs against a logical package path, without touching remote URLs. */
@@ -41,12 +42,12 @@ export function markdownImageUrls(content: string): string[] {
 }
 
 /** Images referenced by Markdown travel in the same request, rather than becoming separate documents. */
-export async function planUploads(items: UploadItem[], existing?: { sourcePath: string; paths: string[] }): Promise<UploadPlanEntry[]> {
+export async function planUploads(items: UploadItem[], existing?: { sourcePath: string; paths: string[] }, preserveFiles = false): Promise<UploadPlanEntry[]> {
   const consumed = new Set<string>()
   const entries: UploadPlanEntry[] = []
   const candidates = items.filter((item) => ['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(fileExtension(item.file.name)))
   // Selecting Markdown makes the accompanying images document assets, including unused ones.
-  if (items.some((item) => isMarkdown(item.file))) candidates.forEach((image) => consumed.add(image.id))
+  if (!preserveFiles && items.some((item) => isMarkdown(item.file))) candidates.forEach((image) => consumed.add(image.id))
   for (const item of items) {
     let sourcePath = uploadPath(item.file)
     if (existing && !item.file.webkitRelativePath && isMarkdown(item.file)) {
@@ -58,7 +59,8 @@ export async function planUploads(items: UploadItem[], existing?: { sourcePath: 
     const fileError = validateKnowledgeFile(item.file)
     try {
       if (fileError) entry.error = { key: fileError }
-      const urls = fileError ? [] : markdownImageUrls(await item.file.text())
+      const content = fileError ? '' : await item.file.text()
+      const urls = fileExtension(item.file.name) === 'mdx' ? prepareMdxDocument(content).imageUrls : markdownImageUrls(content)
       const attached = new Set<string>()
       for (const url of urls) {
         if (/^(?:[a-z][a-z\d+.-]*:|\/|#)/i.test(url)) continue
@@ -82,6 +84,7 @@ export async function planUploads(items: UploadItem[], existing?: { sourcePath: 
         if (invalid) entry.error ??= { key: invalid, path: url }
       }
       for (const image of candidates) {
+        if (preserveFiles) break
         if (entry.bundle.images.some((attachedImage) => attachedImage.itemId === image.id)) continue
         const path = image.file.webkitRelativePath || sourcePath.slice(0, sourcePath.lastIndexOf('/') + 1) + image.file.name
         if (attached.has(path)) entry.error ??= { key: 'knowledge.upload.imageAmbiguous', path }
@@ -96,5 +99,5 @@ export async function planUploads(items: UploadItem[], existing?: { sourcePath: 
       }
     } catch { entry.error = { key: 'knowledge.upload.markdownReadFailed' } }
   }
-  return entries.filter((entry) => !consumed.has(entry.item.id))
+  return preserveFiles ? entries : entries.filter((entry) => !consumed.has(entry.item.id))
 }

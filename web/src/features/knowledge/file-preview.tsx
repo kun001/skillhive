@@ -11,6 +11,7 @@ import { KnowledgeFileIcon } from './file-icon'
 import { knowledgeKeys } from './use-knowledge-queries'
 import { resolveImagePath } from './markdown-images'
 import { KnowledgeBrowserOfficePreview } from './browser-office-preview'
+import { MdxPreview } from './mdx-preview'
 
 /** Text previews beyond this size are offered as downloads instead of rendering in the page. */
 export const MAX_TEXT_PREVIEW_BYTES = 2 * 1024 * 1024
@@ -55,6 +56,8 @@ export function KnowledgeFilePreview({ document }: { document: KnowledgeDocument
   const { user } = useAuth()
   const url = knowledgeApi.contentUrl(document.id, { version: document.currentVersion, inline: true })
   const kind = document.previewKind
+  const isMdx = document.fileExtension?.toLowerCase() === 'mdx'
+  const hasImages = kind === 'MARKDOWN' || isMdx
   const isText = kind === 'MARKDOWN' || kind === 'TEXT'
   const textTooLarge = isText && document.sizeBytes > MAX_TEXT_PREVIEW_BYTES
 
@@ -68,7 +71,7 @@ export function KnowledgeFilePreview({ document }: { document: KnowledgeDocument
   const images = useQuery({
     queryKey: [...knowledgeKeys.document(document.id), 'images', document.currentVersion, user?.userId ?? 'guest'],
     queryFn: () => knowledgeApi.listImages(document.id, document.currentVersion),
-    enabled: !!document.canDownload && kind === 'MARKDOWN' && !textTooLarge,
+    enabled: !!document.canDownload && hasImages && !textTooLarge,
     staleTime: Infinity,
   })
 
@@ -114,16 +117,23 @@ export function KnowledgeFilePreview({ document }: { document: KnowledgeDocument
       </div>
     )
   }
-  if (content.isError || (kind === 'MARKDOWN' && images.isError)) {
+  if (content.isError || (hasImages && images.isError)) {
     return <PreviewMessage document={document} title={t('knowledge.preview.failed')} />
   }
-  if (content.isLoading || (kind === 'MARKDOWN' && images.isLoading) || (kind === 'PDF' && !pdfUrl)) {
+  if (content.isLoading || (hasImages && images.isLoading) || (kind === 'PDF' && !pdfUrl)) {
     return <PreviewLoading />
   }
   if (kind === 'PDF') {
     return <iframe title={document.title} src={pdfUrl} className="h-[78vh] w-full rounded-b-xl border-0 bg-muted" />
   }
   const text = typeof content.data === 'string' ? content.data : ''
+  if (isMdx) {
+    return <MdxPreview key={`${document.id}:${document.currentVersion}`} content={text} resolveImageUrl={(src) => {
+      const path = resolveImagePath(images.data?.sourcePath ?? document.fileName, src)
+      const image = images.data?.images.find((candidate) => candidate.path === path)
+      return image ? knowledgeApi.imageUrl(document.id, image.id, document.currentVersion) : undefined
+    }} />
+  }
   if (kind === 'MARKDOWN') {
     return (
       <div className="px-6 py-5 sm:px-10 sm:py-8">

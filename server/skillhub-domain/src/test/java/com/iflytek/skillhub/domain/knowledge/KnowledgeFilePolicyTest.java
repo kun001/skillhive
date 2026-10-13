@@ -17,6 +17,13 @@ class KnowledgeFilePolicyTest {
     }
 
     @Test
+    void mdxIsAcceptedButNeverExecutedAsMarkup() {
+        assertThat(policy.validateUpload("component.MDX", 10)).isEqualTo("mdx");
+        assertThat(policy.contentTypeFor("mdx")).isEqualTo("text/plain");
+        assertThat(policy.previewKindFor("mdx")).isEqualTo(KnowledgePreviewKind.TEXT);
+    }
+
+    @Test
     void rejectsExecutableAndMarkupTypes() {
         assertThatThrownBy(() -> policy.validateUpload("page.html", 10)).isInstanceOf(DomainBadRequestException.class);
         assertThatThrownBy(() -> policy.validateUpload("icon.svg", 10)).isInstanceOf(DomainBadRequestException.class);

@@ -4,6 +4,22 @@
  */
 
 export interface paths {
+    "/api/v1/mcp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["unsupported"];
+        put?: never;
+        post: operations["post"];
+        delete: operations["unsupported_1"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/skills/{skillId}/subscription": {
         parameters: {
             query?: never;
@@ -3115,7 +3131,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Display an image from a published Markdown version */
+        /** Display an image from a published Markdown or MDX version */
         get: operations["downloadKnowledgeMarkdownImage"];
         put?: never;
         post?: never;
@@ -3132,7 +3148,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Display an image from a published Markdown version */
+        /** Display an image from a published Markdown or MDX version */
         get: operations["downloadKnowledgeMarkdownImage_1"];
         put?: never;
         post?: never;
@@ -3149,7 +3165,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List the images bound to a Markdown version */
+        /** List the images bound to a Markdown or MDX version */
         get: operations["listKnowledgeMarkdownImages"];
         put?: never;
         post?: never;
@@ -3166,7 +3182,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List the images bound to a Markdown version */
+        /** List the images bound to a Markdown or MDX version */
         get: operations["listKnowledgeMarkdownImages_1"];
         put?: never;
         post?: never;
@@ -4371,6 +4387,7 @@ export interface components {
             expiresAt?: string;
             scopes?: string[];
         };
+        JsonNode: Record<string, never>;
         SessionBootstrapRequest: {
             provider: string;
         };
@@ -5796,6 +5813,66 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    unsupported: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JsonNode"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JsonNode"];
+                };
+            };
+        };
+    };
+    unsupported_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     checkSubscribed: {
         parameters: {
             query?: never;

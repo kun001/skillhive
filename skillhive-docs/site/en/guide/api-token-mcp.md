@@ -26,6 +26,28 @@ curl -H "Authorization: Bearer $SKILLHIVE_TOKEN" https://skillhive.example.com/a
 
 ## MCP Server
 
+### Remote connection
+
+The backend includes a stateless Streamable HTTP endpoint at `/api/v1/mcp`. Once a version containing this feature is deployed, agents supporting custom authentication headers can connect without a local MCP process:
+
+```json
+{
+  "mcpServers": {
+    "skillhive": {
+      "type": "http",
+      "url": "https://skillhive.example.com/api/v1/mcp",
+      "headers": { "Authorization": "Bearer <YOUR_READ_ONLY_TOKEN>" }
+    }
+  }
+}
+```
+
+Copy the current instance configuration from Profile → Tokens. Grant only `skill:read` and/or `knowledge:read`. Every call checks team membership, version visibility and download permission, including super-admin tokens. Revocation takes effect on subsequent calls. For local testing use `http://localhost:3000/api/v1/mcp`. Remote file reads are capped at 10 MiB.
+
+This endpoint uses personal Bearer tokens and does not provide OAuth sign-in. Clients requiring OAuth without custom headers are not supported yet.
+
+### Local stdio
+
 `mcp/` in the repository is a local stdio MCP server that lets MCP clients such as Claude Code and Cursor read the skill library and knowledge base with your token:
 
 - **Read-only**: the server refuses to start with a token that can publish, delete or manage tokens. Create a token with Skills · read-only and/or Knowledge (read-only).

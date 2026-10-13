@@ -25,6 +25,8 @@ describe('knowledge file types', () => {
 
   it('validates type, emptiness and size before uploading', () => {
     expect(validateKnowledgeFile({ name: 'a.pdf', size: 10 })).toBeUndefined()
+    expect(validateKnowledgeFile({ name: 'component.MDX', size: 10 })).toBeUndefined()
+    expect(categoryForExtension('mdx')).toBe('text')
     expect(validateKnowledgeFile({ name: 'a.html', size: 10 })).toBe('knowledge.upload.errorType')
     expect(validateKnowledgeFile({ name: 'a.pdf', size: 0 })).toBe('knowledge.upload.errorEmpty')
     expect(validateKnowledgeFile({ name: 'a.pdf', size: KNOWLEDGE_MAX_FILE_SIZE_BYTES + 1 })).toBe('knowledge.upload.errorTooLarge')

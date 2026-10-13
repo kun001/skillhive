@@ -48,6 +48,7 @@ describe('Word full preview', () => {
   })
   it.each([
     ['md', 'MARKDOWN'],
+    ['mdx', 'TEXT'],
     ['txt', 'TEXT'],
     ['pdf', 'PDF'],
     ['png', 'IMAGE'],

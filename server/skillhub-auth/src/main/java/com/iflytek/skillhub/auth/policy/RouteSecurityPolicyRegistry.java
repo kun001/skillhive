@@ -81,6 +81,10 @@ public class RouteSecurityPolicyRegistry {
     );
 
     private static final List<ApiTokenPolicy> API_TOKEN_POLICIES = List.of(
+            // The MCP service checks a read-only token and the scope of each selected tool.
+            ApiTokenPolicy.allow(HttpMethod.POST, "/api/v1/mcp"),
+            ApiTokenPolicy.allow(HttpMethod.GET, "/api/v1/mcp"),
+            ApiTokenPolicy.allow(HttpMethod.DELETE, "/api/v1/mcp"),
             ApiTokenPolicy.allow(null, "/api/v1/health"),
             ApiTokenPolicy.allow(null, "/api/v1/auth/providers"),
             ApiTokenPolicy.allow(null, "/api/v1/auth/methods"),

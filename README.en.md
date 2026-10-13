@@ -24,6 +24,8 @@
 
 ## Why SkillHive
 
+**v0.2.0** adds controlled MDX previews, folder uploads that preserve the directory hierarchy, and remote MCP access. See the [release changelog](CHANGELOG.md); the [site changelog](https://skillhive.team/changelog) records the version deployed to the demo site.
+
 <table>
   <tr>
     <td width="33%" valign="top">
@@ -42,7 +44,7 @@
   <tr>
     <td valign="top">
       <strong>Preview files, trace every change</strong><br /><br />
-      View PDFs, images and Markdown (with its images) online, and preview the first five pages of Word / PowerPoint files. Every update keeps a version you can download or restore.
+      View PDFs, images and Markdown (with its images) online, preview MDX with built-in components and a source toggle, and preview Word / PowerPoint files in the browser. Every update keeps a version you can download or restore.
     </td>
     <td valign="top">
       <strong>Permissions down to each member</strong><br /><br />
@@ -50,7 +52,7 @@
     </td>
     <td valign="top">
       <strong>AI tools read it directly (MCP)</strong><br /><br />
-      Through the local <a href="#mcp-let-ai-read-your-teams-skills-and-files">MCP server</a>, Claude Code, Cursor and other AI tools use your read-only token to search and read your team's skills and knowledge files, with the same permissions as the web, and every read is audited. Skills use the common <code>SKILL.md</code> format and work with any AI tool; the platform never runs skill scripts itself.
+      Through <a href="#mcp-let-ai-read-your-teams-skills-and-files">MCP</a>, Claude Code, Cursor and other AI tools use your read-only token to search and read skills and knowledge files. Connect over remote HTTP or local stdio; the backend checks permissions on each call and audits file reads. Skills use the common <code>SKILL.md</code> format and work with any AI tool; the platform never runs skill scripts itself.
     </td>
   </tr>
 </table>
@@ -84,7 +86,7 @@ For example, a team publishes a meeting-notes skill to the skill library and kee
 
 ## MCP: let AI read your team's skills and files
 
-SkillHive ships a locally run [MCP server](mcp/README.md). Once it is configured in Claude Code, Cursor, Claude Desktop or another MCP client, your AI tool can use your API token to search, browse and read your team's skills and knowledge files, with no manual downloading or copy-pasting.
+SkillHive provides read-only [MCP access](mcp/README.md) over remote Streamable HTTP or local stdio. Once configured, your AI tool uses your own API token to search, browse and read the skills and knowledge files you can access, with no manual downloading or copy-pasting. Read results are passed to the AI tool you choose.
 
 Ask your AI things like:
 
@@ -94,19 +96,41 @@ Ask your AI things like:
 
 | Property | What it means |
 | --- | --- |
-| **Read-only** | Only read-only tokens are accepted; tokens with publish, delete or other write scopes are refused at startup, so the AI cannot change anything. |
-| **Same permissions as the web** | You only see your own teams' content, and reading a file still needs download permission. Even platform administrators' tokens reach the knowledge base only as a team member. |
+| **Read-only** | Use only `skill:read` and/or `knowledge:read`. Tokens with write scopes are refused, so the AI cannot change anything. |
+| **Team permissions apply** | Read published public skills and authorized content in your teams. Reading team files requires download permission; platform administrators' tokens cannot bypass membership or download checks. |
 | **Files passed through unchanged** | Text files come back as text; PDF, Word and other files are handed to the AI tool as the original file. The platform does no content parsing. |
 | **Traceable** | Knowledge files and skill files read with a token are recorded in the audit log, naming the token. |
 | **Grant only what you need** | Skill and knowledge access are granted separately, and the MCP server only offers the tools for what the token can reach. |
 
 12 tools: `whoami`; skills: `search_skills`, `get_skill`, `list_skill_versions`, `list_skill_files`, `read_skill_file`, `list_my_skills`; knowledge: `list_knowledge_bases`, `browse_knowledge_base`, `search_knowledge`, `get_document`, `read_document`.
 
-**Set up in three steps**:
+### Remote access: configure a URL and token
 
-1. In SkillHive, open **Profile → API Tokens** and create a token: set skill access to **Read-only** and tick **Knowledge (read-only)**.
-2. Build the MCP server (needs Node.js 20+ and pnpm): `make build-mcp`.
-3. Add it to your AI tool, for example Claude Code:
+The remote endpoint ships with the backend and needs no additional MCP container or local Node.js installation. **After deploying a version containing this feature**, configure an agent that supports Streamable HTTP and custom authentication headers:
+
+1. Open **Profile → API Tokens** and create a read-only token. Set skill access to **Read-only** or **None**; enable **Knowledge (read-only)** when needed.
+2. Click **Copy MCP configuration**, or use the JSON below with your own instance URL and token.
+3. Enable the MCP connection in your agent, then ask it to find skills or files. Call `whoami` first to confirm the current user and teams.
+
+```json
+{
+  "mcpServers": {
+    "skillhive": {
+      "type": "http",
+      "url": "https://your-skillhive.example.com/api/v1/mcp",
+      "headers": {
+        "Authorization": "Bearer <YOUR_READ_ONLY_TOKEN>"
+      }
+    }
+  }
+}
+```
+
+For local testing, use `http://localhost:3000/api/v1/mcp`. Each user supplies their own token. Token revocation, membership removal and download permission changes apply to subsequent calls. Remote file reads are capped at **10 MiB**; larger files can be downloaded from the web. Keep credentials in private client configuration. Clients requiring OAuth sign-in without custom authentication headers are not supported yet.
+
+### Local stdio access
+
+Requires Node.js 20+ and pnpm. Run `make build-mcp`, then configure the MCP client to launch the local process, for example with Claude Code:
 
 ```bash
 claude mcp add skillhive \
@@ -163,9 +187,9 @@ These recordings were made in a local Web interface; the knowledge base files ar
 | Area | What you can do |
 | --- | --- |
 | **Skill library** | Upload packages containing `SKILL.md`; read instructions, bundled files and version history; publish after validation, security scanning and review; star and subscribe; browse by keyword, label and sort order; unpublish and hide. |
-| **Knowledge bases** | Nested folders; batch uploads with progress and retries; upload Markdown together with its local images or a whole folder; online preview; version history, per-version download and restore; search titles and descriptions, including across knowledge bases. |
+| **Knowledge bases** | Nested folders; batch file or folder uploads that preserve the directory hierarchy and require a second confirmation; progress and retry; Markdown images and controlled MDX previews; version history, download or restore a chosen version; title and description search across knowledge bases. |
 | **Team spaces** | One page shows the space's skills and knowledge bases; member management with per-member read-only, editable and download permissions that apply immediately. |
-| **AI access** | Local MCP server that gives AI tools read-only access to skills and knowledge files; create API tokens in your profile, with skill access (read-write / read-only) and knowledge access (read-only) granted separately. |
+| **AI access** | Remote HTTP / local stdio MCP for reading skills and knowledge files with personal read-only tokens; copy connection configuration from your profile and grant skill and knowledge access separately. |
 | **Governance** | Platform and space roles; notifications; audit log of key operations, including knowledge file downloads and previews and token reads of skills and files. |
 | **Interface** | Chinese and English; light and dark themes; works on phones and narrow screens. |
 
@@ -209,12 +233,17 @@ Files are organized as **team space → knowledge base → folder → file**, up
 | PDF | `.pdf` | Preview online, download the original. |
 | Images | `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp` | Preview online, download the original. |
 | Markdown / text | `.md`, `.markdown`, `.txt` | Read online; Markdown can be uploaded and shown with its local images. |
+| MDX | `.mdx` | Upload, download and version management; Markdown, built-in callouts/accordions/tabs/steps/cards and local images, with a source toggle. Document code is never executed. |
 | Word / PowerPoint | `.docx`, `.pptx` | Full document preview in the browser; original download. |
 | Legacy Word / PowerPoint | `.doc`, `.ppt` | Upload, download and version management; no online preview. |
 | Spreadsheets / data | `.xls`, `.xlsx`, `.csv`, `.json` | Upload, download and version management. |
 | Archives | `.zip`, `.rar`, `.7z` | Upload, download and version management. |
 
 Uploaded files are available to authorized members immediately and are not open to anonymous visitors by default. DOCX and PPTX render in the browser; layout may differ from Microsoft Office. Members with download permission can download originals if preview fails. Browser previews require file bytes: download permission controls download actions and the regular download endpoint, but cannot prevent extracting preview data from the browser.
+
+See [controlled MDX previews](skillhive-docs/mdx-preview.md) for supported syntax and security boundaries. Upload the [sample document](examples/mdx/团队使用指南.mdx) together with its [image](examples/mdx/images/workflow.png).
+
+To upload a folder, choose **Upload files → Select folder**, check the destination and directory preview, then confirm the upload. The selected top folder and its subdirectories are retained; existing folders with the same name are not merged. Retry failed files in the same dialog. Browsers cannot upload empty folders. See [folder uploads and MDX](skillhive-docs/folder-upload-mdx.md) for details (in Chinese).
 
 </details>
 
@@ -251,7 +280,7 @@ The deployment configuration uses the images published from this repository by d
 flowchart TB
     User[User] --> Web[Web interface]
     Web --> API[Backend API]
-    AI[AI tool] --> MCP[MCP server · local stdio · read-only token] --> API
+    AI[AI tool] --> MCP[MCP · remote HTTP / local stdio · read-only token] --> API
     API --> Skill[Skills · validate / scan / review / publish]
     API --> Knowledge[Files · folders / preview / versions]
     API --> Governance[Team spaces / permissions / notifications / audit]
@@ -282,7 +311,7 @@ Run `make generate-api` after changing backend API contracts, and do not edit `w
 
 ### Roadmap
 
-The first MCP phase runs locally and is read-only. Planned next steps include write actions that the user confirms (such as publishing a skill), a team-hosted remote MCP server with per-user authorization, and tokens limited to a single team; see the [MCP server design](skillhive-docs/26-mcp-server.md). The backend API mainly serves the Web interface and MCP and is not yet published as a complete open API; the changelog is the source of truth for what ships.
+MCP currently supports remote HTTP and local stdio with personal read-only tokens. Future directions include remote OAuth authorization, write actions that the user confirms (such as publishing a skill), and tokens limited to a single team; see the [MCP server design](skillhive-docs/26-mcp-server.md). The backend API mainly serves the Web interface and MCP and is not yet published as a complete open API. See the [development changelog](CHANGELOG.md) for pending changes and the [site changelog](https://skillhive.team/changelog) for deployed releases.
 
 ## Acknowledgements
 

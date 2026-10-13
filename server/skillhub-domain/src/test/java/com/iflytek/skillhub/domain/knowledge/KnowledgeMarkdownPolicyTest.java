@@ -17,6 +17,19 @@ class KnowledgeMarkdownPolicyTest {
     }
 
     @Test
+    void acceptsMdxRasterAttachmentsWithoutMakingSourceExecutable() {
+        var files = new KnowledgeFilePolicy();
+        assertThat(policy.validate("guide.mdx", 20, "docs/guide.mdx",
+                List.of(new KnowledgeMarkdownPolicy.Image("images/flow.webp", "flow.webp", 50))))
+                .isEqualTo("docs/guide.mdx");
+        assertThat(files.previewKindFor("mdx")).isEqualTo(KnowledgePreviewKind.TEXT);
+        assertThat(files.contentTypeFor("mdx")).isEqualTo("text/plain");
+        assertThatThrownBy(() -> policy.validate("guide.mdx", 20, null,
+                List.of(new KnowledgeMarkdownPolicy.Image("evil.svg", "evil.svg", 50))))
+                .isInstanceOf(DomainBadRequestException.class);
+    }
+
+    @Test
     void rejectsTraversalAbsolutePathsAndDuplicateImages() {
         for (String path : List.of("../a.png", "/a.png", "C:/a.png", "x/../a.png", "x\\a.png", "x//a.png")) {
             assertThatThrownBy(() -> policy.validatePath(path)).isInstanceOf(DomainBadRequestException.class);

@@ -31,6 +31,7 @@ import type { ApiToken } from '@/api/types'
 import { resolveTokenExpiresAt, toLocalDateTimeInputValue, type TokenExpirationMode } from './token-expiration'
 import { domainsForScopes } from './token-scopes'
 import { TOKEN_TABLE_ACTIONS_HEAD_CLASS_NAME, TOKEN_TABLE_HEAD_CLASS_NAME } from './token-table-style'
+import { McpConnection } from './mcp-connection'
 
 const PAGE_SIZE = 10
 type TokenPage = { items: ApiToken[]; total: number; page: number; size: number }
@@ -198,6 +199,7 @@ export function TokenList() {
         </CreateTokenDialog>
       </div>
       <p className="text-sm text-muted-foreground">{t('token.copyHint')}</p>
+      <McpConnection />
 
       {!tokenPage || tokenPage.total === 0 ? (
         <div className="text-center py-12 text-muted-foreground">

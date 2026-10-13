@@ -348,7 +348,7 @@ public class KnowledgeController extends BaseApiController {
     }
 
     @GetMapping("/documents/{documentId}/images")
-    @Operation(operationId = "listKnowledgeMarkdownImages", summary = "List the images bound to a Markdown version")
+    @Operation(operationId = "listKnowledgeMarkdownImages", summary = "List the images bound to a Markdown or MDX version")
     public ApiResponse<KnowledgeMarkdownImagesResponse> images(
             @PathVariable Long documentId,
             @RequestParam(required = false) Integer version,
@@ -359,7 +359,7 @@ public class KnowledgeController extends BaseApiController {
     }
 
     @GetMapping("/documents/{documentId}/images/{imageId}/content")
-    @Operation(operationId = "downloadKnowledgeMarkdownImage", summary = "Display an image from a published Markdown version")
+    @Operation(operationId = "downloadKnowledgeMarkdownImage", summary = "Display an image from a published Markdown or MDX version")
     @RateLimit(category = "download", authenticated = 120, anonymous = 0)
     public ResponseEntity<InputStreamResource> imageContent(
             @PathVariable Long documentId, @PathVariable Long imageId,

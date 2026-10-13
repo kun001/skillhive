@@ -162,12 +162,13 @@ class KnowledgeAppServiceTest {
         assertThat(document.getStatus()).isEqualTo(KnowledgeDocumentStatus.ARCHIVED);
     }
 
-    @Test
-    void markdownUploadStoresImagesInTheSameVersionAndPreservesSource() throws Exception {
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"md", "mdx"})
+    void markdownUploadStoresImagesInTheSameVersionAndPreservesSource(String extension) throws Exception {
         when(documentRepository.save(any(KnowledgeDocument.class))).thenAnswer(invocation -> withId(invocation.getArgument(0), 21L));
         when(versionRepository.save(any(KnowledgeDocumentVersion.class))).thenAnswer(invocation -> withId(invocation.getArgument(0), 31L));
-        service.uploadDocument("team-a", "handbook", upload("guide.md"),
-                new KnowledgeAppService.MarkdownUpload("package/docs/guide.md", List.of(upload("a.png")), List.of("package/images/a.png")),
+        service.uploadDocument("team-a", "handbook", upload("guide." + extension),
+                new KnowledgeAppService.MarkdownUpload("package/docs/guide." + extension, List.of(upload("a.png")), List.of("package/images/a.png")),
                 null, null, null, member("alice"), null);
         var image = ArgumentCaptor.forClass(KnowledgeAttachment.class);
         verify(attachmentRepository).save(image.capture());
@@ -176,7 +177,7 @@ class KnowledgeAppServiceTest {
         assertThat(image.getValue().getObjectKey()).startsWith("knowledge/11/21/v1/images/");
         var version = ArgumentCaptor.forClass(KnowledgeDocumentVersion.class);
         verify(versionRepository).save(version.capture());
-        assertThat(version.getValue().getSourcePath()).isEqualTo("package/docs/guide.md");
+        assertThat(version.getValue().getSourcePath()).isEqualTo("package/docs/guide." + extension);
     }
 
     @Test
@@ -198,19 +199,21 @@ class KnowledgeAppServiceTest {
         readOnly.setCanDownload(false);
         when(members.findByNamespaceIdAndUserId(NAMESPACE_ID, "bob")).thenReturn(Optional.of(readOnly));
         assertThatThrownBy(() -> service.openImage(21L, 41L, null, member("bob"))).isInstanceOf(DomainForbiddenException.class);
+        assertThatThrownBy(() -> service.listImages(21L, null, member("bob"))).isInstanceOf(DomainForbiddenException.class);
     }
 
     private static KnowledgeAppService.Upload upload(String filename) {
         return new KnowledgeAppService.Upload(filename, 1, () -> new ByteArrayInputStream(new byte[]{1}));
     }
 
-    @Test
-    void newVersionsKeepUnchangedImagesAndRestoresUseTheOriginalImages() throws Exception {
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"md", "mdx"})
+    void newVersionsKeepUnchangedImagesAndRestoresUseTheOriginalImages(String extension) throws Exception {
         KnowledgeDocument document = withId(new KnowledgeDocument(11L, null, "guide", "Guide", null, "alice"), 21L);
-        KnowledgeDocumentVersion original = withId(new KnowledgeDocumentVersion(21L, 1, "key", "text/markdown", "guide.md", 1, "sha", null, "alice"), 31L);
+        KnowledgeDocumentVersion original = withId(new KnowledgeDocumentVersion(21L, 1, "key", "text/markdown", "guide." + extension, 1, "sha", null, "alice"), 31L);
         original.publishDirectly("alice");
-        original.setSourcePath("pack/guide.md");
-        document.publish(original, "md");
+        original.setSourcePath("pack/guide." + extension);
+        document.publish(original, extension);
         when(documentRepository.findById(21L)).thenReturn(Optional.of(document));
         when(versionRepository.findById(31L)).thenReturn(Optional.of(original));
         when(versionRepository.findByDocumentIdAndVersionNumber(21L, 1)).thenReturn(Optional.of(original));
@@ -218,7 +221,7 @@ class KnowledgeAppServiceTest {
         when(versionRepository.save(any(KnowledgeDocumentVersion.class))).thenAnswer(invocation -> withId(invocation.getArgument(0), 32L));
         var oldImage = new KnowledgeAttachment(31L, "pack/a.png", "a.png", "image/png", 1, "sha", "original-image");
         when(attachmentRepository.findByDocumentVersionId(31L)).thenReturn(List.of(oldImage));
-        service.uploadVersion(21L, upload("guide.md"), null, member("alice"), null);
+        service.uploadVersion(21L, upload("guide." + extension), null, member("alice"), null);
         var image = ArgumentCaptor.forClass(KnowledgeAttachment.class);
         verify(attachmentRepository).save(image.capture());
         assertThat(image.getValue().getDocumentVersionId()).isEqualTo(32L);

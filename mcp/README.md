@@ -2,6 +2,30 @@
 
 本地 stdio MCP 服务：让 Claude Code、Cursor 等 MCP 客户端用你自己的 API Token 只读访问 SkillHive 的技能库和知识库。设计与权限模型见 [skillhive-docs/26-mcp-server.md](../skillhive-docs/26-mcp-server.md)。
 
+## 远程连接（无需本地安装）
+
+后端包含无状态 Streamable HTTP 入口 `/api/v1/mcp`，随现有 server 镜像发布，无需额外 MCP 容器或共享服务 Token。以下配置在包含此功能的版本部署后生效：
+
+```json
+{
+  "mcpServers": {
+    "skillhive": {
+      "type": "http",
+      "url": "https://skillhive.example.com/api/v1/mcp",
+      "headers": { "Authorization": "Bearer <YOUR_READ_ONLY_TOKEN>" }
+    }
+  }
+}
+```
+
+本地验证可将 URL 改为 `http://localhost:3000/api/v1/mcp`。个人中心的 Token 页面可复制当前实例的配置；创建只读 Token 后可复制包含该 Token 的配置。配置中含凭据，请只保存到客户端私有配置，不提交到仓库。
+
+服务每次请求验证个人 Token，按作用域显示工具。工具参数不能指定用户、Token 或后端地址；后端地址固定为本实例的 loopback。工具调用通过原有 GET 接口再次执行身份、作用域、团队、可见版本、下载权限及审计检查，无用户数据缓存。Token 吊销、成员移除或下载权限撤销会影响后续调用。超级管理员 Token 的知识、团队技能读取同样受成员及下载权限约束。
+
+协议支持 `2025-03-26`、`2025-06-18`、`2025-11-25`，以 JSON 返回 POST 请求，通知返回 202；不提供长连接 SSE 或服务器会话，GET/DELETE 返回 405。单个文件上限 10 MiB，超限请通过网页下载。服务只接受 `skill:read`、`knowledge:read` 作用域，任何其他作用域都会拒绝连接。
+
+代理已通过现有 `/api/` 路由转发该入口。生产发布仍按项目规定的 GitHub Actions 镜像和版本部署流程执行；此功能不需要修改生产容器或服务器配置。带 `Origin` 的请求仅允许 `SKILLHUB_PUBLIC_BASE_URL` 对应的源（本地默认 `http://localhost:3000`）。无 Origin 的原生 Agent 客户端仍需 Bearer 认证。
+
 - 只读：不能发布、修改或删除任何内容。
 - 权限与网页一致：只能看到你所在团队的内容，读取知识库文件需要该团队的下载权限。
 - 文件原样返回：文本文件返回文本，PDF、DOCX 等返回原文件，不做内容解析。

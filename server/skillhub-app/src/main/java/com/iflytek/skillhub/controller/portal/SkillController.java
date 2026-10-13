@@ -94,7 +94,7 @@ public class SkillController extends BaseApiController {
             @AuthenticationPrincipal PlatformPrincipal principal) {
 
         Map<Long, NamespaceRole> namespaceRoles = userNsRoles != null ? userNsRoles : Map.of();
-        Set<String> platformRoles = principal == null || principal.platformRoles() == null
+        Set<String> platformRoles = principal == null || principal.platformRoles() == null || "api_token".equals(principal.oauthProvider())
                 ? Set.of() : principal.platformRoles();
         SkillQueryService.SkillDetailDTO detail = skillQueryService.getSkillDetail(
                 namespace, slug, userId, namespaceRoles);

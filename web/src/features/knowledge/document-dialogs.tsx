@@ -128,7 +128,7 @@ export function NewKnowledgeVersionDialog({ open, onOpenChange, document }: NewV
     if (!file) return
     setProgress(0)
     try {
-      const existing = document.previewKind === 'MARKDOWN' ? await knowledgeApi.listImages(document.id, document.currentVersion) : undefined
+      const existing = document.canDownload && (document.previewKind === 'MARKDOWN' || document.fileExtension?.toLowerCase() === 'mdx') ? await knowledgeApi.listImages(document.id, document.currentVersion) : undefined
       const plan = await planUploads(createUploadItems(files), existing ? { sourcePath: existing.sourcePath, paths: existing.images.map((image) => image.path) } : undefined)
       if (plan.length !== 1) throw new Error(t('knowledge.upload.versionSingleFile'))
       const entry = plan[0]

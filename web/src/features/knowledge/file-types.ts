@@ -8,7 +8,7 @@ export const KNOWLEDGE_FILE_CATEGORIES = [
   { id: 'excel', extensions: ['xls', 'xlsx', 'csv'] },
   { id: 'ppt', extensions: ['ppt', 'pptx'] },
   { id: 'image', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp'] },
-  { id: 'text', extensions: ['md', 'markdown', 'txt', 'json'] },
+  { id: 'text', extensions: ['md', 'mdx', 'markdown', 'txt', 'json'] },
   { id: 'archive', extensions: ['zip', 'rar', '7z'] },
 ] as const
 
