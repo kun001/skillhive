@@ -14,6 +14,20 @@ export interface ReleaseNote {
 // Confirm the date and image tag when deploying; Git submission is not deployment.
 export const releases: ReleaseNote[] = [
   {
+    id: '20261013-mdx-folder-remote-mcp',
+    version: 'v0.2.0',
+    date: '2026-10-13',
+    title: { zh: 'MDX 受控预览、文件夹上传与远程 MCP', en: 'Controlled MDX previews, folder uploads and remote MCP' },
+    summary: { zh: '知识库支持带配图的 MDX 内置组件预览，上传文件夹可保留目录并二次确认；Agent 可以通过实例地址和个人只读 Token 接入 MCP。', en: 'Knowledge bases support MDX previews with built-in components and local images. Folder uploads preserve directories after confirmation, and agents can connect to MCP using the instance URL and a personal read-only token.' },
+    changes: [
+      { zh: 'MDX 支持 Markdown、提示卡片、折叠区、标签页、步骤、静态卡片和图注，可切换源码；JavaScript、模块导入和自定义组件不会执行，不支持的语法保留为源码。', en: 'MDX previews support Markdown, callouts, accordions, tabs, steps, static cards and figures, with a source toggle. JavaScript, imports and custom components never execute; unsupported syntax stays as source.' },
+      { zh: 'MDX 配图支持随文档上传的 PNG、JPEG、GIF 和 WebP，沿用文档版本、团队成员与下载权限；远程图片不加载，无下载权限无法读取正文、配图路径或图片内容。', en: 'Local PNG, JPEG, GIF and WebP attachments follow document versions, team membership and download permission. Remote images are not loaded, and members without download permission cannot read source, image paths or image content.' },
+      { zh: '选择文件夹后先查看目标位置、文件数量与目录结构，再确认上传；保留顶层文件夹及子目录，同名目标目录不会自动合并，部分失败可重试。浏览器无法上传空文件夹。', en: 'Review the destination, file count and directory tree before confirming folder uploads. Top-level folders and subdirectories are retained, existing folders are not merged, and failed files can be retried. Browsers cannot upload empty folders.' },
+      { zh: '新增远程只读 MCP 接口 /api/v1/mcp，Token 页面可复制连接配置；仅接受技能只读与知识库只读范围，每次调用检查成员、可见版本和下载权限，管理员 Token 也不能越过团队边界。', en: 'The new read-only /api/v1/mcp endpoint provides remote access, with copyable configuration on the Tokens page. Only skill-read and knowledge-read scopes are accepted. Every call checks membership, visible versions and download permission, including administrator tokens.' },
+      { zh: '补充中英文 README、MCP 使用方式、组件与配图说明，以及可直接上传的 MDX 和 PNG 示例。', en: 'Updated the Chinese and English READMEs, MCP setup guide, component and image documentation, and an uploadable MDX example with a PNG image.' },
+    ],
+  },
+  {
     id: '20261012-namespace-knowledge-delete',
     version: 'v0.1.1',
     date: '2026-10-12',

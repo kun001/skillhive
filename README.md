@@ -24,7 +24,7 @@
 
 ## 为什么选择 SkillHive
 
-本分支新增 **MDX、保留目录层级的文件夹上传、远程 MCP 接入**，已完成本地验证，等待发布。变更见 [开发更新记录](CHANGELOG.md)；演示站实际已上线的版本以 [站点更新日志](https://skillhive.team/changelog) 为准。
+**v0.2.0** 新增 MDX 受控预览、保留目录层级的文件夹上传与远程 MCP 接入。变更见 [版本更新记录](CHANGELOG.md)；演示站实际部署的版本以 [站点更新日志](https://skillhive.team/changelog) 为准。
 
 <table>
   <tr>

@@ -1,10 +1,10 @@
 # 更新记录 / Changelog
 
-这里记录尚未发布的开发改动。实际已上线的版本、日期和历史内容见 [站点更新日志](https://skillhive.team/changelog)，其源文件为 [releases.ts](web/src/features/changelog/releases.ts)。提交或本地验证不代表上线。
+这里记录版本改动；未发布的开发内容另列在“待发布 / Unreleased”章节。实际已上线的版本、日期和历史内容见 [站点更新日志](https://skillhive.team/changelog)，其源文件为 [releases.ts](web/src/features/changelog/releases.ts)。提交或本地验证不代表上线。
 
-## 待发布 / Unreleased
+## v0.2.0 — 2026-10-13
 
-记录日期：2026-10-13。以下功能已在开发分支完成实现和本地验证，尚未发布到线上；发布时再确定正式版本号与上线日期。
+本版本包含 MDX 受控预览、文件夹上传和远程 MCP。线上部署情况以站点更新日志为准。
 
 ### 中文
 

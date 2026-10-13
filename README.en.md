@@ -24,7 +24,7 @@
 
 ## Why SkillHive
 
-This branch adds **MDX, folder uploads that preserve the directory hierarchy, and remote MCP access**. These changes have passed local verification and are awaiting release. See the [development changelog](CHANGELOG.md); the [site changelog](https://skillhive.team/changelog) records what is deployed to the demo site.
+**v0.2.0** adds controlled MDX previews, folder uploads that preserve the directory hierarchy, and remote MCP access. See the [release changelog](CHANGELOG.md); the [site changelog](https://skillhive.team/changelog) records the version deployed to the demo site.
 
 <table>
   <tr>
