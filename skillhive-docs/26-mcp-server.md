@@ -1,6 +1,6 @@
 # SkillHive MCP 服务设计
 
-本文记录 SkillHive MCP 服务的设计依据、第一期能力范围与权限模型。实现位于仓库根目录的 `mcp/`。
+本文记录 SkillHive MCP 服务的设计依据、能力范围与权限模型。本地 stdio 实现位于 `mcp/`；远程 Streamable HTTP 入口位于后端 `McpController` 与 `service/mcp/`，与后端一同部署。
 
 ## 为什么做
 
@@ -18,7 +18,7 @@
 | 问题 | 决策 |
 | --- | --- |
 | 能力范围 | 只读。不提供发布/删除技能、收藏、上传或修改知识库文件、审核、管理后台、Token 管理。 |
-| 部署与认证 | 本地 stdio 进程 + 个人 API Token（环境变量 `SKILLHIVE_TOKEN`）。Token 不经过第三方服务。 |
+| 部署与认证 | 本地 stdio 或远程 `/api/v1/mcp` Streamable HTTP；每位用户提供自己的只读 API Token，禁止共享服务 Token。 |
 | PDF、DOCX 等二进制文件 | 原样传递原文件（MCP 嵌入资源，base64 + MIME 类型），MCP 与后端都不做任何内容解析。 |
 | 技能读取审计 | 通过 API Token 读取技能文件内容或下载技能包时写审计；网页会话和匿名访问不记录。 |
 | 超级管理员的 Token | 通过 Token 访问知识库时只按团队成员身份判断，不享受 `SUPER_ADMIN` 的全平台放行。 |
@@ -53,7 +53,7 @@
 
 - `publish_skill` 等写入能力：需要 `skill:publish`，并要求在客户端由用户确认。
 - MCP Resources（如 `skillhive://skills/{ns}/{slug}/SKILL.md`），方便客户端直接引用。
-- 团队托管的远程 MCP 服务：需要 OAuth 等按用户的授权，不得共用 Token。设备码登录已删除，不重新接入。
+- 远程 OAuth 授权：目前远程入口使用个人只读 Bearer Token，适用于支持自定义认证 Header 的客户端。需要 OAuth 的客户端仍需后续适配。设备码登录已删除，不重新接入。
 - Token 绑定到指定团队（namespace 级作用域），让一个 AI 工具只能读一个团队的资料。
 
 ## 权限模型

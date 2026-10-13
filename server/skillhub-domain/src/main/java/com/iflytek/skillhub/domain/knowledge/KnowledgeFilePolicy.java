@@ -35,6 +35,8 @@ public class KnowledgeFilePolicy {
             Map.entry("gif", new FileType("image/gif", KnowledgePreviewKind.IMAGE)),
             Map.entry("webp", new FileType("image/webp", KnowledgePreviewKind.IMAGE)),
             Map.entry("md", new FileType("text/markdown", KnowledgePreviewKind.MARKDOWN)),
+            // MDX is displayed as source text; never compile or execute uploaded JSX/JavaScript.
+            Map.entry("mdx", new FileType("text/plain", KnowledgePreviewKind.TEXT)),
             Map.entry("markdown", new FileType("text/markdown", KnowledgePreviewKind.MARKDOWN)),
             Map.entry("txt", new FileType("text/plain", KnowledgePreviewKind.TEXT)),
             Map.entry("csv", new FileType("text/csv", KnowledgePreviewKind.NONE)),

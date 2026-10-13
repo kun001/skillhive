@@ -26,6 +26,28 @@ curl -H "Authorization: Bearer $SKILLHIVE_TOKEN" https://skillhive.example.com/a
 
 ## MCP 服务
 
+### 远程连接
+
+后端提供 `/api/v1/mcp` Streamable HTTP 入口，随现有后端版本发布。部署包含该功能的版本后，支持自定义 Header 的 Agent 无需安装本地 MCP 程序：
+
+```json
+{
+  "mcpServers": {
+    "skillhive": {
+      "type": "http",
+      "url": "https://skillhive.example.com/api/v1/mcp",
+      "headers": { "Authorization": "Bearer <YOUR_READ_ONLY_TOKEN>" }
+    }
+  }
+}
+```
+
+在 Token 页面可复制当前实例地址的配置。仅授予 `skill:read` 和 / 或 `knowledge:read`；读取范围仍受团队成员、可见版本和下载权限控制，超级管理员 Token 也不能绕过团队读取权限。权限撤销和 Token 吊销会影响下一次调用。本地验证地址为 `http://localhost:3000/api/v1/mcp`。远程文件读取上限为 10 MiB。
+
+远程入口使用个人 Bearer Token，不提供 OAuth 登录；只支持 OAuth 授权且不能设置 Header 的客户端暂不适用。
+
+### 本地 stdio
+
 仓库中的 `mcp/` 是一个本地 stdio MCP 服务，让 Claude Code、Cursor 等 MCP 客户端用你的 Token 只读访问技能库和知识库：
 
 - **只读**：Token 带有发布、删除或 Token 管理权限时，服务拒绝启动。请创建「技能库 · 只读」和 / 或「知识库（只读）」的 Token。

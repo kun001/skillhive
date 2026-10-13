@@ -13,7 +13,7 @@ const TEXT_MIME_TYPES = new Set([
 ])
 
 const TEXT_EXTENSIONS = new Set([
-  'md', 'markdown', 'txt', 'text', 'csv', 'tsv', 'json', 'yaml', 'yml', 'toml', 'xml', 'html', 'htm', 'css',
+  'md', 'mdx', 'markdown', 'txt', 'text', 'csv', 'tsv', 'json', 'yaml', 'yml', 'toml', 'xml', 'html', 'htm', 'css',
   'js', 'mjs', 'cjs', 'ts', 'tsx', 'jsx', 'py', 'sh', 'bash', 'zsh', 'ps1', 'rb', 'go', 'java', 'kt', 'rs', 'c',
   'h', 'cpp', 'hpp', 'cs', 'php', 'sql', 'ini', 'cfg', 'conf', 'env', 'log', 'rst', 'adoc',
 ])

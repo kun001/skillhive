@@ -41,12 +41,12 @@ export function markdownImageUrls(content: string): string[] {
 }
 
 /** Images referenced by Markdown travel in the same request, rather than becoming separate documents. */
-export async function planUploads(items: UploadItem[], existing?: { sourcePath: string; paths: string[] }): Promise<UploadPlanEntry[]> {
+export async function planUploads(items: UploadItem[], existing?: { sourcePath: string; paths: string[] }, preserveFiles = false): Promise<UploadPlanEntry[]> {
   const consumed = new Set<string>()
   const entries: UploadPlanEntry[] = []
   const candidates = items.filter((item) => ['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(fileExtension(item.file.name)))
   // Selecting Markdown makes the accompanying images document assets, including unused ones.
-  if (items.some((item) => isMarkdown(item.file))) candidates.forEach((image) => consumed.add(image.id))
+  if (!preserveFiles && items.some((item) => isMarkdown(item.file))) candidates.forEach((image) => consumed.add(image.id))
   for (const item of items) {
     let sourcePath = uploadPath(item.file)
     if (existing && !item.file.webkitRelativePath && isMarkdown(item.file)) {
@@ -82,6 +82,7 @@ export async function planUploads(items: UploadItem[], existing?: { sourcePath: 
         if (invalid) entry.error ??= { key: invalid, path: url }
       }
       for (const image of candidates) {
+        if (preserveFiles) break
         if (entry.bundle.images.some((attachedImage) => attachedImage.itemId === image.id)) continue
         const path = image.file.webkitRelativePath || sourcePath.slice(0, sourcePath.lastIndexOf('/') + 1) + image.file.name
         if (attached.has(path)) entry.error ??= { key: 'knowledge.upload.imageAmbiguous', path }
@@ -96,5 +97,5 @@ export async function planUploads(items: UploadItem[], existing?: { sourcePath: 
       }
     } catch { entry.error = { key: 'knowledge.upload.markdownReadFailed' } }
   }
-  return entries.filter((entry) => !consumed.has(entry.item.id))
+  return preserveFiles ? entries : entries.filter((entry) => !consumed.has(entry.item.id))
 }

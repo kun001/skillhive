@@ -30,12 +30,12 @@ public class MemberResourceAccessConfig implements WebMvcConfigurer {
                 if (pattern == null || !(pattern.contains("/skills/") || pattern.contains("/knowledge/"))) return true;
                 Map<String, String> coordinates = (Map<String, String>) request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
                 Set<String> roles = (Set<String>) request.getAttribute("platformRoles");
-                if (pattern.contains("/knowledge/")) {
+                boolean read = Set.of("GET", "HEAD", "OPTIONS").contains(request.getMethod());
+                if (pattern.contains("/knowledge/") || read) {
                     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
                     roles = KnowledgeAppService.knowledgePlatformRoles(
                             authentication != null ? authentication.getPrincipal() : null, roles);
                 }
-                boolean read = Set.of("GET", "HEAD", "OPTIONS").contains(request.getMethod());
                 // Personal reactions do not modify team resources.
                 boolean reaction = pattern.endsWith("/star") || pattern.endsWith("/subscription") || pattern.endsWith("/rating")
                         || pattern.contains("/reviews") || pattern.endsWith("/reports");

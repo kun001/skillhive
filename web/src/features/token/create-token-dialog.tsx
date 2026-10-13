@@ -26,6 +26,7 @@ import { centeredToastOptions, toast } from '@/shared/lib/toast'
 import { formatLocalDateTime } from '@/shared/lib/date-time'
 import type { CreateTokenRequest, CreateTokenResponse } from '@/api/types'
 import { resolveTokenExpiresAt, toLocalDateTimeInputValue, type TokenExpirationMode } from './token-expiration'
+import { McpConnection } from './mcp-connection'
 import {
   DEFAULT_TOKEN_SCOPE_SELECTION,
   domainsForScopes,
@@ -314,6 +315,7 @@ export function CreateTokenDialog({ children, existingNames = [] }: CreateTokenD
                   {createdToken.token}
                 </div>
               </div>
+              <McpConnection token={createdToken.token} scopes={createdToken.scopes} />
               <div className="space-y-2">
                 <Label>{t('createToken.nameDisplay')}</Label>
                 <div className="text-sm break-all">{createdToken.name}</div>
