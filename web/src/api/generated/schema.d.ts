@@ -4480,6 +4480,7 @@ export interface components {
             timestamp?: string;
             requestId?: string;
         };
+        JsonNode: Record<string, never>;
         SessionBootstrapRequest: {
             provider: string;
         };
