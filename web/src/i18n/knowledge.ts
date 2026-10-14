@@ -3,7 +3,6 @@ export const knowledgeZh = {
   mdx: {
     mode: 'MDX 显示模式', source: '源码', preview: '预览', tabs: '内容标签', details: '展开详情', openLink: '打开链接',
     imageUnavailable: '配图不可用：{{name}}',
-    unsupported: '有 {{count}} 处语法不在支持范围内，已保留为源码，不会执行。',
     errors: { size: '文档超过 131,072 字符的预览限制，显示源码。', syntax: 'MDX 语法无法解析，显示原始源码。', complexity: '文档结构超过预览复杂度限制，显示源码。' },
     tones: { note: '说明', info: '信息', tip: '提示', warning: '注意', danger: '警告' },
   },
@@ -31,8 +30,8 @@ export const knowledgeZh = {
   baseDialog: {
     createTitle: '新建知识库',
     editTitle: '编辑知识库',
-    namespace: '团队空间',
-    namespacePlaceholder: '选择团队空间',
+    namespace: '团队命名空间',
+    namespacePlaceholder: '选择团队命名空间',
     name: '名称',
     namePlaceholder: '例如：员工制度',
     slug: '标识（可选）',
@@ -226,7 +225,6 @@ export const knowledgeEn: typeof knowledgeZh = {
   mdx: {
     mode: 'MDX display mode', source: 'Source', preview: 'Preview', tabs: 'Content tabs', details: 'Show details', openLink: 'Open link',
     imageUnavailable: 'Image unavailable: {{name}}',
-    unsupported: '{{count}} unsupported syntax sections are shown as inert source.',
     errors: { size: 'The document exceeds the 131,072-character preview limit. Showing source.', syntax: 'Unable to parse MDX syntax. Showing original source.', complexity: 'The document exceeds preview complexity limits. Showing source.' },
     tones: { note: 'Note', info: 'Information', tip: 'Tip', warning: 'Caution', danger: 'Warning' },
   },
@@ -254,8 +252,8 @@ export const knowledgeEn: typeof knowledgeZh = {
   baseDialog: {
     createTitle: 'New knowledge base',
     editTitle: 'Edit knowledge base',
-    namespace: 'Team space',
-    namespacePlaceholder: 'Choose a team space',
+    namespace: 'Team namespace',
+    namespacePlaceholder: 'Choose a team namespace',
     name: 'Name',
     namePlaceholder: 'e.g. Employee policies',
     slug: 'Slug (optional)',

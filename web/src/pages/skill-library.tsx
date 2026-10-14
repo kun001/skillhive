@@ -94,7 +94,6 @@ export function SkillLibraryPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 flex-wrap items-baseline gap-x-4 gap-y-2">
           <h1 className="text-3xl font-semibold text-foreground">{t('skillLibrary.title')}</h1>
-          <p className="text-sm text-muted-foreground">{t(`skillLibrary.${library}Description`)}{skills.data && (library === 'public' || isAuthenticated) ? ` · ${t('skillLibrary.count', { count: total })}` : ''}</p>
         </div>
         {canPublish ? <Link
           to="/dashboard/publish"

@@ -6,7 +6,7 @@ const termsDocuments = {
     eyebrow: '法律与政策',
     title: '服务条款',
     summary: '本条款适用于你访问和使用 SkillHive 提供的团队技能库、知识库、团队空间、审核治理、账号管理、API Token 与 MCP 接入等服务。使用本服务即表示你同意受本条款约束。',
-    lastUpdated: '最后更新：2026年10月11日',
+    lastUpdated: '最后更新：2026年10月14日',
     note: 'SkillHive 是私有部署软件，每个实例由部署它的组织（下称“运营方”）运营。运营方可以在本条款之外增加自己的内部规范、信息安全要求或可接受使用政策；两者冲突时，以运营方的规定为准。',
     sections: [
       {
@@ -30,6 +30,7 @@ const termsDocuments = {
         paragraphs: [
           '你保留对自己上传内容（技能包、知识库文件、说明、审核意见等）的权利，并授予运营方在提供服务所必需的范围内存储、复制、处理、预览、展示，以及按你设置的可见范围向有权限的成员分发这些内容的许可。',
           '你承诺有权上传这些内容，并对其合法性和准确性负责。',
+          'SkillHive 网站管理方（当前实例的运营方及其授权管理员）可以查看你上传的技能包、知识库文件及其历史版本，包括团队内上传的文件。请勿上传包含个人隐私、密码、API Token 或其他敏感信息的文件。',
         ],
         bullets: [
           '不得上传恶意代码、违法内容、侵权内容、欺诈性内容，或故意误导他人的技能和资料。',
@@ -94,7 +95,7 @@ const termsDocuments = {
     eyebrow: 'Legal',
     title: 'Terms of Service',
     summary: 'These terms apply when you access and use SkillHive services, including team skill libraries, knowledge bases, team spaces, review and governance, account management, API tokens, and MCP access. By using the service, you agree to these terms.',
-    lastUpdated: 'Last updated: October 11, 2026',
+    lastUpdated: 'Last updated: October 14, 2026',
     note: 'SkillHive is self-hosted software. Each instance is operated by the organization that deploys it (the "operator"). Operators may add their own internal rules, security requirements, or acceptable use policies; where they conflict with these terms, the operator\'s rules apply.',
     sections: [
       {
@@ -118,6 +119,7 @@ const termsDocuments = {
         paragraphs: [
           'You keep your rights in the content you upload (skill packages, knowledge files, descriptions, review comments, and so on), and you grant the operator a license to store, copy, process, preview, display, and distribute it to permitted members according to the visibility you choose, as needed to provide the service.',
           'You confirm that you have the right to upload the content and are responsible for its legality and accuracy.',
+          'The SkillHive website management team (the instance operator and its authorized administrators) can view your uploaded skill packages, knowledge files, and their previous versions, including files uploaded within teams. Do not upload files containing personal private information, passwords, API tokens, or other sensitive information.',
         ],
         bullets: [
           'Do not upload malicious code, unlawful, infringing, or fraudulent content, or skills and files that intentionally mislead others.',
