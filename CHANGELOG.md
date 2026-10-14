@@ -2,6 +2,22 @@
 
 这里记录版本改动；未发布的开发内容另列在“待发布 / Unreleased”章节。实际已上线的版本、日期和历史内容见 [站点更新日志](https://skillhive.team/changelog)，其源文件为 [releases.ts](web/src/features/changelog/releases.ts)。提交或本地验证不代表上线。
 
+## v0.3.0 — 2026-10-14
+
+### 中文
+
+- MCP 新增技能与知识文件上传及归档工具，读取、上传、删除分别授权，可限定团队空间和知识库。
+- 写入默认 7 天、最长 30 天有效期，逐次检查成员和业务权限；幂等重试不重复创建，同名内容不覆盖，删除保留历史版本与文件并记录审计。
+- Token 页面新增完整权限查看面板，统一 MCP 文案，完善文件夹上传和 Markdown / MDX 配图提示。
+
+### English
+
+- MCP adds skill and knowledge file uploads and archiving, with separate read, upload and delete grants restricted to selected spaces and knowledge bases.
+- Write tokens default to seven days and expire within thirty days. Every call checks membership and business permissions; idempotent retries prevent duplicates, existing names cannot be overwritten, and archiving retains history and files with audit records.
+- The Tokens page adds a full permissions panel, consistent MCP copy and clearer folder upload and Markdown / MDX image guidance.
+
+See [MCP permissions and writes](skillhive-docs/27-mcp-permissions-and-writes.md) and the [site changelog](https://skillhive.team/changelog).
+
 ## v0.2.0 — 2026-10-13
 
 本版本包含 MDX 受控预览、文件夹上传和远程 MCP。线上部署情况以站点更新日志为准。
@@ -17,7 +33,7 @@
 
 ### English
 
-Recorded on 2026-10-13. Implemented and verified locally; these changes are awaiting deployment. The release version and deployment date will be set when published.
+Deployed on 2026-10-13 as v0.2.0.
 
 - **MDX support**: upload, download and manage `.mdx` versions in knowledge bases. Controlled previews support Markdown, callouts, accordions, tabs, steps, cards and figures with a source toggle. Local raster images retain version and download permission checks. JavaScript, imports and arbitrary JSX are never executed; unsupported syntax remains inert source.
 - **Folder uploads preserve the hierarchy**: keep the selected top folder and subdirectories. Review the destination, file count and directory preview before confirming the upload. Empty directories cannot be uploaded through the browser.
