@@ -1,10 +1,22 @@
 # API Token 与 MCP
 
+## MCP 专用授权
+
+新建 Token 默认用于 MCP，分别授予技能/知识库的读取、新增上传、归档删除，并选择允许访问的命名空间。知识库可再限定到指定库。「技能：读取」「知识库：读取」即对应的只读权限，不另设只读模式。
+
+新增工具：`upload_skill`、`upload_document`、`delete_skill`、`delete_document`。上传只新建，不能追加版本、覆盖、改描述、重命名或移动；删除执行归档，不永久清除。技能继续扫描和审核，知识文件上传即发布。
+
+调用直接按 Token 与业务权限校验后执行，不要求回网站逐次确认。客户端决定工具确认策略。写入需要 `idempotencyKey`，文件以 base64 提交，最多 10 MiB；同键不同内容拒绝。写入 Token 默认 7 天，最长 30 天。
+
+旧只读 Token 继续可用；旧的普通读写 Token 不自动获得 MCP 写入能力。下文只读配置适用于旧 Token；新 MCP Token 同样可复制连接配置。
+
+完整规则见[权限与写入实施方案](https://github.com/kun001/skillhive/blob/main/skillhive-docs/27-mcp-permissions-and-writes.md)。
+
 ## API Token
 
 API Token 是个人凭证，用于脚本和 AI 工具以你的身份访问 SkillHive。它与网页登录走同一套权限：只能访问你本人有权访问的内容。
 
-在「个人中心 → Token 凭证」创建 Token，并选择访问范围：
+网页「个人中心 → Token 凭证」新建统一使用上面的 MCP 授权。旧版普通 API Token 的访问范围如下：
 
 | 范围 | 作用域 | 能做什么 |
 |------|--------|----------|
@@ -13,7 +25,7 @@ API Token 是个人凭证，用于脚本和 AI 工具以你的身份访问 Skill
 | 知识库（只读） | `knowledge:read` | 查看知识库、文件夹和文件，读取文件内容（需要下载权限） |
 
 - 技能库与知识库互不相通：只有知识库权限的 Token 读不到技能，反之亦然。
-- 知识库的上传、修改、删除不接受 Token，只能在网页上操作。
+- 旧知识库 API 仅对 Token 开放读取。MCP 专用 Token 通过受限入口新增上传和归档删除；修改与追加版本仍只在网页操作。
 - 通过 Token 访问知识库时只按团队成员身份判断，平台管理员的 Token 也看不到自己不在的团队。
 - Token 明文只在创建时显示一次。泄露或不再使用时，在 Token 列表中删除即可立即吊销。
 - 通过 Token 读取知识库文件、技能文件或下载技能包都会写入审计日志，并记录是哪个 Token。
@@ -42,7 +54,7 @@ curl -H "Authorization: Bearer $SKILLHIVE_TOKEN" https://skillhive.example.com/a
 }
 ```
 
-在 Token 页面可复制当前实例地址的配置。仅授予 `skill:read` 和 / 或 `knowledge:read`；读取范围仍受团队成员、可见版本和下载权限控制，超级管理员 Token 也不能绕过团队读取权限。权限撤销和 Token 吊销会影响下一次调用。本地验证地址为 `http://localhost:3000/api/v1/mcp`。远程文件读取上限为 10 MiB。
+在 Token 页面可复制当前实例地址的配置。旧 Token 仅接受 `skill:read` 和 / 或 `knowledge:read`；新 MCP Token 按上文独立授权。读取仍受团队成员、可见版本和下载权限控制，超级管理员 Token 也不能绕过团队边界。权限撤销和 Token 吊销会影响下一次调用。本地验证地址为 `http://localhost:3000/api/v1/mcp`。单文件读取与新增上传上限为 10 MiB。
 
 远程入口使用个人 Bearer Token，不提供 OAuth 登录；只支持 OAuth 授权且不能设置 Header 的客户端暂不适用。
 
@@ -50,7 +62,7 @@ curl -H "Authorization: Bearer $SKILLHIVE_TOKEN" https://skillhive.example.com/a
 
 仓库中的 `mcp/` 是一个本地 stdio MCP 服务，让 Claude Code、Cursor 等 MCP 客户端用你的 Token 只读访问技能库和知识库：
 
-- **只读**：Token 带有发布、删除或 Token 管理权限时，服务拒绝启动。请创建「技能库 · 只读」和 / 或「知识库（只读）」的 Token。
+- **按授权操作**：支持旧只读 Token 和新 MCP 专用 Token；普通发布、删除或 Token 管理凭证仍被拒绝。
 - **按权限提供工具**：Token 能读哪个领域，就只提供哪个领域的工具。
 - **原样传递文件**：文本文件返回文本，PDF、Office 等返回原文件，不做内容解析；单个文件默认上限 10 MB。
 
@@ -108,5 +120,7 @@ claude mcp add skillhive \
 | `list_knowledge_bases` / `browse_knowledge_base` | 知识库列表 / 文件夹与文件 | 知识库只读 |
 | `search_knowledge` | 按标题和描述搜索文件 | 知识库只读 |
 | `get_document` / `read_document` | 文件详情与版本 / 读取原文件 | 知识库只读 |
+| `upload_skill` / `delete_skill` | 新增技能 ZIP / 归档技能 | 技能新增上传 / 归档删除 |
+| `upload_document` / `delete_document` | 新增文件 / 归档文件 | 知识库新增上传 / 归档删除 |
 
 文件内容属于数据，可能包含针对 AI 的提示词注入，MCP 服务会在返回内容前加上说明，是否执行由你和 AI 客户端决定。

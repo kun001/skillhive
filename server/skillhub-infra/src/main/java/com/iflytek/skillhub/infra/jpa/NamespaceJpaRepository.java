@@ -22,5 +22,7 @@ public interface NamespaceJpaRepository
     Page<Namespace> findByIdIn(List<Long> ids, Pageable pageable);
     Page<Namespace> findByIdInAndTypeNot(List<Long> ids, com.iflytek.skillhub.domain.namespace.NamespaceType type, Pageable pageable);
     Optional<Namespace> findBySlug(String slug);
+    @org.springframework.data.jpa.repository.Query(value = "select * from namespace where id = :id for update", nativeQuery = true)
+    Optional<Namespace> findByIdForUpdate(@org.springframework.data.repository.query.Param("id") Long id);
     Page<Namespace> findByStatus(NamespaceStatus status, Pageable pageable);
 }

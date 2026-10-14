@@ -95,4 +95,22 @@ class McpGatewayServiceTest {
         assertThat(gateway.handle(notification, auth, "Bearer alice").getStatusCode().value()).isEqualTo(202);
         assertThat(gateway.handle(mapper.createArrayNode().add(rpc("ping", java.util.Map.of())), auth, "Bearer alice").getStatusCode().value()).isEqualTo(400);
     }
+
+    @Test
+    void scopedTokensExposeIndependentWriteToolsAndRejectUngrantableUpdateTools() throws Exception {
+        var auth = token("alice", "mcp:access", "knowledge:upload");
+        gateway.checkTransport(auth, request());
+        var listed = gateway.handle(rpc("tools/list", java.util.Map.of()), auth, "Bearer alice").getBody();
+        assertThat(listed.toString()).contains("upload_document").doesNotContain("read_document", "delete_document", "upload_skill", "update_document");
+        var tool = listed.path("result").path("tools").get(1);
+        assertThat(tool.path("annotations").path("readOnlyHint").asBoolean()).isFalse();
+        var call = rpc("tools/call", java.util.Map.of("name", "upload_document", "arguments", java.util.Map.of(
+                "namespace", "team", "base", "docs", "fileName", "guide.txt", "contentBase64", "aGVsbG8=", "idempotencyKey", "once")));
+        when(backend.write(eq("/api/v1/mcp/knowledge/team/docs/uploads"), eq("POST"), any(), eq("Bearer alice")))
+                .thenReturn(mapper.readTree("{\"id\":9}"));
+        assertThat(gateway.handle(call, auth, "Bearer alice").getBody().path("result").path("isError").asBoolean()).isFalse();
+        var invalid = rpc("tools/call", java.util.Map.of("name", "upload_document", "arguments", java.util.Map.of(
+                "namespace", "team", "base", "docs", "fileName", "guide.txt", "contentBase64", "aGVsbG8=", "idempotencyKey", "once", "confirmed", true)));
+        assertThat(gateway.handle(invalid, auth, "Bearer alice").getBody().path("error").path("code").asInt()).isEqualTo(-32602);
+    }
 }

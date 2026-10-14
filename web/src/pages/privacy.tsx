@@ -6,7 +6,7 @@ const privacyDocuments = {
     eyebrow: '法律与隐私',
     title: '隐私政策',
     summary: '本政策说明 SkillHive 在提供团队技能库、知识库、团队空间、账号登录、API Token 与 MCP 接入等服务时，如何收集、使用、共享并保护与你有关的信息。',
-    lastUpdated: '最后更新：2026年10月11日',
+    lastUpdated: '最后更新：2026年10月14日',
     note: 'SkillHive 是私有部署软件，每个实例由部署它的组织（下称“运营方”）运营。运营方决定实例的配置、数据存放位置和保留期限，并对其实例中的数据负责；隐私相关的请求请优先联系你所在实例的运营方或管理员。',
     sections: [
       {
@@ -41,7 +41,8 @@ const privacyDocuments = {
       {
         title: '4. 信息的可见范围与共享',
         paragraphs: [
-          '团队空间内的技能和知识库文件只对有权限的成员可见；文件的预览和下载还受成员下载权限控制。你在公共技能库中公开发布的技能、说明和部分个人资料（如显示名）可能被其他用户或匿名访客看到。',
+          '团队空间内的技能和知识库文件在网页和 API 中按成员权限控制；文件的预览和下载还受成员下载权限控制。你在公共技能库中公开发布的技能、说明和部分个人资料（如显示名）可能被其他用户或匿名访客看到。',
+          'SkillHive 网站管理方（当前实例的运营方及其授权管理员）可以查看用户上传的技能包、知识库文件及其历史版本，包括团队内上传的文件。请勿上传包含个人隐私、密码、API Token 或其他敏感信息的文件。',
           '运营方可能把数据交给其选择的基础设施处理，例如对象存储（本地磁盘、S3 或 MinIO）、邮件服务和日志或监控系统。若运营方为安全扫描启用了大模型分析，技能包内容会发送给其配置的大模型服务商。',
           '当你使用自己的 API Token 让 AI 工具（例如通过 MCP 服务）读取内容时，这些内容会传给你选择的 AI 工具及其服务商，由其按各自的政策处理。请只在你信任的工具中使用 Token。',
           '我们不出售你的个人信息。除提供服务所必需、遵守法律要求或保护实例和用户安全外，不向其他第三方共享。',
@@ -83,7 +84,7 @@ const privacyDocuments = {
     eyebrow: 'Legal',
     title: 'Privacy Policy',
     summary: 'This policy explains how SkillHive collects, uses, shares, and protects information when providing team skill libraries, knowledge bases, team spaces, sign-in, API tokens, and MCP access.',
-    lastUpdated: 'Last updated: October 11, 2026',
+    lastUpdated: 'Last updated: October 14, 2026',
     note: 'SkillHive is self-hosted software. Each instance is operated by the organization that deploys it (the "operator"), which decides the instance configuration, where data is stored and how long it is kept, and is responsible for the data in its instance. Please send privacy requests to your instance operator or administrator first.',
     sections: [
       {
@@ -118,7 +119,8 @@ const privacyDocuments = {
       {
         title: '4. Visibility and Sharing',
         paragraphs: [
-          'Skills and knowledge files in a team space are visible only to permitted members, and previews and downloads also depend on each member\'s download permission. Skills you publish to the public library, their descriptions, and some profile information (such as your display name) may be visible to other users or anonymous visitors.',
+          'Access to team skills and knowledge files through the website and APIs is controlled by member permissions, and previews and downloads also depend on each member\'s download permission. Skills you publish to the public library, their descriptions, and some profile information (such as your display name) may be visible to other users or anonymous visitors.',
+          'The SkillHive website management team (the instance operator and its authorized administrators) can view uploaded skill packages, knowledge files, and their previous versions, including files uploaded within teams. Do not upload files containing personal private information, passwords, API tokens, or other sensitive information.',
           'The operator may have data processed by infrastructure it chooses, such as object storage (local disk, S3, or MinIO), email services, and logging or monitoring systems. If the operator enables LLM analysis for security scanning, skill package contents are sent to the model provider it configures.',
           'When you let an AI tool read content with your own API token (for example through the MCP server), that content is passed to the AI tool you chose and its provider, which handle it under their own policies. Only use your tokens with tools you trust.',
           'We do not sell your personal information. We share it only as needed to provide the service, to comply with law, or to protect the instance and its users.',

@@ -346,6 +346,20 @@ public class SkillPublishService {
         );
     }
 
+    @Transactional
+    public PublishResult uploadNewFromEntries(String namespaceSlug, List<PackageEntry> entries,
+            String publisherId, SkillVisibility visibility, boolean publicNamespaceAllowed) {
+        return publishFromEntriesInternal(namespaceSlug, entries, publisherId, visibility, Set.of(),
+                false, false, publicNamespaceAllowed, true);
+    }
+
+    private PublishResult publishFromEntriesInternal(String namespaceSlug, List<PackageEntry> entries,
+            String publisherId, SkillVisibility visibility, Set<String> platformRoles, boolean confirmWarnings,
+            boolean forceAutoPublish, boolean bypassMembershipCheck) {
+        return publishFromEntriesInternal(namespaceSlug, entries, publisherId, visibility, platformRoles,
+                confirmWarnings, forceAutoPublish, bypassMembershipCheck, false);
+    }
+
     private PublishResult publishFromEntriesInternal(
             String namespaceSlug,
             List<PackageEntry> entries,
@@ -354,12 +368,15 @@ public class SkillPublishService {
             Set<String> platformRoles,
             boolean confirmWarnings,
             boolean forceAutoPublish,
-            boolean bypassMembershipCheck) {
+            boolean bypassMembershipCheck,
+            boolean newOnly) {
 
         // 1. Find namespace by slug
         Namespace namespace = namespaceRepository.findBySlug(namespaceSlug)
                 .orElseThrow(() -> new DomainBadRequestException("error.namespace.slug.notFound", namespaceSlug));
         assertNamespaceWritable(namespace);
+        // Serialize publication in a namespace, including web uploads, before checking new-only conflicts.
+        namespaceRepository.findByIdForUpdate(namespace.getId());
 
         boolean isSuperAdmin = platformRoles.contains("SUPER_ADMIN");
 
@@ -413,6 +430,9 @@ public class SkillPublishService {
 
         // 6. Find or create Skill record (with owner isolation)
         List<Skill> existingSkills = skillRepository.findByNamespaceIdAndSlug(namespace.getId(), skillSlug);
+        if (newOnly && !existingSkills.isEmpty()) {
+            throw new com.iflytek.skillhub.domain.shared.exception.DomainConflictException("error.skill.version.exists", skillSlug);
+        }
 
         // Check if any other owner's skill has published versions
         // Only PUBLISHED status blocks same-name publishing (UPLOADED/PENDING_REVIEW allowed)

@@ -28,13 +28,16 @@ public class TokenController extends BaseApiController {
 
     private final ApiTokenService apiTokenService;
     private final ApiTokenScopeService apiTokenScopeService;
+    private final com.iflytek.skillhub.service.mcp.McpTokenCreationService mcpTokens;
 
     public TokenController(ApiTokenService apiTokenService,
                            ApiTokenScopeService apiTokenScopeService,
-                           ApiResponseFactory responseFactory) {
+                           ApiResponseFactory responseFactory,
+                           com.iflytek.skillhub.service.mcp.McpTokenCreationService mcpTokens) {
         super(responseFactory);
         this.apiTokenService = apiTokenService;
         this.apiTokenScopeService = apiTokenScopeService;
+        this.mcpTokens = mcpTokens;
     }
 
     @PostMapping
@@ -43,7 +46,12 @@ public class TokenController extends BaseApiController {
             @Valid @RequestBody TokenCreateRequest request) {
         String scopeJson = apiTokenScopeService.toScopeJson(request.scopes());
 
-        var result = apiTokenService.rotateToken(principal.userId(), request.name(), scopeJson, request.expiresAt());
+        if (!request.mcp() && apiTokenScopeService.parseScopes(scopeJson).contains("mcp:access")) {
+            throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST,
+                    "MCP tokens require explicit resource grants");
+        }
+        var result = request.mcp() ? mcpTokens.create(principal, request)
+                : apiTokenService.rotateToken(principal.userId(), request.name(), scopeJson, request.expiresAt());
         return ok("response.success.created", new TokenCreateResponse(
                 result.rawToken(),
                 result.entity().getId(),
@@ -51,7 +59,7 @@ public class TokenController extends BaseApiController {
                 result.entity().getTokenPrefix(),
                 formatInstant(result.entity().getCreatedAt()),
                 formatInstant(result.entity().getExpiresAt()),
-                scopesOf(result.entity())
+                scopesOf(result.entity()), grantsOf(result.entity())
         ));
     }
 
@@ -68,7 +76,7 @@ public class TokenController extends BaseApiController {
             formatInstant(t.getCreatedAt()),
             formatInstant(t.getExpiresAt()),
             formatInstant(t.getLastUsedAt()),
-            scopesOf(t)
+            scopesOf(t), grantsOf(t)
         ));
         return ok("response.success.read", PageResponse.from(result));
     }
@@ -94,12 +102,18 @@ public class TokenController extends BaseApiController {
                 formatInstant(token.getCreatedAt()),
                 formatInstant(token.getExpiresAt()),
                 formatInstant(token.getLastUsedAt()),
-                scopesOf(token)
+                scopesOf(token), grantsOf(token)
         ));
     }
 
     private List<String> scopesOf(ApiToken token) {
         return apiTokenScopeService.parseScopes(token.getScopeJson()).stream().sorted().toList();
+    }
+
+    private com.iflytek.skillhub.auth.token.McpTokenGrants grantsOf(ApiToken token) {
+        if (token.getResourceGrantsJson() == null) return null;
+        try { return apiTokenScopeService.parseResourceGrants(token.getResourceGrantsJson()); }
+        catch (Exception invalid) { return new com.iflytek.skillhub.auth.token.McpTokenGrants(java.util.Set.of(), java.util.Set.of()); }
     }
 
     private String formatInstant(Instant value) {

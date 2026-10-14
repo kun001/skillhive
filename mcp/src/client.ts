@@ -63,6 +63,19 @@ export class SkillHiveClient {
     }
     return response
   }
+
+  async writeJson(path: string, method: 'POST' | 'DELETE', body?: unknown, query?: Query): Promise<unknown> {
+    if (!path.startsWith('/api/v1/mcp/')) throw new Error('Unsupported write endpoint')
+    const url = new URL(this.baseUrl + path)
+    for (const [key, value] of Object.entries(query ?? {})) if (value !== undefined) url.searchParams.set(key, String(value))
+    const response = await this.fetchImpl(url, { method, body: body === undefined ? undefined : JSON.stringify(body),
+      headers: { Authorization: `Bearer ${this.token}`, Accept: 'application/json', 'Content-Type': 'application/json' },
+      redirect: 'error', signal: AbortSignal.timeout(60_000) })
+    if (!response.ok) throw new SkillHiveError(response.status, await errorMessage(response))
+    const envelope = await response.json() as ApiEnvelope<unknown>
+    if (envelope.code !== 0) throw new SkillHiveError(response.status, envelope.msg ?? 'Operation failed')
+    return envelope.data
+  }
 }
 
 async function errorMessage(response: Response): Promise<string> {

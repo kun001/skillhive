@@ -2,8 +2,15 @@ import { describe, expect, it } from 'vitest'
 import { DEFAULT_TOKEN_SCOPE_SELECTION, domainsForScopes, scopesForSelection } from './token-scopes'
 
 describe('scopesForSelection', () => {
-  it('requests read-write skill scopes by default, without knowledge', () => {
-    expect(scopesForSelection(DEFAULT_TOKEN_SCOPE_SELECTION)).toEqual(['skill:read', 'skill:publish', 'skill:delete'])
+  it('defaults to read-only without knowledge or mutation access', () => {
+    expect(scopesForSelection(DEFAULT_TOKEN_SCOPE_SELECTION)).toEqual(['skill:read'])
+  })
+
+  it('grants MCP mutations independently without legacy publishing or update scopes', () => {
+    expect(scopesForSelection({ skill: 'none', knowledge: false, skillUpload: true, knowledgeDelete: true }, true))
+      .toEqual(['skill:upload', 'knowledge:delete'])
+    expect(domainsForScopes(['mcp:access', 'skill:read', 'skill:upload', 'knowledge:delete']))
+      .toEqual(['skillRead', 'skillUpload', 'knowledgeDelete'])
   })
 
   it('requests only skill:read for read-only skill access', () => {

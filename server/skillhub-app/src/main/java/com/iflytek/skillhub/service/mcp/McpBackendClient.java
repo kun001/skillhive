@@ -12,7 +12,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
- * Read-only loopback adapter. Every request re-enters the existing bearer, scope, membership,
+ * Loopback adapter. Every request re-enters the existing bearer, scope, membership,
  * visibility, download and audit guards. No shared credentials, cookies, redirects or user URLs.
  */
 @Component
@@ -51,6 +51,23 @@ public class McpBackendClient {
             byte[] bytes = input.readNBytes(MAX_RESPONSE_BYTES + 1);
             if (bytes.length > MAX_RESPONSE_BYTES) throw new IOException("Response exceeds the MCP size limit");
             return new File(bytes, response.headers().firstValue("Content-Type").orElse("application/octet-stream"));
+        }
+    }
+
+    public JsonNode write(String path, String method, JsonNode body, String authorization) throws IOException, InterruptedException {
+        if (!path.startsWith("/api/v1/mcp/")) throw new IllegalArgumentException("Unsupported mutation path");
+        var request = HttpRequest.newBuilder(URI.create(baseUrl + path)).timeout(Duration.ofSeconds(60))
+                .header("Authorization", authorization).header("Accept", "application/json")
+                .header("Content-Type", "application/json")
+                .method(method, body == null ? HttpRequest.BodyPublishers.noBody() : HttpRequest.BodyPublishers.ofString(body.toString())).build();
+        var response = http.send(request, HttpResponse.BodyHandlers.ofInputStream());
+        try (var input = response.body()) {
+            byte[] bytes = input.readNBytes(MAX_RESPONSE_BYTES + 1);
+            if (bytes.length > MAX_RESPONSE_BYTES) throw new IOException("Response exceeds the MCP size limit");
+            if (response.statusCode() != 200) throw new IOException("SkillHive denied or failed the operation (HTTP " + response.statusCode() + ")");
+            JsonNode envelope = mapper.readTree(bytes);
+            if (envelope.path("code").asInt(-1) != 0 || !envelope.has("data")) throw new IOException("Invalid backend response");
+            return envelope.get("data");
         }
     }
 }

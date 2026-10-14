@@ -9,8 +9,12 @@ public record SearchVisibilityScope(
         String userId,
         Set<Long> memberNamespaceIds,
         Set<Long> adminNamespaceIds,
-        boolean platformWideAccess
+        boolean platformWideAccess,
+        Set<Long> allowedNamespaceIds
 ) {
+    public SearchVisibilityScope(String userId, Set<Long> memberNamespaceIds, Set<Long> adminNamespaceIds, boolean platformWideAccess) {
+        this(userId, memberNamespaceIds, adminNamespaceIds, platformWideAccess, null);
+    }
     public SearchVisibilityScope(
             String userId,
             Set<Long> memberNamespaceIds,

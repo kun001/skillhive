@@ -45,6 +45,9 @@ public class MemberResourceAccessService {
                 && !com.iflytek.skillhub.domain.namespace.NamespaceAccessPolicy.canViewGlobal(roles)) {
             throw new com.iflytek.skillhub.domain.shared.exception.DomainForbiddenException("error.member.edit.denied");
         }
+        if (!com.iflytek.skillhub.auth.token.McpTokenGrants.namespaceAllowed(namespaceId)) {
+            throw new DomainNotFoundException("error.namespace.notFound", namespaceId);
+        }
         // Public skill reads still enforce visibility and version eligibility in the domain service.
         if (skillResource && !edit && isGlobal(namespaceId)) return;
         policy.assertRead(namespaceId, userId, roles);

@@ -87,8 +87,12 @@ public class MySkillAppService {
 
         Page<Skill> skillPage;
         if (normalizedFilter == MySkillFilter.HIDDEN) {
+            if (com.iflytek.skillhub.auth.token.McpTokenGrants.current() != null) {
+                return new PageResponse<>(List.of(), 0, page, size);
+            }
             skillPage = listHiddenSkills(page, size, keyword, namespace, platformRoles);
         } else if (normalizedFilter == MySkillFilter.ALL
+                && com.iflytek.skillhub.auth.token.McpTokenGrants.current() == null
                 && (keyword == null || keyword.isBlank())
                 && (namespace == null || namespace.isBlank())) {
             skillPage = skillRepository.findVisibleByOwnerId(userId, PageRequest.of(page, size));
@@ -119,7 +123,7 @@ public class MySkillAppService {
     public PageResponse<SkillSummaryResponse> listMyStars(String userId, int page, int size) {
         Page<com.iflytek.skillhub.domain.social.SkillStar> starPage = skillStarRepository.findByUserId(
                 userId,
-                PageRequest.of(page, size)
+                com.iflytek.skillhub.auth.token.McpTokenGrants.current() == null ? PageRequest.of(page, size) : org.springframework.data.domain.Pageable.unpaged()
         );
         List<com.iflytek.skillhub.domain.social.SkillStar> stars = starPage.getContent();
 
@@ -135,6 +139,11 @@ public class MySkillAppService {
                 .map(star -> skillsById.get(star.getSkillId()))
                 .filter(java.util.Objects::nonNull)
                 .toList();
+        if (com.iflytek.skillhub.auth.token.McpTokenGrants.current() != null) {
+            Page<Skill> allowed = page(mcpVisibleSkills(orderedSkills, userId), page, size);
+            return new PageResponse<>(skillIntroductionService.enrichSummaries(mySkillQueryRepository.getSkillSummaries(allowed.getContent(), userId)),
+                    allowed.getTotalElements(), page, size);
+        }
         List<SkillSummaryResponse> items = mySkillQueryRepository.getSkillSummaries(orderedSkills, userId);
 
         return new PageResponse<>(skillIntroductionService.enrichSummaries(items), starPage.getTotalElements(), starPage.getNumber(), starPage.getSize());
@@ -143,7 +152,7 @@ public class MySkillAppService {
     public PageResponse<SkillSummaryResponse> listMySubscriptions(String userId, int page, int size) {
         Page<com.iflytek.skillhub.domain.social.SkillSubscription> subPage = skillSubscriptionRepository.findByUserId(
                 userId,
-                PageRequest.of(page, size)
+                com.iflytek.skillhub.auth.token.McpTokenGrants.current() == null ? PageRequest.of(page, size) : org.springframework.data.domain.Pageable.unpaged()
         );
         List<com.iflytek.skillhub.domain.social.SkillSubscription> subs = subPage.getContent();
 
@@ -159,6 +168,11 @@ public class MySkillAppService {
                 .map(sub -> skillsById.get(sub.getSkillId()))
                 .filter(java.util.Objects::nonNull)
                 .toList();
+        if (com.iflytek.skillhub.auth.token.McpTokenGrants.current() != null) {
+            Page<Skill> allowed = page(mcpVisibleSkills(orderedSkills, userId), page, size);
+            return new PageResponse<>(skillIntroductionService.enrichSummaries(mySkillQueryRepository.getSkillSummaries(allowed.getContent(), userId)),
+                    allowed.getTotalElements(), page, size);
+        }
         List<SkillSummaryResponse> items = mySkillQueryRepository.getSkillSummaries(orderedSkills, userId);
 
         return new PageResponse<>(skillIntroductionService.enrichSummaries(items), subPage.getTotalElements(), subPage.getNumber(), subPage.getSize());
@@ -179,13 +193,37 @@ public class MySkillAppService {
         final Long finalNamespaceId = namespaceId;
         String normalizedKeyword = normalizeKeyword(keyword);
 
-        List<Skill> filtered = skills.stream()
+        List<Skill> filtered = mcpVisibleSkills(skills, userId).stream()
                 .filter(skill -> matchesNamespace(skill, finalNamespaceId))
                 .filter(skill -> matchesKeyword(skill, normalizedKeyword))
                 .filter(skill -> matchesFilter(skill, filter, platformRoles))
                 .toList();
 
         return page(filtered, page, size);
+    }
+
+    private List<Skill> mcpVisibleSkills(List<Skill> skills, String userId) {
+        var grants = com.iflytek.skillhub.auth.token.McpTokenGrants.current();
+        if (grants == null || skills.isEmpty()) return skills;
+        var attributes = (org.springframework.web.context.request.ServletRequestAttributes)
+                org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
+        Object projected = attributes.getRequest().getAttribute("userNsRoles");
+        java.util.Map<?, ?> memberships = projected instanceof java.util.Map<?, ?> map ? map : java.util.Map.of();
+        var namespaces = namespaceRepository.findByIdIn(skills.stream().map(Skill::getNamespaceId).distinct().toList()).stream()
+                .collect(java.util.stream.Collectors.toMap(Namespace::getId, java.util.function.Function.identity()));
+        var publishedIds = skillVersionRepository.findBySkillIdInAndStatus(skills.stream().map(Skill::getId).toList(),
+                com.iflytek.skillhub.domain.skill.SkillVersionStatus.PUBLISHED).stream()
+                .map(com.iflytek.skillhub.domain.skill.SkillVersion::getSkillId).collect(java.util.stream.Collectors.toSet());
+        return skills.stream().filter(skill -> {
+            Namespace namespace = namespaces.get(skill.getNamespaceId());
+            if (namespace == null || namespace.getStatus() == com.iflytek.skillhub.domain.namespace.NamespaceStatus.ARCHIVED
+                    || !grants.allowsNamespace(namespace.getId()) || skill.isHidden()) return false;
+            if (namespace.getType() != com.iflytek.skillhub.domain.namespace.NamespaceType.GLOBAL
+                    && !memberships.containsKey(namespace.getId())) return false;
+            return skill.getOwnerId().equals(userId)
+                    || skill.getVisibility() != com.iflytek.skillhub.domain.skill.SkillVisibility.PRIVATE
+                    && skill.getStatus() == com.iflytek.skillhub.domain.skill.SkillStatus.ACTIVE && publishedIds.contains(skill.getId());
+        }).toList();
     }
 
     private Long resolveNamespaceId(String namespace) {

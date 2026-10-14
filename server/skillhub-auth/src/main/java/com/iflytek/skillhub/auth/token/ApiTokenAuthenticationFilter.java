@@ -98,6 +98,15 @@ public class ApiTokenAuthenticationFilter extends OncePerRequestFilter {
                 .collect(Collectors.toSet());
             roles = PlatformRoleDefaults.withDefaultUserRole(roles);
             Set<String> scopes = apiTokenScopeService.parseScopes(apiToken.getScopeJson());
+            if (scopes.contains(ApiTokenScopes.MCP_ACCESS)) {
+                try {
+                    McpTokenGrants grants = apiTokenScopeService.parseResourceGrants(apiToken.getResourceGrantsJson());
+                    request.setAttribute(McpTokenGrants.ATTRIBUTE, grants);
+                } catch (Exception invalidGrants) {
+                    rejectBearer(request, response);
+                    return;
+                }
+            }
             PlatformPrincipal principal = new PlatformPrincipal(
                 userAccount.getId(), userAccount.getDisplayName(), userAccount.getEmail(),
                 userAccount.getAvatarUrl(), "api_token", roles

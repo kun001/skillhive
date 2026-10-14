@@ -20,6 +20,10 @@ public interface KnowledgeDocumentJpaRepository
         extends JpaRepository<KnowledgeDocument, Long>, JpaSpecificationExecutor<KnowledgeDocument> {
 
     boolean existsByKnowledgeBaseIdAndSlug(Long knowledgeBaseId, String slug);
+    @Query(value = "select exists(select 1 from knowledge_document d join knowledge_document_version v on v.id = d.published_version_id "
+            + "where d.knowledge_base_id = :baseId and d.status = 'ACTIVE' and d.folder_id is not distinct from :folderId "
+            + "and lower(v.source_filename) = lower(:filename))", nativeQuery = true)
+    boolean existsActiveFilename(@Param("baseId") Long baseId, @Param("folderId") Long folderId, @Param("filename") String filename);
 
     boolean existsByFolderIdAndStatus(Long folderId, KnowledgeDocumentStatus status);
 

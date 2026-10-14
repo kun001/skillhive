@@ -14,6 +14,20 @@ export interface ReleaseNote {
 // Confirm the date and image tag when deploying; Git submission is not deployment.
 export const releases: ReleaseNote[] = [
   {
+    id: '20261014-mcp-scoped-writes',
+    version: 'v0.3.0',
+    date: '2026-10-14',
+    title: { zh: 'MCP 新增上传、归档与资源范围授权', en: 'MCP uploads, archiving and resource grants' },
+    summary: { zh: '可分别授权 AI 工具读取、上传或删除技能与知识文件，并限定团队空间和知识库；个人中心可查看每个 Token 的完整权限。', en: 'Grant AI tools separate read, upload and delete permissions for skills and knowledge files, limited to selected spaces and knowledge bases. Inspect each token’s full permissions in your profile.' },
+    changes: [
+      { zh: '技能与知识文件各提供读取、新增上传和删除三项独立权限；Token 可限定团队空间与知识库，加入新团队不会自动扩大原授权。', en: 'Skills and knowledge files each have independent read, upload and delete permissions. Tokens can be restricted to selected spaces and knowledge bases; joining a new team does not expand existing grants.' },
+      { zh: '远程 HTTP 与本地 stdio 均支持上传新技能 ZIP、上传新知识文件及归档；同名内容拒绝覆盖，技能上传继续扫描和审核，知识文件上传即发布。', en: 'Remote HTTP and local stdio support new skill ZIP uploads, new knowledge file uploads and archiving. Existing names cannot be overwritten. Skills still pass scanning and review; knowledge files publish on upload.' },
+      { zh: '写入要求有效成员身份和业务权限，管理员 Token 也不能跨团队；写入凭证默认 7 天、最长 30 天，撤销或权限变更对后续调用生效。', en: 'Writes require current membership and business permissions, including administrator tokens. Write tokens default to seven days and expire within thirty days. Revocation and permission changes affect subsequent calls.' },
+      { zh: '写入要求幂等键，重复请求不会重复创建；删除按现有规则归档，保留历史版本与文件，写入操作记录审计。旧只读 Token 继续可用。', en: 'Writes require an idempotency key, so retries do not create duplicates. Deletions archive content under existing rules, retaining versions and files, and writes are audited. Existing read-only tokens remain supported.' },
+      { zh: 'Token 页面新增权限查看面板，统一 MCP 文案；文件夹上传和 Markdown / MDX 配图提示更清晰，技能库移除重复说明。', en: 'The Tokens page adds a permissions panel and consistent MCP wording. Folder upload and Markdown / MDX image guidance is clearer, and duplicate skill library copy has been removed.' },
+    ],
+  },
+  {
     id: '20261013-mdx-folder-remote-mcp',
     version: 'v0.2.0',
     date: '2026-10-13',

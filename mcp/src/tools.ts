@@ -83,6 +83,34 @@ export function registerTools(server: McpServer, client: SkillHiveClient, option
   if (options.access.knowledge) {
     registerKnowledgeTools(server, client, options)
   }
+  registerWriteTools(server, client, options)
+}
+
+function registerWriteTools(server: McpServer, client: SkillHiveClient, options: ToolOptions): void {
+  const coordinate = z.string().min(1).max(128).refine(value => !/[\\/]/.test(value) && value !== '.' && value !== '..')
+  const key = z.string().min(1).max(128).describe('Unique key; reuse only when retrying identical parameters')
+  const fileName = z.string().min(1).max(255).refine(value => !/[\\/]/.test(value))
+  const contentBase64 = z.string().min(1).max(13_981_016).describe('Base64 file bytes; maximum decoded size 10 MiB')
+  const write = { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false }
+  const destructive = { ...write, destructiveHint: true }
+  if (options.access.skillUpload) server.registerTool('upload_skill', {
+    title: 'Upload a new skill', description: 'Upload a new ZIP; rejects existing skills. Uses scanning and review without automatic approval.',
+    annotations: write, inputSchema: { namespace: coordinate, fileName, contentBase64, idempotencyKey: key,
+      visibility: z.enum(['PUBLIC', 'PRIVATE', 'NAMESPACE_ONLY']).optional() },
+  }, ({ namespace, ...body }) => run(async () => jsonContent(await client.writeJson(`/api/v1/mcp/skills/${seg(namespace)}/uploads`, 'POST', body))))
+  if (options.access.knowledgeUpload) server.registerTool('upload_document', {
+    title: 'Upload a new knowledge file', description: 'Create a new file in an authorized knowledge base; same-name conflicts are rejected. Published immediately.',
+    annotations: write, inputSchema: { namespace: coordinate, base: coordinate, fileName, contentBase64, idempotencyKey: key,
+      folderId: z.number().int().positive().optional(), title: z.string().max(256).optional(), description: z.string().max(4096).optional() },
+  }, ({ namespace, base, ...body }) => run(async () => jsonContent(await client.writeJson(`/api/v1/mcp/knowledge/${seg(namespace)}/${seg(base)}/uploads`, 'POST', body))))
+  if (options.access.skillDelete) server.registerTool('delete_skill', {
+    title: 'Archive a skill', description: 'Archive a skill you own or manage. No permanent purge or restore tool is exposed.',
+    annotations: destructive, inputSchema: { namespace: coordinate, slug: coordinate, idempotencyKey: key },
+  }, ({ namespace, slug, idempotencyKey }) => run(async () => jsonContent(await client.writeJson(`/api/v1/mcp/skills/${seg(namespace)}/${seg(slug)}`, 'DELETE', undefined, { idempotencyKey }))))
+  if (options.access.knowledgeDelete) server.registerTool('delete_document', {
+    title: 'Archive a knowledge file', description: 'Archive a file you own or manage. Historical bytes are not permanently purged.',
+    annotations: destructive, inputSchema: { documentId: z.number().int().positive(), idempotencyKey: key },
+  }, ({ documentId, idempotencyKey }) => run(async () => jsonContent(await client.writeJson(`/api/v1/mcp/knowledge/documents/${documentId}`, 'DELETE', undefined, { idempotencyKey }))))
 }
 
 function registerSkillTools(server: McpServer, client: SkillHiveClient, options: ToolOptions): void {

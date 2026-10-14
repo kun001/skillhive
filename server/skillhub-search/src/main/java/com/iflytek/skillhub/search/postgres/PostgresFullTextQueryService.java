@@ -157,6 +157,10 @@ public class PostgresFullTextQueryService implements SearchQueryService {
         sql.append(") ");
 
         // Namespace filtering
+        if (query.visibilityScope().allowedNamespaceIds() != null) {
+            sql.append(query.visibilityScope().allowedNamespaceIds().isEmpty() ? "AND 1 = 0 "
+                    : "AND d.namespace_id IN :allowedNamespaceIds ");
+        }
         if (query.namespaceId() != null) {
             sql.append("AND d.namespace_id = :namespaceId ");
         }
@@ -216,6 +220,9 @@ public class PostgresFullTextQueryService implements SearchQueryService {
         sql.append("LIMIT :limit OFFSET :offset");
 
         Query nativeQuery = entityManager.createNativeQuery(sql.toString());
+        if (query.visibilityScope().allowedNamespaceIds() != null && !query.visibilityScope().allowedNamespaceIds().isEmpty()) {
+            nativeQuery.setParameter("allowedNamespaceIds", query.visibilityScope().allowedNamespaceIds());
+        }
 
         if (query.visibilityScope().userId() != null) {
             nativeQuery.setParameter("memberNamespaceIds", memberNamespaceIds);
@@ -260,6 +267,9 @@ public class PostgresFullTextQueryService implements SearchQueryService {
         }
 
         Query countQuery = entityManager.createNativeQuery(countSql);
+        if (query.visibilityScope().allowedNamespaceIds() != null && !query.visibilityScope().allowedNamespaceIds().isEmpty()) {
+            countQuery.setParameter("allowedNamespaceIds", query.visibilityScope().allowedNamespaceIds());
+        }
 
         if (query.visibilityScope().userId() != null) {
             countQuery.setParameter("memberNamespaceIds", memberNamespaceIds);

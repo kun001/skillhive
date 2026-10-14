@@ -9,6 +9,7 @@ import java.util.Optional;
  */
 public interface KnowledgeBaseRepository {
     Optional<KnowledgeBase> findById(Long id);
+    default Optional<KnowledgeBase> findByIdForUpdate(Long id) { return findById(id); }
     Optional<KnowledgeBase> findByNamespaceIdAndSlug(Long namespaceId, String slug);
     List<KnowledgeBase> findByNamespaceIdInAndStatus(Collection<Long> namespaceIds, KnowledgeBaseStatus status);
     List<KnowledgeBase> findByStatus(KnowledgeBaseStatus status);

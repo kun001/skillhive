@@ -25,10 +25,10 @@ export const knowledgeKeys = {
   versions: (documentId: number) => [...knowledgeKeys.all, 'versions', documentId] as const,
 }
 
-export function useKnowledgeBases() {
+export function useKnowledgeBases(enabled = true) {
   const { user, isLoading } = useAuth()
   const scope = user?.userId ?? 'guest'
-  return useQuery({ queryKey: [...knowledgeKeys.bases(), scope], enabled: !isLoading, queryFn: () => knowledgeApi.listBases() })
+  return useQuery({ queryKey: [...knowledgeKeys.bases(), scope], enabled: enabled && !isLoading, queryFn: () => knowledgeApi.listBases() })
 }
 
 export function useKnowledgeBase(namespace: string, base: string) {

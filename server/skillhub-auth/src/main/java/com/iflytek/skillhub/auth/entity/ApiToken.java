@@ -35,6 +35,10 @@ public class ApiToken {
     @Column(name = "scope_json", nullable = false, columnDefinition = "jsonb")
     private String scopeJson;
 
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "resource_grants_json", columnDefinition = "jsonb")
+    private String resourceGrantsJson;
+
     @Column(name = "expires_at")
     private Instant expiresAt;
 
@@ -72,6 +76,8 @@ public class ApiToken {
     public String getTokenPrefix() { return tokenPrefix; }
     public String getTokenHash() { return tokenHash; }
     public String getScopeJson() { return scopeJson; }
+    public String getResourceGrantsJson() { return resourceGrantsJson; }
+    public void setResourceGrantsJson(String value) { resourceGrantsJson = value; }
     public Instant getExpiresAt() { return expiresAt; }
     public void setExpiresAt(Instant expiresAt) { this.expiresAt = expiresAt; }
     public Instant getLastUsedAt() { return lastUsedAt; }
@@ -81,7 +87,7 @@ public class ApiToken {
     public Instant getCreatedAt() { return createdAt; }
     public boolean isRevoked() { return revokedAt != null; }
     public boolean isExpired() { return isExpired(Instant.now(Clock.systemUTC())); }
-    public boolean isExpired(Instant referenceTime) { return expiresAt != null && expiresAt.isBefore(referenceTime); }
+    public boolean isExpired(Instant referenceTime) { return expiresAt != null && !expiresAt.isAfter(referenceTime); }
     public boolean isValid() { return !isRevoked() && !isExpired(); }
     public boolean isValid(Instant referenceTime) { return !isRevoked() && !isExpired(referenceTime); }
 }

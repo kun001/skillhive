@@ -102,6 +102,15 @@ public class ApiTokenService {
         return tokenRepo.findByTokenHash(hash).filter(token -> token.isValid(currentTime()));
     }
 
+    @Transactional
+    public TokenCreateResult rotateMcpToken(String userId, String name, String scopeJson,
+                                            String expiresAt, String resourceGrantsJson) {
+        TokenCreateResult result = rotateToken(userId, name, scopeJson, expiresAt);
+        result.entity().setResourceGrantsJson(resourceGrantsJson);
+        tokenRepo.save(result.entity());
+        return result;
+    }
+
     /**
      * Revokes a token owned by the current user. Missing or foreign tokens are
      * ignored to keep revocation idempotent.
@@ -124,7 +133,15 @@ public class ApiTokenService {
         ApiToken token = tokenRepo.findById(tokenId)
                 .filter(existing -> existing.getUserId().equals(userId) && existing.getRevokedAt() == null)
                 .orElseThrow(() -> new DomainNotFoundException("error.token.notFound", tokenId));
-        token.setExpiresAt(parseExpiresAt(expiresAt));
+        Instant updatedExpiry = parseExpiresAt(expiresAt);
+        if (token.getResourceGrantsJson() != null && (token.getScopeJson().contains("skill:upload")
+                || token.getScopeJson().contains("skill:delete") || token.getScopeJson().contains("knowledge:upload")
+                || token.getScopeJson().contains("knowledge:delete"))) {
+            if (updatedExpiry == null || updatedExpiry.isAfter(currentTime().plusSeconds(30L * 24 * 60 * 60))) {
+                throw new DomainBadRequestException("validation.token.expiresAt.future");
+            }
+        }
+        token.setExpiresAt(updatedExpiry);
         return tokenRepo.save(token);
     }
 

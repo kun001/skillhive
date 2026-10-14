@@ -183,6 +183,30 @@ class SkillPublishServiceTest {
     }
 
     @Test
+    void mcpUploadCannotAppendVersionOrTouchExistingSkillEvenWhenItIsUnpublished() throws Exception {
+        String content = "---\nname: existing\ndescription: Test\nversion: 2.0.0\n---\nBody";
+        List<PackageEntry> entries = List.of(new PackageEntry("SKILL.md", content.getBytes(StandardCharsets.UTF_8), content.length(), "text/markdown"));
+        Namespace namespace = new Namespace("team", "Team", "alice");
+        setId(namespace, 1L);
+        when(namespaceRepository.findBySlug("team")).thenReturn(Optional.of(namespace));
+        when(namespaceMemberRepository.findByNamespaceIdAndUserId(1L, "alice"))
+                .thenReturn(Optional.of(new NamespaceMember(1L, "alice", NamespaceRole.MEMBER)));
+        when(skillPackageValidator.validate(entries)).thenReturn(ValidationResult.pass());
+        when(skillMetadataParser.parse(content)).thenReturn(new SkillMetadata("existing", "Test", "2.0.0", "Body", Map.of()));
+        when(prePublishValidator.validate(any())).thenReturn(ValidationResult.pass());
+        when(skillRepository.findByNamespaceIdAndSlug(1L, "existing"))
+                .thenReturn(List.of(new Skill(1L, "existing", "alice", SkillVisibility.PRIVATE)));
+
+        assertThrows(com.iflytek.skillhub.domain.shared.exception.DomainConflictException.class,
+                () -> service.uploadNewFromEntries("team", entries, "alice", SkillVisibility.NAMESPACE_ONLY, false));
+        InOrder order = inOrder(namespaceRepository, skillRepository);
+        order.verify(namespaceRepository).findBySlug("team");
+        order.verify(namespaceRepository).findByIdForUpdate(1L);
+        order.verify(skillRepository).findByNamespaceIdAndSlug(1L, "existing");
+        verifyNoInteractions(objectStorageService, skillVersionRepository, skillFileRepository, eventPublisher);
+    }
+
+    @Test
     void testPublishFromEntries_ShouldRequireConfirmationWhenWarningsExist() throws Exception {
         String namespaceSlug = "test-ns";
         String publisherId = "user-100";

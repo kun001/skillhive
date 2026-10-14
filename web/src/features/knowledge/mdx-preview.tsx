@@ -84,7 +84,7 @@ export function MdxPreview({ content, resolveImageUrl }: { content: string; reso
     <div className="mb-4 flex gap-2" role="group" aria-label={t('knowledge.mdx.mode')}>
       {[false, true].map((value) => <button key={String(value)} type="button" aria-pressed={source === value} onClick={() => setSource(value)} className={cn('min-h-10 rounded-md border px-4 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring', source === value && 'bg-secondary font-medium')}>{t(value ? 'knowledge.mdx.source' : 'knowledge.mdx.preview')}</button>)}
     </div>
-    {!source && (parsed.error || parsed.unsupported > 0) && <p role="status" className="mb-4 rounded-md bg-secondary p-3 text-sm text-muted-foreground">{parsed.error ? t(`knowledge.mdx.errors.${parsed.error}`) : t('knowledge.mdx.unsupported', { count: parsed.unsupported })}</p>}
+    {!source && parsed.error && <p role="status" className="mb-4 rounded-md bg-secondary p-3 text-sm text-muted-foreground">{t(`knowledge.mdx.errors.${parsed.error}`)}</p>}
     {source || !parsed.tree ? <pre className="max-h-[70vh] overflow-auto whitespace-pre-wrap break-words font-mono text-[13px] leading-6">{content}</pre> :
       <div className="break-words text-sm leading-7 [&_h1]:mb-5 [&_h1]:text-2xl [&_h1]:font-bold [&_h2]:my-4 [&_h2]:text-xl [&_h2]:font-semibold [&_h3]:my-3 [&_h3]:text-lg [&_h3]:font-semibold [&_p]:my-3 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_blockquote]:border-l-4 [&_blockquote]:pl-4 [&_code]:rounded [&_code]:bg-secondary [&_code]:px-1 [&_table]:w-full [&_th]:border [&_th]:p-2 [&_td]:border [&_td]:p-2">
         <ReactMarkdown remarkPlugins={plugins} rehypePlugins={[[rehypeSanitize, schema], [rehypeHighlight, { detect: false, ignoreMissing: true }]]}

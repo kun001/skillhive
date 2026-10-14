@@ -153,7 +153,9 @@ public class SkillSearchAppService {
                 userId,
                 memberNamespaceIds,
                 adminNamespaceIds,
-                hasPlatformWideReadAccess(platformRoles)
+                hasPlatformWideReadAccess(platformRoles),
+                com.iflytek.skillhub.auth.token.McpTokenGrants.current() == null ? null
+                        : com.iflytek.skillhub.auth.token.McpTokenGrants.current().namespaceIds()
         );
     }
 
