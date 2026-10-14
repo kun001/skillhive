@@ -1445,6 +1445,10 @@
     "scopeSeparator": ", ",
     "scopeDomain": {
       "skillReadWrite": "Skills read-write",
+      "skillUpload": "Skills upload new",
+      "skillDelete": "Skills archive",
+      "knowledgeUpload": "Knowledge upload new",
+      "knowledgeDelete": "Knowledge archive",
       "skillRead": "Skills read-only",
       "knowledge": "Knowledge read-only",
       "tokenManage": "Token management"

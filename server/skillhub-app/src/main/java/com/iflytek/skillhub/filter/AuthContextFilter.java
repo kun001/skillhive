@@ -107,6 +107,11 @@ public class AuthContextFilter extends OncePerRequestFilter {
                             NamespaceMember::getNamespaceId,
                             NamespaceMember::getRole,
                             (left, right) -> left));
+            if (request.getAttribute(com.iflytek.skillhub.auth.token.McpTokenGrants.ATTRIBUTE)
+                    instanceof com.iflytek.skillhub.auth.token.McpTokenGrants grants) {
+                userNsRoles = userNsRoles.entrySet().stream().filter(entry -> grants.allowsNamespace(entry.getKey()))
+                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+            }
             request.setAttribute("userNsRoles", userNsRoles);
         }
 

@@ -37,6 +37,20 @@ const SKILL_FILES = [
 ]
 
 describe('tool registration', () => {
+  it('offers only independently granted write tools and sends mutations to restricted endpoints', async () => {
+    const { client, requested } = fakeSkillHive({
+      '/api/v1/mcp/knowledge/team/docs/uploads': () => new Response(JSON.stringify({ code: 0, data: { id: 19 } })),
+    })
+    const mcp = await connect(client, { skills: false, knowledge: false, knowledgeUpload: true })
+    const tools = (await mcp.listTools()).tools
+    expect(tools.map(tool => tool.name)).toEqual(['whoami', 'upload_document'])
+    expect(tools.find(tool => tool.name === 'upload_document')?.annotations?.readOnlyHint).toBe(false)
+    const result = await mcp.callTool({ name: 'upload_document', arguments: {
+      namespace: 'team', base: 'docs', fileName: 'guide.txt', contentBase64: 'aGVsbG8=', idempotencyKey: 'once',
+    } })
+    expect(result.isError).toBeFalsy()
+    expect(requested).toEqual(['/api/v1/mcp/knowledge/team/docs/uploads'])
+  })
   it('only offers tools for the domains the token can read', async () => {
     const { client } = fakeSkillHive({})
     const skillsOnly = await (await connect(client, { skills: true, knowledge: false })).listTools()

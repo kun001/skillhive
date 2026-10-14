@@ -1524,6 +1524,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/mcp/skills/{namespace}/uploads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["uploadSkill"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mcp/knowledge/{namespace}/{base}/uploads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["uploadDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/session/bootstrap": {
         parameters: {
             query?: never;
@@ -3740,6 +3772,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/mcp/skills/{namespace}/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["archiveSkill_2"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mcp/knowledge/documents/{documentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["deleteDocument"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/namespaces/{slug}/members/{userId}": {
         parameters: {
             query?: never;
@@ -4010,6 +4074,10 @@ export interface components {
             timestamp?: string;
             requestId?: string;
         };
+        McpTokenGrants: {
+            namespaceIds?: number[];
+            knowledgeBaseIds?: number[];
+        };
         TokenSummaryResponse: {
             /** Format: int64 */
             id?: number;
@@ -4019,6 +4087,7 @@ export interface components {
             expiresAt?: string;
             lastUsedAt?: string;
             scopes?: string[];
+            resourceGrants?: components["schemas"]["McpTokenGrants"];
         };
         AdminUserStatusUpdateRequest: {
             status: string;
@@ -4367,6 +4436,9 @@ export interface components {
             name: string;
             scopes?: string[];
             expiresAt?: string;
+            mcp?: boolean;
+            namespaceIds?: number[];
+            knowledgeBaseIds?: number[];
         };
         ApiResponseTokenCreateResponse: {
             /** Format: int32 */
@@ -4386,8 +4458,28 @@ export interface components {
             createdAt?: string;
             expiresAt?: string;
             scopes?: string[];
+            resourceGrants?: components["schemas"]["McpTokenGrants"];
         };
         JsonNode: Record<string, never>;
+        McpUploadRequest: {
+            idempotencyKey: string;
+            fileName: string;
+            contentBase64: string;
+            /** Format: int64 */
+            folderId?: number;
+            title?: string;
+            description?: string;
+            visibility?: string;
+        };
+        ApiResponseJsonNode: {
+            /** Format: int32 */
+            code?: number;
+            msg?: string;
+            data?: components["schemas"]["JsonNode"];
+            /** Format: date-time */
+            timestamp?: string;
+            requestId?: string;
+        };
         SessionBootstrapRequest: {
             provider: string;
         };
@@ -9254,6 +9346,59 @@ export interface operations {
             };
         };
     };
+    uploadSkill: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                namespace: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["McpUploadRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseJsonNode"];
+                };
+            };
+        };
+    };
+    uploadDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                namespace: string;
+                base: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["McpUploadRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseJsonNode"];
+                };
+            };
+        };
+    };
     bootstrapSession: {
         parameters: {
             query?: never;
@@ -12677,6 +12822,55 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseSkillDeleteResponse"];
+                };
+            };
+        };
+    };
+    archiveSkill_2: {
+        parameters: {
+            query: {
+                idempotencyKey: string;
+            };
+            header?: never;
+            path: {
+                namespace: string;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseJsonNode"];
+                };
+            };
+        };
+    };
+    deleteDocument: {
+        parameters: {
+            query: {
+                idempotencyKey: string;
+            };
+            header?: never;
+            path: {
+                documentId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseJsonNode"];
                 };
             };
         };

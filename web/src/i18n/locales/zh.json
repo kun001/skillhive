@@ -1445,6 +1445,10 @@
     "scopeSeparator": "、",
     "scopeDomain": {
       "skillReadWrite": "技能库读写",
+      "skillUpload": "技能新增上传",
+      "skillDelete": "技能归档删除",
+      "knowledgeUpload": "知识文件新增上传",
+      "knowledgeDelete": "知识文件归档删除",
       "skillRead": "技能库只读",
       "knowledge": "知识库只读",
       "tokenManage": "Token 管理"

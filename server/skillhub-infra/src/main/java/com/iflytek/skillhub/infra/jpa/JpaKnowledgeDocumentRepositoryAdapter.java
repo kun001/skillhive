@@ -39,6 +39,11 @@ public class JpaKnowledgeDocumentRepositoryAdapter implements KnowledgeDocumentR
     }
 
     @Override
+    public boolean existsActiveFilename(Long baseId, Long folderId, String filename) {
+        return delegate.existsActiveFilename(baseId, folderId, filename);
+    }
+
+    @Override
     public boolean existsByKnowledgeBaseIdAndSlug(Long knowledgeBaseId, String slug) {
         return delegate.existsByKnowledgeBaseIdAndSlug(knowledgeBaseId, slug);
     }

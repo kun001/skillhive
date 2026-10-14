@@ -52,6 +52,10 @@ public class ApiTokenScopeService {
         }
     }
 
+    public McpTokenGrants parseResourceGrants(String json) throws com.fasterxml.jackson.core.JsonProcessingException {
+        return java.util.Objects.requireNonNull(objectMapper.readValue(json, McpTokenGrants.class), "MCP resource grants are required");
+    }
+
     /**
      * Normalizes the scopes requested for a new token into stored JSON. No request means the
      * default skill profile; anything outside {@link ApiTokenScopes#SUPPORTED} is rejected so a
@@ -77,6 +81,17 @@ public class ApiTokenScopeService {
     }
 
     public AuthorizationDecision authorize(String method, String path, Set<String> tokenScopes) {
+        if (tokenScopes.contains(ApiTokenScopes.MCP_ACCESS)) {
+            String required = mcpWriteScope(method, path);
+            if (required != null) return tokenScopes.contains(required)
+                    ? AuthorizationDecision.allow() : AuthorizationDecision.missingScope(required);
+            if ("/api/v1/mcp".equals(path)) return AuthorizationDecision.allow();
+            // Dedicated credentials cannot bypass MCP by using legacy lifecycle/admin endpoints.
+            if (!"GET".equals(method) || !(path.equals("/api/v1/auth/me")
+                    || path.startsWith("/api/v1/me/") || path.startsWith("/api/v1/skills/")
+                    || path.startsWith("/api/v1/knowledge/") || path.equals("/api/web/skills")
+                    || path.startsWith("/api/web/skills/"))) return AuthorizationDecision.unsupported(path);
+        }
         RouteSecurityPolicyRegistry.ApiTokenAuthorizationDecision decision =
                 routeSecurityPolicyRegistry.authorizeApiToken(method, path, tokenScopes);
         if (decision.allowed()) {
@@ -86,6 +101,14 @@ public class ApiTokenScopeService {
             return AuthorizationDecision.missingScope(decision.requiredScope());
         }
         return AuthorizationDecision.unsupported(path);
+    }
+
+    private String mcpWriteScope(String method, String path) {
+        if ("POST".equals(method) && path.matches("/api/v1/mcp/skills/[^/]+/uploads")) return ApiTokenScopes.SKILL_UPLOAD;
+        if ("DELETE".equals(method) && path.matches("/api/v1/mcp/skills/[^/]+/[^/]+")) return ApiTokenScopes.SKILL_DELETE;
+        if ("POST".equals(method) && path.matches("/api/v1/mcp/knowledge/[^/]+/[^/]+/uploads")) return ApiTokenScopes.KNOWLEDGE_UPLOAD;
+        if ("DELETE".equals(method) && path.matches("/api/v1/mcp/knowledge/documents/[0-9]+")) return ApiTokenScopes.KNOWLEDGE_DELETE;
+        return null;
     }
 
     public record AuthorizationDecision(boolean allowed, String requiredScope, String message) {

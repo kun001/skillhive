@@ -2,7 +2,7 @@
   "name": "@skillhive/mcp-server",
   "version": "0.1.0",
   "private": true,
-  "description": "Read-only MCP server that lets AI clients read SkillHive skills and knowledge bases with a personal API token",
+  "description": "MCP server with scoped read, upload-new and archive access to SkillHive skills and knowledge files",
   "type": "module",
   "bin": {
     "skillhive-mcp": "dist/index.js"

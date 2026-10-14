@@ -29,9 +29,9 @@ import {
 import { Input } from '@/shared/ui/input'
 import type { ApiToken } from '@/api/types'
 import { resolveTokenExpiresAt, toLocalDateTimeInputValue, type TokenExpirationMode } from './token-expiration'
-import { domainsForScopes } from './token-scopes'
 import { TOKEN_TABLE_ACTIONS_HEAD_CLASS_NAME, TOKEN_TABLE_HEAD_CLASS_NAME } from './token-table-style'
 import { McpConnection } from './mcp-connection'
+import { TokenPermissionsDialog } from './token-permissions-dialog'
 
 const PAGE_SIZE = 10
 type TokenPage = { items: ApiToken[]; total: number; page: number; size: number }
@@ -55,6 +55,7 @@ export function TokenList() {
     tokenName?: string
     mode: TokenExpirationMode
     customExpiresAt: string
+    mcpWrites?: boolean
   }>({
     open: false,
     mode: 'never',
@@ -136,6 +137,7 @@ export function TokenList() {
       tokenName: token.name,
       mode: token.expiresAt ? 'custom' : 'never',
       customExpiresAt: token.expiresAt ? toLocalDateTimeInputValue(token.expiresAt) : '',
+      mcpWrites: !!token.scopes?.includes('mcp:access') && token.scopes.some(scope => ['skill:upload', 'skill:delete', 'knowledge:upload', 'knowledge:delete'].includes(scope)),
     })
   }
 
@@ -230,13 +232,7 @@ export function TokenList() {
                     </code>
                   </TableCell>
                   <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {domainsForScopes(token.scopes).map((domain) => (
-                        <span key={domain} className="whitespace-nowrap rounded bg-muted px-2 py-0.5 text-xs">
-                          {t(`token.scopeDomain.${domain}`)}
-                        </span>
-                      ))}
-                    </div>
+                    <TokenPermissionsDialog token={token} />
                   </TableCell>
                   <TableCell>{formatDate(token.createdAt)}</TableCell>
                   <TableCell>{formatDate(token.lastUsedAt)}</TableCell>
@@ -305,10 +301,10 @@ export function TokenList() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="never">{t('createToken.expirationNever')}</SelectItem>
+                  <SelectItem value="never" disabled={expirationDialog.mcpWrites}>{t('createToken.expirationNever')}</SelectItem>
                   <SelectItem value="7d">{t('createToken.expiration7d')}</SelectItem>
                   <SelectItem value="30d">{t('createToken.expiration30d')}</SelectItem>
-                  <SelectItem value="90d">{t('createToken.expiration90d')}</SelectItem>
+                  <SelectItem value="90d" disabled={expirationDialog.mcpWrites}>{t('createToken.expiration90d')}</SelectItem>
                   <SelectItem value="custom">{t('createToken.expirationCustom')}</SelectItem>
                 </SelectContent>
               </Select>
@@ -321,6 +317,7 @@ export function TokenList() {
                   type="datetime-local"
                   value={expirationDialog.customExpiresAt}
                   min={toLocalDateTimeInputValue(new Date())}
+                  max={expirationDialog.mcpWrites ? toLocalDateTimeInputValue(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)) : undefined}
                   onChange={(event) => setExpirationDialog((current) => ({
                     ...current,
                     customExpiresAt: event.target.value,

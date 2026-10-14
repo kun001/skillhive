@@ -445,6 +445,11 @@ public class KnowledgeAppService {
         requireContribute(context, caller);
         String extension = filePolicy.validateUpload(upload.filename(), upload.sizeBytes());
         String filename = filePolicy.validateFilename(upload.filename());
+        baseRepository.findByIdForUpdate(context.base().getId());
+        if (com.iflytek.skillhub.auth.token.McpTokenGrants.current() != null
+                && documentRepository.existsActiveFilename(context.base().getId(), folderId, filename)) {
+            throw new DomainConflictException("error.knowledge.folder.nameExists", filename);
+        }
         String sourcePath = validateMarkdownUpload(upload, markdown);
         requireFolderInBase(new KnowledgeFolderTree(folderRepository.findByKnowledgeBaseId(context.base().getId())), folderId);
 
@@ -743,6 +748,7 @@ public class KnowledgeAppService {
                     return new BaseContext(namespace, base, caller.roleIn(namespace));
                 })
                 .filter(context -> accessPolicy.canRead(context.namespace(), context.role(), caller.platformRoles()))
+                .filter(context -> com.iflytek.skillhub.auth.token.McpTokenGrants.baseAllowed(context.namespace().getId(), context.base().getId()))
                 .toList();
     }
 
@@ -755,6 +761,9 @@ public class KnowledgeAppService {
         KnowledgeBase base = baseRepository.findByNamespaceIdAndSlug(namespace.getId(), baseSlug)
                 .filter(candidate -> candidate.getStatus() == KnowledgeBaseStatus.ACTIVE)
                 .orElseThrow(() -> new DomainNotFoundException("error.knowledge.base.notFound", baseSlug));
+        if (!com.iflytek.skillhub.auth.token.McpTokenGrants.baseAllowed(namespace.getId(), base.getId())) {
+            throw new DomainNotFoundException("error.knowledge.base.notFound", baseSlug);
+        }
         return new BaseContext(namespace, base, role);
     }
 
@@ -769,7 +778,8 @@ public class KnowledgeAppService {
         Namespace namespace = namespaceRepository.findById(base.getNamespaceId())
                 .orElseThrow(() -> new DomainNotFoundException("error.knowledge.document.notFound", documentId));
         NamespaceRole role = caller.roleIn(namespace);
-        if (!accessPolicy.canRead(namespace, role, caller.platformRoles())) {
+        if (!com.iflytek.skillhub.auth.token.McpTokenGrants.baseAllowed(namespace.getId(), base.getId())
+                || !accessPolicy.canRead(namespace, role, caller.platformRoles())) {
             throw new DomainNotFoundException("error.knowledge.document.notFound", documentId);
         }
         return new DocumentContext(new BaseContext(namespace, base, role), document);

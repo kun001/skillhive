@@ -8,6 +8,15 @@ describe('checkTokenScopes', () => {
     expect(checkTokenScopes('api_token', ['knowledge:read', 'skill:read'])).toEqual({ skills: true, knowledge: true })
   })
 
+  it('accepts explicitly scoped MCP mutations but refuses unknown or legacy elevated scopes', () => {
+    expect(checkTokenScopes('api_token', ['mcp:access', 'knowledge:upload'])).toEqual({
+      skills: false, knowledge: false, skillUpload: false, skillDelete: false, knowledgeUpload: true, knowledgeDelete: false,
+    })
+    expect(() => checkTokenScopes('api_token', ['mcp:access', 'knowledge:update'])).toThrow(TokenScopeError)
+    expect(() => checkTokenScopes('api_token', ['mcp:access', 'skill:publish'])).toThrow(TokenScopeError)
+    expect(() => checkTokenScopes('api_token', ['knowledge:upload'])).toThrow(TokenScopeError)
+  })
+
   it('refuses tokens with write scopes', () => {
     expect(() => checkTokenScopes('api_token', ['skill:read', 'skill:publish', 'skill:delete']))
       .toThrow(/skill:publish, skill:delete/)

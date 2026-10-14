@@ -24,14 +24,18 @@ import {
 } from '@/shared/ui/select'
 import { centeredToastOptions, toast } from '@/shared/lib/toast'
 import { formatLocalDateTime } from '@/shared/lib/date-time'
-import type { CreateTokenRequest, CreateTokenResponse } from '@/api/types'
+import type { CreateTokenRequest, CreateTokenResponse, Namespace } from '@/api/types'
 import { resolveTokenExpiresAt, toLocalDateTimeInputValue, type TokenExpirationMode } from './token-expiration'
 import { McpConnection } from './mcp-connection'
+import { McpGrantSummary } from './mcp-grant-summary'
+import { TokenPermissionGrid } from './token-permission-grid'
+import { useMyNamespaces } from '@/features/namespace/use-my-namespaces'
+import { useKnowledgeBases } from '@/features/knowledge/use-knowledge-queries'
+import { useNamespaceDetail } from '@/shared/hooks/use-namespace-queries'
 import {
   DEFAULT_TOKEN_SCOPE_SELECTION,
   domainsForScopes,
   scopesForSelection,
-  type SkillAccess,
   type TokenScopeSelection,
 } from './token-scopes'
 
@@ -57,8 +61,20 @@ export function CreateTokenDialog({ children, existingNames = [] }: CreateTokenD
   const [expiresAtError, setExpiresAtError] = useState<string | null>(null)
   const [scopeSelection, setScopeSelection] = useState<TokenScopeSelection>(DEFAULT_TOKEN_SCOPE_SELECTION)
   const [scopeError, setScopeError] = useState<string | null>(null)
+  const [namespaceIds, setNamespaceIds] = useState<number[]>([])
+  const [limitBases, setLimitBases] = useState(false)
+  const [knowledgeBaseIds, setKnowledgeBaseIds] = useState<number[]>([])
+  const namespaces = useMyNamespaces(open)
+  const publicNamespace = useNamespaceDetail(open ? 'global' : '')
+  const selectableNamespaces: Namespace[] = [...(namespaces.data ?? [])]
+  if (publicNamespace.data && !selectableNamespaces.some(item => item.id === publicNamespace.data?.id)) {
+    selectableNamespaces.push(publicNamespace.data)
+  }
+  const bases = useKnowledgeBases(open)
   const [, copy] = useCopyToClipboard()
   const queryClient = useQueryClient()
+  const mcpWrites = !!(scopeSelection.skillUpload || scopeSelection.skillDelete || scopeSelection.knowledgeUpload || scopeSelection.knowledgeDelete)
+  const effectiveExpiration = mcpWrites && (expirationMode === 'never' || expirationMode === '90d') ? '7d' : expirationMode
 
   const normalizedName = name.trim()
   const hasDuplicateName = existingNames.some(
@@ -94,22 +110,33 @@ export function CreateTokenDialog({ children, existingNames = [] }: CreateTokenD
       return
     }
 
-    const scopes = scopesForSelection(scopeSelection)
+    const scopes = scopesForSelection(scopeSelection, true)
     if (scopes.length === 0) {
       setScopeError(t('createToken.scopeRequired'))
       return
     }
+    if (namespaceIds.length === 0 || limitBases && knowledgeBaseIds.length === 0
+        && (scopeSelection.knowledge || scopeSelection.knowledgeUpload || scopeSelection.knowledgeDelete)) {
+      setScopeError(t('mcp.resourcesRequired'))
+      return
+    }
 
-    const expiresAt = resolveTokenExpiresAt(expirationMode, customExpiresAt)
+    const expiresAt = resolveTokenExpiresAt(effectiveExpiration, customExpiresAt)
     if (expirationMode === 'custom' && !expiresAt) {
       setExpiresAtError(t('createToken.expiresAtRequired'))
+      return
+    }
+    if (mcpWrites && expiresAt && new Date(expiresAt).getTime() > Date.now() + 30 * 24 * 60 * 60 * 1000) {
+      setExpiresAtError(t('mcp.writeExpiryLimit'))
       return
     }
 
     setNameError(null)
     setExpiresAtError(null)
     setScopeError(null)
-    createMutation.mutate({ name: normalizedName, scopes, expiresAt })
+    createMutation.mutate({ name: normalizedName, scopes, expiresAt, mcp: true,
+      namespaceIds,
+      knowledgeBaseIds: limitBases ? knowledgeBaseIds : undefined })
   }
 
   const handleClose = () => {
@@ -156,6 +183,9 @@ export function CreateTokenDialog({ children, existingNames = [] }: CreateTokenD
     // is only meant to be shown once, immediately after a successful create call.
     <Dialog open={open} onOpenChange={(nextOpen) => {
       if (nextOpen) {
+        setNamespaceIds([])
+        setLimitBases(false)
+        setKnowledgeBaseIds([])
         setCreatedToken(null)
         setName('')
         setNameError(null)
@@ -169,7 +199,7 @@ export function CreateTokenDialog({ children, existingNames = [] }: CreateTokenD
       setOpen(nextOpen)
     }}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         {!createdToken ? (
           <>
             <DialogHeader className="text-center">
@@ -211,42 +241,34 @@ export function CreateTokenDialog({ children, existingNames = [] }: CreateTokenD
 
               <fieldset className="space-y-2">
                 <legend className="text-sm font-medium leading-none">{t('createToken.scopeLabel')}</legend>
-                <div className="space-y-2 rounded-md border border-border/60 p-3 text-sm">
-                  <Label htmlFor="token-skill-access" className="block font-medium">{t('createToken.scopeSkill')}</Label>
-                  <Select
-                    value={scopeSelection.skill}
-                    onValueChange={(value) => updateScope({ skill: value as SkillAccess })}
-                  >
-                    <SelectTrigger id="token-skill-access">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="readWrite">{t('createToken.scopeSkillReadWrite')}</SelectItem>
-                      <SelectItem value="read">{t('createToken.scopeSkillRead')}</SelectItem>
-                      <SelectItem value="none">{t('createToken.scopeSkillNone')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">{t('createToken.scopeSkillHint')}</p>
-                </div>
-                <label className="flex items-start gap-3 rounded-md border border-border/60 p-3 text-sm">
-                  <input
-                    type="checkbox"
-                    className="mt-0.5 h-4 w-4 accent-primary"
-                    checked={scopeSelection.knowledge}
-                    onChange={(e) => updateScope({ knowledge: e.target.checked })}
-                  />
-                  <span className="space-y-1">
-                    <span className="block font-medium">{t('createToken.scopeKnowledge')}</span>
-                    <span className="block text-xs text-muted-foreground">{t('createToken.scopeKnowledgeHint')}</span>
-                  </span>
-                </label>
+                <TokenPermissionGrid scopes={scopesForSelection(scopeSelection, true)} onChange={(key, checked) => {
+                  updateScope(key === 'skillRead' ? { skill: checked ? 'read' : 'none' }
+                    : key === 'knowledgeRead' ? { knowledge: checked } : { [key]: checked })
+                }} />
+                  <fieldset className="space-y-2 rounded-md border p-3">
+                    <legend className="text-sm font-medium">{t('mcp.namespaces')}</legend>
+                    {selectableNamespaces.filter(item => item.status === 'ACTIVE').map(item => <label key={item.id} className="flex items-center gap-2 text-sm">
+                      <input type="checkbox" checked={namespaceIds.includes(item.id)} onChange={event => {
+                        setNamespaceIds(current => event.target.checked ? [...current, item.id] : current.filter(id => id !== item.id))
+                        setKnowledgeBaseIds([])
+                      }} />{item.displayName} <span className="text-muted-foreground">@{item.slug}</span>
+                    </label>)}
+                    {namespaces.isLoading && <p role="status" className="text-sm">{t('mcp.loading')}</p>}
+                    {namespaces.isError && <p role="alert" className="text-sm text-destructive">{t('mcp.loadFailed')}</p>}
+                  </fieldset>
+                  {(scopeSelection.knowledge || scopeSelection.knowledgeUpload || scopeSelection.knowledgeDelete) && <fieldset className="space-y-2 rounded-md border p-3">
+                    <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={limitBases} onChange={event => setLimitBases(event.target.checked)} />{t('mcp.limitBases')}</label>
+                    {limitBases && bases.data?.filter(base => namespaces.data?.some(item => namespaceIds.includes(item.id) && item.slug === base.namespace)).map(base => <label key={base.id} className="flex items-center gap-2 text-sm">
+                      <input type="checkbox" checked={knowledgeBaseIds.includes(base.id)} onChange={event => setKnowledgeBaseIds(current => event.target.checked ? [...current, base.id] : current.filter(id => id !== base.id))} />{base.displayName}
+                    </label>)}
+                  </fieldset>}
                 {scopeError ? <p className="text-xs text-red-600">{scopeError}</p> : null}
               </fieldset>
 
               <div className="space-y-2">
                 <Label htmlFor="token-expiration">{t('createToken.expirationLabel')}</Label>
                 <Select
-                  value={expirationMode}
+                  value={effectiveExpiration}
                   onValueChange={(value) => {
                     setExpirationMode(value as TokenExpirationMode)
                     setExpiresAtError(null)
@@ -256,10 +278,10 @@ export function CreateTokenDialog({ children, existingNames = [] }: CreateTokenD
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="never">{t('createToken.expirationNever')}</SelectItem>
+                    <SelectItem value="never" disabled={mcpWrites}>{t('createToken.expirationNever')}</SelectItem>
                     <SelectItem value="7d">{t('createToken.expiration7d')}</SelectItem>
                     <SelectItem value="30d">{t('createToken.expiration30d')}</SelectItem>
-                    <SelectItem value="90d">{t('createToken.expiration90d')}</SelectItem>
+                    <SelectItem value="90d" disabled={mcpWrites}>{t('createToken.expiration90d')}</SelectItem>
                     <SelectItem value="custom">{t('createToken.expirationCustom')}</SelectItem>
                   </SelectContent>
                 </Select>
@@ -269,6 +291,7 @@ export function CreateTokenDialog({ children, existingNames = [] }: CreateTokenD
                     type="datetime-local"
                     value={customExpiresAt}
                     min={minDateTime}
+                    max={mcpWrites ? toLocalDateTimeInputValue(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)) : undefined}
                     onChange={(e) => {
                       setCustomExpiresAt(e.target.value)
                       if (expiresAtError) {
@@ -280,7 +303,7 @@ export function CreateTokenDialog({ children, existingNames = [] }: CreateTokenD
                 {expiresAtError ? (
                   <p className="text-xs text-red-600">{expiresAtError}</p>
                 ) : (
-                  <p className="text-xs text-muted-foreground">{t('createToken.expirationHint')}</p>
+                  <p className="text-xs text-muted-foreground">{t(mcpWrites ? 'mcp.writeExpiryHint' : 'createToken.expirationHint')}</p>
                 )}
               </div>
             </div>
@@ -294,7 +317,7 @@ export function CreateTokenDialog({ children, existingNames = [] }: CreateTokenD
               <Button
                 onClick={handleCreate}
                 disabled={!normalizedName || hasDuplicateName || createMutation.isPending
-                  || scopesForSelection(scopeSelection).length === 0}
+                  || scopesForSelection(scopeSelection, true).length === 0}
               >
                 {createMutation.isPending ? t('createToken.creating') : t('createToken.create')}
               </Button>
@@ -325,6 +348,7 @@ export function CreateTokenDialog({ children, existingNames = [] }: CreateTokenD
                 <div className="text-sm">
                   {domainsForScopes(createdToken.scopes).map((domain) => t(`token.scopeDomain.${domain}`)).join(t('token.scopeSeparator'))}
                 </div>
+                <McpGrantSummary grants={createdToken.resourceGrants} />
               </div>
               <div className="space-y-2">
                 <Label>{t('createToken.expiresAtDisplay')}</Label>

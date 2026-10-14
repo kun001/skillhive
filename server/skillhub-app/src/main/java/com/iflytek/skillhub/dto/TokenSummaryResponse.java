@@ -9,5 +9,9 @@ public record TokenSummaryResponse(
         String createdAt,
         String expiresAt,
         String lastUsedAt,
-        List<String> scopes
-) {}
+        List<String> scopes,
+        com.iflytek.skillhub.auth.token.McpTokenGrants resourceGrants
+) {
+    public TokenSummaryResponse(Long id, String name, String prefix, String createdAt, String expiresAt,
+            String lastUsedAt, List<String> scopes) { this(id, name, prefix, createdAt, expiresAt, lastUsedAt, scopes, null); }
+}

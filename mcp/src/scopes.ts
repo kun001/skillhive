@@ -4,6 +4,10 @@ export const WRITE_SCOPES = ['skill:publish', 'skill:delete', 'token:manage'] as
 export interface ReadAccess {
   skills: boolean
   knowledge: boolean
+  skillUpload?: boolean
+  skillDelete?: boolean
+  knowledgeUpload?: boolean
+  knowledgeDelete?: boolean
 }
 
 export class TokenScopeError extends Error {}
@@ -17,14 +21,20 @@ export function checkTokenScopes(oauthProvider: string | undefined, tokenScopes:
     throw new TokenScopeError(
       'SkillHive did not report the token scopes; upgrade SkillHive to a version that supports the MCP server')
   }
-  const writeScopes = tokenScopes.filter((scope) => (WRITE_SCOPES as readonly string[]).includes(scope))
+  const dedicated = tokenScopes.includes('mcp:access')
+  const allowed = dedicated
+    ? ['mcp:access', 'skill:read', 'skill:upload', 'skill:delete', 'knowledge:read', 'knowledge:upload', 'knowledge:delete']
+    : ['skill:read', 'knowledge:read']
+  const writeScopes = tokenScopes.filter((scope) => !allowed.includes(scope))
   if (writeScopes.length > 0) {
     throw new TokenScopeError(
       `The token has write scopes (${writeScopes.join(', ')}). The MCP server is read-only: create a token `
       + 'with only "Skills (read)" and/or "Knowledge (read-only)" access and use it instead')
   }
-  const access = { skills: tokenScopes.includes('skill:read'), knowledge: tokenScopes.includes('knowledge:read') }
-  if (!access.skills && !access.knowledge) {
+  const access: ReadAccess = { skills: tokenScopes.includes('skill:read'), knowledge: tokenScopes.includes('knowledge:read') }
+  if (dedicated) Object.assign(access, { skillUpload: tokenScopes.includes('skill:upload'), skillDelete: tokenScopes.includes('skill:delete'),
+    knowledgeUpload: tokenScopes.includes('knowledge:upload'), knowledgeDelete: tokenScopes.includes('knowledge:delete') })
+  if (!Object.values(access).some(Boolean)) {
     throw new TokenScopeError('The token has neither skill:read nor knowledge:read, so there is nothing to read')
   }
   return access
