@@ -4,6 +4,10 @@
 
 ## 待发布 / Unreleased
 
+暂无。
+
+## v0.4.0 — 2026-10-15
+
 ### 中文
 
 - 产品重新定位为“团队 Agent 的私有上下文中心”，首页重新设计：Agent 调用演示、团队与 Agent 之间的上下文流向图、治理与审计、与网盘和 RAG 平台的对比，以及可直接复制的 MCP 配置。README 与文档站同步新定位，详见 [产品定位](skillhive-docs/28-product-positioning.md)。
