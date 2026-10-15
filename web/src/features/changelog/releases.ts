@@ -14,6 +14,20 @@ export interface ReleaseNote {
 // Confirm the date and image tag when deploying; Git submission is not deployment.
 export const releases: ReleaseNote[] = [
   {
+    id: '20261015-mcp-knowledge-crud',
+    version: 'v0.4.1',
+    date: '2026-10-15',
+    title: { zh: 'MCP 支持知识库增删查改与文件版本更新', en: 'MCP knowledge management and file version updates' },
+    summary: { zh: 'Agent 可通过远程 HTTP 或本地 stdio 管理知识库和目录、修改文件信息并上传新版本，新增操作分别授权。', en: 'Agents can manage knowledge bases and folders, edit file metadata and upload new versions over remote HTTP or local stdio, with separate grants for the new operations.' },
+    changes: [
+      { zh: '新增知识库详情、新建、修改和删除工具，以及目录的新建、修改和删除工具；知识库管理要求团队所有者或管理员权限，目录操作沿用现有业务权限。', en: 'Added tools to inspect, create, update and delete knowledge bases, and create, update and delete folders. Base management requires team owner or administrator permissions; folder operations follow existing business permissions.' },
+      { zh: '支持修改文件标题、描述和所在目录，以及上传新版本；版本上传须匹配当前版本，保留历史文件，并发修改不会静默覆盖。', en: 'Edit file titles, descriptions and folders, and upload new versions. Uploads must match the current version, retain historical files and reject conflicting concurrent changes.' },
+      { zh: 'Token 新增独立的“更新知识文件”和“管理知识库与目录”授权，可在创建和查看权限面板中设置与核对；旧 Token 不会自动获得新权限。', en: 'Tokens gain independent grants for updating knowledge files and managing bases and folders, shown in both creation and permission panels. Existing tokens do not gain new permissions automatically.' },
+      { zh: '写入继续检查资源范围和实时业务权限，支持幂等与审计；非空目录不能删除，知识库须清空有效文件后才能归档，保留历史版本。', en: 'Writes continue to check resource ceilings and current business permissions, with idempotency and auditing. Nonempty folders cannot be deleted; bases can be archived only after active files are removed, retaining version history.' },
+      { zh: '更新首页间距、文件摘要标签与中英文 README，补充 MCP 使用文档和可复用回归脚本。', en: 'Refined homepage spacing, file summary labels and bilingual READMEs, with updated MCP documentation and a reusable regression script.' },
+    ],
+  },
+  {
     id: '20261015-agent-context-center',
     version: 'v0.4.0',
     date: '2026-10-15',

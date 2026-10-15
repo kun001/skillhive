@@ -110,6 +110,14 @@ public class ApiTokenScopeService {
         if ("DELETE".equals(method) && path.matches("/api/v1/mcp/skills/[^/]+/[^/]+")) return ApiTokenScopes.SKILL_DELETE;
         if ("POST".equals(method) && path.matches("/api/v1/mcp/knowledge/[^/]+/[^/]+/uploads")) return ApiTokenScopes.KNOWLEDGE_UPLOAD;
         if ("DELETE".equals(method) && path.matches("/api/v1/mcp/knowledge/documents/[0-9]+")) return ApiTokenScopes.KNOWLEDGE_DELETE;
+        if ("PUT".equals(method) && path.matches("/api/v1/mcp/knowledge/documents/[0-9]+")
+                || "POST".equals(method) && path.matches("/api/v1/mcp/knowledge/documents/[0-9]+/versions"))
+            return ApiTokenScopes.KNOWLEDGE_UPDATE;
+        if ("POST".equals(method) && path.equals("/api/v1/mcp/knowledge/bases")
+                || Set.of("PUT", "DELETE").contains(method) && path.matches("/api/v1/mcp/knowledge/bases/[^/]+/[^/]+")
+                || "POST".equals(method) && path.matches("/api/v1/mcp/knowledge/bases/[^/]+/[^/]+/folders")
+                || Set.of("PUT", "DELETE").contains(method) && path.matches("/api/v1/mcp/knowledge/bases/[^/]+/[^/]+/folders/[0-9]+"))
+            return ApiTokenScopes.KNOWLEDGE_MANAGE;
         return null;
     }
 

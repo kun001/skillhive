@@ -28,8 +28,9 @@ class McpWriteServiceTest {
     private final KnowledgeAppService knowledge = mock(KnowledgeAppService.class);
     private final JdbcTemplate jdbc = mock(JdbcTemplate.class);
     private final ObjectMapper mapper = new ObjectMapper();
+    private final KnowledgeBaseRepository bases = mock(KnowledgeBaseRepository.class);
     private final McpWriteService service = new McpWriteService(namespaces, members, mock(SkillRepository.class),
-            mock(KnowledgeDocumentRepository.class), mock(KnowledgeBaseRepository.class), mock(SkillPublishService.class),
+            mock(KnowledgeDocumentRepository.class), bases, mock(SkillPublishService.class),
             mock(SkillGovernanceService.class), mock(SkillPackageArchiveExtractor.class), knowledge, jdbc, mapper, mock(AuditLogService.class));
     private final PlatformPrincipal actor = new PlatformPrincipal("alice", "Alice", null, null, "api_token", Set.of("SUPER_ADMIN"));
     private final McpUploadRequest file = new McpUploadRequest("retry", "guide.txt", "aGVsbG8=", null, null, null, null);
@@ -43,6 +44,9 @@ class McpWriteServiceTest {
         var team = new Namespace("team", "Team", "alice");
         ReflectionTestUtils.setField(team, "id", 1L);
         when(namespaces.findBySlug("team")).thenReturn(Optional.of(team));
+        var base = new KnowledgeBase(1L, "docs", "Docs", null, "alice");
+        ReflectionTestUtils.setField(base, "id", 4L);
+        when(bases.findByNamespaceIdAndSlugForUpdate(1L, "docs")).thenReturn(Optional.of(base));
         return team;
     }
     @Test void administratorTokenCannotWriteOutsideMembershipOrExplicitResourceGrant() {

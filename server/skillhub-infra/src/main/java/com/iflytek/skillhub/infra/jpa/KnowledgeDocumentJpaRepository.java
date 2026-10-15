@@ -5,11 +5,13 @@ import com.iflytek.skillhub.domain.knowledge.KnowledgeDocumentStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Spring Data repository for knowledge documents; exposed to the domain through
@@ -18,6 +20,10 @@ import java.util.List;
 @Repository
 public interface KnowledgeDocumentJpaRepository
         extends JpaRepository<KnowledgeDocument, Long>, JpaSpecificationExecutor<KnowledgeDocument> {
+
+    @Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("select d from KnowledgeDocument d where d.id = :id")
+    Optional<KnowledgeDocument> findByIdForUpdate(@Param("id") Long id);
 
     boolean existsByKnowledgeBaseIdAndSlug(Long knowledgeBaseId, String slug);
     @Query(value = "select exists(select 1 from knowledge_document d join knowledge_document_version v on v.id = d.published_version_id "

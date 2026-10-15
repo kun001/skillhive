@@ -13,7 +13,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache--2.0-blue.svg" alt="License: Apache-2.0" /></a>
   <a href="https://github.com/kun001/skillhive/releases"><img src="https://img.shields.io/github/v/release/kun001/skillhive?label=release" alt="Latest release" /></a>
   <img src="https://img.shields.io/badge/Deploy-Self--hosted%20·%20Docker%20Compose-2496ed" alt="Self-hosted with Docker Compose" />
-  <a href="#mcp-hand-team-context-to-your-agents"><img src="https://img.shields.io/badge/AI%20access-MCP%20read--only-7c3aed" alt="Read-only MCP access" /></a>
+  <a href="#mcp-hand-team-context-to-your-agents"><img src="https://img.shields.io/badge/AI%20access-MCP-7c3aed" alt="Scoped MCP access" /></a>
 </p>
 
 <p align="center">
@@ -108,7 +108,7 @@ Demo site: **[https://skillhive.team](https://skillhive.team)**, running the lat
 
 ## MCP: hand team context to your agents
 
-SkillHive provides read-only [MCP access](mcp/README.md) over remote Streamable HTTP or local stdio. Once configured, your AI tool uses your own API token to search, browse and read the skills and knowledge files you can access, with no manual downloading or copy-pasting. Read results are passed to the AI tool you choose.
+SkillHive provides operation-scoped [MCP access](mcp/README.md) over remote Streamable HTTP or local stdio. Once configured, your AI tool uses your own API token to search, browse and read the skills and knowledge files you can access, with no manual downloading or copy-pasting. Read results are passed to the AI tool you choose.
 
 Ask your AI things like:
 
@@ -118,19 +118,21 @@ Ask your AI things like:
 
 | Property | What it means |
 | --- | --- |
-| **Read-only** | Use only `skill:read` and/or `knowledge:read`. Tokens with write scopes are refused, so the AI cannot change anything. |
+| **Operation-scoped** | Grant reads, new uploads, archiving, file updates and versions, and base/folder management separately. Legacy read-only tokens remain compatible. |
 | **Team permissions apply** | Read published public skills and authorized content in your teams. Reading team files requires download permission; platform administrators' tokens cannot bypass membership or download checks. |
 | **Readable by agents** | Word, PowerPoint, Excel, PDF and text files are extracted to Markdown on the server; `read_document` returns that Markdown by default (with the AI summary when available) and other files unchanged. |
 | **Traceable** | Knowledge files and skill files read with a token are recorded in the audit log, naming the token. |
 | **Grant only what you need** | Skill and knowledge access are granted separately, and the MCP server only offers the tools for what the token can reach. |
 
-13 tools: `whoami`, `get_team_guide` (team guide); skills: `search_skills`, `get_skill`, `list_skill_versions`, `list_skill_files`, `read_skill_file`, `list_my_skills`; knowledge: `list_knowledge_bases`, `browse_knowledge_base`, `search_knowledge`, `get_document`, `read_document`.
+Read tools include: `whoami`, `get_team_guide` (team guide); skills: `search_skills`, `get_skill`, `list_skill_versions`, `list_skill_files`, `read_skill_file`, `list_my_skills`; knowledge: `list_knowledge_bases`, `browse_knowledge_base`, `search_knowledge`, `get_document`, `read_document`.
+
+Knowledge management also includes base and folder mutations, file metadata edits and version uploads. See [all tools and parameters](mcp/README.md). Existing tokens do not gain new grants automatically; deployment status is recorded in the changelog.
 
 ### Remote access: configure a URL and token
 
 The remote endpoint ships with the backend and needs no additional MCP container or local Node.js installation. **After deploying a version containing this feature**, configure an agent that supports Streamable HTTP and custom authentication headers:
 
-1. Open **Profile → API Tokens** and create a read-only token. Set skill access to **Read-only** or **None**; enable **Knowledge (read-only)** when needed.
+1. Open **Profile → API Tokens**, choose the required operations and allowed teams. Grant only read access for lookup tasks and enable mutations explicitly. Write tokens default to seven days and expire within thirty days.
 2. Click **Copy MCP configuration**, or use the JSON below with your own instance URL and token.
 3. Enable the MCP connection in your agent, then ask it to find skills or files. Call `whoami` first to confirm the current user and teams.
 
@@ -228,7 +230,7 @@ To upload a folder, choose **Upload files → Select folder**, check the destina
 
 </details>
 
-**Scope**: SkillHive manages resources through the Web and does not run skill scripts; the MCP server is read-only and cannot publish or change content. Knowledge search matches titles, descriptions, AI summaries and extracted text. It does not provide vector search, RAG Q&A, OCR for scans or online co-editing.
+**Scope**: SkillHive manages resources through the Web and does not run skill scripts; MCP executes explicitly granted operations and preserves file version history. Knowledge search matches titles, descriptions, AI summaries and extracted text. It does not provide vector search, RAG Q&A, OCR for scans or online co-editing.
 
 ## Deployment
 
@@ -292,7 +294,7 @@ Run `make generate-api` after changing backend API contracts, and do not edit `w
 
 ### Roadmap
 
-MCP currently supports remote HTTP and local stdio with personal read-only tokens. Future directions include remote OAuth authorization, write actions that the user confirms (such as publishing a skill), and tokens limited to a single team; see the [MCP server design](skillhive-docs/26-mcp-server.md). The backend API mainly serves the Web interface and MCP and is not yet published as a complete open API. See the [development changelog](CHANGELOG.md) for pending changes and the [site changelog](https://skillhive.team/changelog) for deployed releases.
+MCP supports remote HTTP and local stdio with personal tokens. Reads, uploads, archiving, knowledge file updates and base/folder management are granted separately within explicit team and knowledge base ceilings. See the [MCP permissions contract](skillhive-docs/27-mcp-permissions-and-writes.md) for knowledge management permissions. The backend API mainly serves the Web interface and MCP and is not yet published as a complete open API. See the [development changelog](CHANGELOG.md) for pending changes and the [site changelog](https://skillhive.team/changelog) for deployed releases.
 
 ## Acknowledgements
 

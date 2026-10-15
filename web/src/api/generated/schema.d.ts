@@ -470,6 +470,59 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/mcp/knowledge/documents/{documentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replace a knowledge file's title, description and folder */
+        put: operations["mcpUpdateKnowledgeDocument"];
+        post?: never;
+        delete: operations["deleteDocument"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mcp/knowledge/bases/{namespace}/{base}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update a knowledge base's name and description */
+        put: operations["mcpUpdateKnowledgeBase"];
+        post?: never;
+        /** Archive an empty knowledge base, retaining historical files */
+        delete: operations["mcpArchiveKnowledgeBase"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mcp/knowledge/bases/{namespace}/{base}/folders/{folderId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Rename or move a knowledge folder */
+        put: operations["mcpUpdateKnowledgeFolder"];
+        post?: never;
+        /** Delete an empty knowledge folder */
+        delete: operations["mcpDeleteKnowledgeFolder"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/users/{userId}/status": {
         parameters: {
             query?: never;
@@ -1586,6 +1639,57 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["uploadDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mcp/knowledge/documents/{documentId}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publish a new file version if the expected version is still current */
+        post: operations["mcpUploadKnowledgeVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mcp/knowledge/bases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create a knowledge base with an explicit MCP management grant */
+        post: operations["mcpCreateKnowledgeBase"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mcp/knowledge/bases/{namespace}/{base}/folders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create a knowledge folder */
+        post: operations["mcpCreateKnowledgeFolder"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3858,22 +3962,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/mcp/knowledge/documents/{documentId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete: operations["deleteDocument"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/admin/namespaces/{slug}/members/{userId}": {
         parameters: {
             query?: never;
@@ -4179,6 +4267,34 @@ export interface components {
             lastUsedAt?: string;
             scopes?: string[];
             resourceGrants?: components["schemas"]["McpTokenGrants"];
+        };
+        UpdateDocument: {
+            idempotencyKey: string;
+            title: string;
+            description?: string;
+            /** Format: int64 */
+            folderId?: number;
+        };
+        ApiResponseJsonNode: {
+            /** Format: int32 */
+            code?: number;
+            msg?: string;
+            data?: components["schemas"]["JsonNode"];
+            /** Format: date-time */
+            timestamp?: string;
+            requestId?: string;
+        };
+        JsonNode: Record<string, never>;
+        UpdateBase: {
+            idempotencyKey: string;
+            displayName: string;
+            description?: string;
+        };
+        Folder: {
+            idempotencyKey: string;
+            name: string;
+            /** Format: int64 */
+            parentId?: number;
         };
         AdminUserStatusUpdateRequest: {
             status: string;
@@ -4551,7 +4667,6 @@ export interface components {
             scopes?: string[];
             resourceGrants?: components["schemas"]["McpTokenGrants"];
         };
-        JsonNode: Record<string, never>;
         McpUploadRequest: {
             idempotencyKey: string;
             fileName: string;
@@ -4562,14 +4677,20 @@ export interface components {
             description?: string;
             visibility?: string;
         };
-        ApiResponseJsonNode: {
+        UploadVersion: {
+            idempotencyKey: string;
+            fileName: string;
+            contentBase64: string;
             /** Format: int32 */
-            code?: number;
-            msg?: string;
-            data?: components["schemas"]["JsonNode"];
-            /** Format: date-time */
-            timestamp?: string;
-            requestId?: string;
+            expectedVersion: number;
+            changeNote?: string;
+        };
+        CreateBase: {
+            idempotencyKey: string;
+            namespace: string;
+            slug: string;
+            displayName: string;
+            description?: string;
         };
         SessionBootstrapRequest: {
             provider: string;
@@ -7384,6 +7505,162 @@ export interface operations {
             };
         };
     };
+    mcpUpdateKnowledgeDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                documentId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateDocument"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseJsonNode"];
+                };
+            };
+        };
+    };
+    deleteDocument: {
+        parameters: {
+            query: {
+                idempotencyKey: string;
+            };
+            header?: never;
+            path: {
+                documentId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseJsonNode"];
+                };
+            };
+        };
+    };
+    mcpUpdateKnowledgeBase: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                namespace: string;
+                base: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateBase"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseJsonNode"];
+                };
+            };
+        };
+    };
+    mcpArchiveKnowledgeBase: {
+        parameters: {
+            query: {
+                idempotencyKey: string;
+            };
+            header?: never;
+            path: {
+                namespace: string;
+                base: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseJsonNode"];
+                };
+            };
+        };
+    };
+    mcpUpdateKnowledgeFolder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                namespace: string;
+                base: string;
+                folderId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Folder"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseJsonNode"];
+                };
+            };
+        };
+    };
+    mcpDeleteKnowledgeFolder: {
+        parameters: {
+            query: {
+                idempotencyKey: string;
+            };
+            header?: never;
+            path: {
+                namespace: string;
+                base: string;
+                folderId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseJsonNode"];
+                };
+            };
+        };
+    };
     updateUserStatus: {
         parameters: {
             query?: never;
@@ -9604,6 +9881,83 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["McpUploadRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseJsonNode"];
+                };
+            };
+        };
+    };
+    mcpUploadKnowledgeVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                documentId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UploadVersion"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseJsonNode"];
+                };
+            };
+        };
+    };
+    mcpCreateKnowledgeBase: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateBase"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseJsonNode"];
+                };
+            };
+        };
+    };
+    mcpCreateKnowledgeFolder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                namespace: string;
+                base: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Folder"];
             };
         };
         responses: {
@@ -13102,30 +13456,6 @@ export interface operations {
             path: {
                 namespace: string;
                 slug: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["ApiResponseJsonNode"];
-                };
-            };
-        };
-    };
-    deleteDocument: {
-        parameters: {
-            query: {
-                idempotencyKey: string;
-            };
-            header?: never;
-            path: {
-                documentId: number;
             };
             cookie?: never;
         };

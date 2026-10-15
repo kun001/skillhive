@@ -37,6 +37,36 @@ const SKILL_FILES = [
 ]
 
 describe('tool registration', () => {
+  it('exposes management and update operations independently and preserves version guards', async () => {
+    const calls: { path: string; method?: string; body: unknown }[] = []
+    const fetchImpl = (async (input: URL, init?: RequestInit) => {
+      calls.push({ path: input.pathname, method: init?.method, body: init?.body ? JSON.parse(String(init.body)) as unknown : undefined })
+      return ok({ id: 7, versionNumber: 2 })
+    }) as typeof fetch
+    const client = new SkillHiveClient('https://hive.example.com', 'fixture', fetchImpl)
+    const update = await connect(client, { skills: false, knowledge: false, knowledgeUpdate: true })
+    expect((await update.listTools()).tools.map(tool => tool.name))
+      .toEqual(['whoami', 'get_team_guide', 'update_document', 'upload_document_version'])
+    const arguments_ = { documentId: 7, fileName: 'guide.txt', contentBase64: 'aGVsbG8=', expectedVersion: 1, idempotencyKey: 'version' }
+    expect((await update.callTool({ name: 'upload_document_version', arguments: arguments_ })).isError).toBeFalsy()
+    expect(calls[0]).toEqual({ path: '/api/v1/mcp/knowledge/documents/7/versions', method: 'POST',
+      body: { fileName: 'guide.txt', contentBase64: 'aGVsbG8=', expectedVersion: 1, idempotencyKey: 'version' } })
+    const missingVersion = { ...arguments_, expectedVersion: undefined }
+    expect((await update.callTool({ name: 'upload_document_version', arguments: missingVersion })).isError).toBe(true)
+    expect(calls).toHaveLength(1)
+    const manage = await connect(client, { skills: false, knowledge: false, knowledgeManage: true })
+    const tools = (await manage.listTools()).tools
+    expect(tools.map(tool => tool.name)).toContain('create_knowledge_base')
+    expect(tools.map(tool => tool.name)).not.toContain('update_document')
+    expect(tools.find(tool => tool.name === 'delete_knowledge_base')?.annotations?.destructiveHint).toBe(true)
+    await manage.callTool({ name: 'update_knowledge_folder', arguments: {
+      namespace: 'team', base: 'docs', folderId: 3, name: 'Policies', parentId: 4, idempotencyKey: 'folder',
+    } })
+    expect(calls[1]).toEqual({ path: '/api/v1/mcp/knowledge/bases/team/docs/folders/3', method: 'PUT',
+      body: { name: 'Policies', parentId: 4, idempotencyKey: 'folder' } })
+    await update.close()
+    await manage.close()
+  })
   it('offers only independently granted write tools and sends mutations to restricted endpoints', async () => {
     const { client, requested } = fakeSkillHive({
       '/api/v1/mcp/knowledge/team/docs/uploads': () => new Response(JSON.stringify({ code: 0, data: { id: 19 } })),

@@ -136,7 +136,8 @@ public class ApiTokenService {
         Instant updatedExpiry = parseExpiresAt(expiresAt);
         if (token.getResourceGrantsJson() != null && (token.getScopeJson().contains("skill:upload")
                 || token.getScopeJson().contains("skill:delete") || token.getScopeJson().contains("knowledge:upload")
-                || token.getScopeJson().contains("knowledge:delete"))) {
+                || token.getScopeJson().contains("knowledge:delete") || token.getScopeJson().contains("knowledge:update")
+                || token.getScopeJson().contains("knowledge:manage"))) {
             if (updatedExpiry == null || updatedExpiry.isAfter(currentTime().plusSeconds(30L * 24 * 60 * 60))) {
                 throw new DomainBadRequestException("validation.token.expiresAt.future");
             }

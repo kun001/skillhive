@@ -4,7 +4,12 @@
 
 ## 待发布 / Unreleased
 
-暂无。
+暂无。 / None.
+
+## v0.4.1 — 2026-10-15
+
+- MCP 补齐知识库和目录的新建、修改、删除，以及文件信息修改和新版本上传；新增独立的 `knowledge:update`、`knowledge:manage` 授权，旧 Token 不自动扩权。版本上传校验预期版本并保留历史，知识库删除仅归档空库，写入继续支持幂等与审计。
+- MCP adds knowledge base and folder management, file metadata updates and version uploads, with independent `knowledge:update` and `knowledge:manage` grants. Existing tokens retain their permissions. Version uploads check the expected current version and preserve history; only empty bases can be archived. Mutations remain idempotent and audited.
 
 ## v0.4.0 — 2026-10-15
 

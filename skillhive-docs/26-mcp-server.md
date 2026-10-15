@@ -1,6 +1,6 @@
 # SkillHive MCP 服务设计
 
-> 本文保留第一期只读设计的背景与接口。当前权限及新增上传、归档删除的契约以 [MCP 权限与新增写入实施方案](27-mcp-permissions-and-writes.md) 为准；其中“后续团队绑定”和“仅接受只读 Token”的描述不适用于新 MCP 专用 Token。
+> 本文保留第一期只读设计的背景与接口。当前读取、上传、归档、知识文件更新以及知识库和目录管理的契约以 [MCP 权限与写入实施方案](27-mcp-permissions-and-writes.md) 为准；其中“后续团队绑定”和“仅接受只读 Token”的描述不适用于新 MCP 专用 Token。
 
 本文记录 SkillHive MCP 服务的设计依据、能力范围与权限模型。本地 stdio 实现位于 `mcp/`；远程 Streamable HTTP 入口位于后端 `McpController` 与 `service/mcp/`，与后端一同部署。
 

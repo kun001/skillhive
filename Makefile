@@ -221,7 +221,7 @@ clean: ## 清理构建产物
 
 generate-api: ## 生成 OpenAPI 类型（前端用）
 	@echo "Generating OpenAPI types..."
-	cd web && pnpm run generate-api
+	cd web && pnpm exec openapi-typescript "$(or $(OPENAPI_URL),http://localhost:8080/v3/api-docs)" -o src/api/generated/schema.d.ts
 
 web-install: ## 安装前端依赖
 	cd web && pnpm install

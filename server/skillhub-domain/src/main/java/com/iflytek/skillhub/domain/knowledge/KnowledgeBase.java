@@ -70,6 +70,10 @@ public class KnowledgeBase {
     }
 
     public Long getId() { return id; }
+    public void archive(String updatedBy) {
+        this.status = KnowledgeBaseStatus.ARCHIVED;
+        this.updatedBy = updatedBy;
+    }
     public Long getNamespaceId() { return namespaceId; }
     public String getSlug() { return slug; }
     public String getDisplayName() { return displayName; }

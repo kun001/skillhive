@@ -12,7 +12,7 @@ import java.util.Map;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-/** Narrow REST adapters share the MCP token checks and cannot edit or permanently delete objects. */
+/** Upload-new and archive adapters share the MCP token and resource checks. */
 @RestController
 @RequestMapping("/api/v1/mcp")
 public class McpWriteController extends BaseApiController {

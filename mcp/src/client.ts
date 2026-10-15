@@ -64,7 +64,7 @@ export class SkillHiveClient {
     return response
   }
 
-  async writeJson(path: string, method: 'POST' | 'DELETE', body?: unknown, query?: Query): Promise<unknown> {
+  async writeJson(path: string, method: 'POST' | 'PUT' | 'DELETE', body?: unknown, query?: Query): Promise<unknown> {
     if (!path.startsWith('/api/v1/mcp/')) throw new Error('Unsupported write endpoint')
     const url = new URL(this.baseUrl + path)
     for (const [key, value] of Object.entries(query ?? {})) if (value !== undefined) url.searchParams.set(key, String(value))

@@ -120,7 +120,38 @@ class McpGatewayServiceTest {
     }
 
     @Test
-    void scopedTokensExposeIndependentWriteToolsAndRejectUngrantableUpdateTools() throws Exception {
+    void knowledgeManagementAndVersionToolsAreScopedAndForwardValidatedBodies() throws Exception {
+        var update = token("alice", "mcp:access", "knowledge:update");
+        var listed = gateway.handle(rpc("tools/list", java.util.Map.of()), update, "Bearer alice").getBody().toString();
+        assertThat(listed).contains("update_document", "upload_document_version")
+                .doesNotContain("create_knowledge_base", "upload_document\"", "delete_document");
+        var args = mapper.createObjectNode().put("documentId", 7).put("fileName", "guide.txt")
+                .put("contentBase64", "aGVsbG8=").put("expectedVersion", 1).put("idempotencyKey", "retry");
+        when(backend.write(eq("/api/v1/mcp/knowledge/documents/7/versions"), eq("POST"), any(), eq("Bearer alice")))
+                .thenReturn(mapper.readTree("{\"versionNumber\":2}"));
+        var response = gateway.handle(rpc("tools/call", java.util.Map.of("name", "upload_document_version", "arguments", args)), update, "Bearer alice").getBody();
+        assertThat(response.path("result").path("isError").asBoolean()).isFalse();
+        verify(backend).write(eq("/api/v1/mcp/knowledge/documents/7/versions"), eq("POST"), argThat(body ->
+                !body.has("documentId") && body.path("expectedVersion").asInt() == 1), eq("Bearer alice"));
+        args.remove("expectedVersion");
+        assertThat(gateway.handle(rpc("tools/call", java.util.Map.of("name", "upload_document_version", "arguments", args)), update,
+                "Bearer alice").getBody().path("error").path("code").asInt()).isEqualTo(-32602);
+
+        var manage = token("alice", "mcp:access", "knowledge:manage");
+        assertThat(gateway.handle(rpc("tools/list", java.util.Map.of()), manage, "Bearer alice").getBody().toString())
+                .contains("create_knowledge_base", "delete_knowledge_base", "update_knowledge_folder").doesNotContain("update_document");
+        var folder = java.util.Map.of("namespace", "team", "base", "docs", "folderId", 3, "name", "Renamed", "parentId", 4, "idempotencyKey", "folder");
+        when(backend.write(eq("/api/v1/mcp/knowledge/bases/team/docs/folders/3"), eq("PUT"), any(), eq("Bearer alice")))
+                .thenReturn(mapper.readTree("{\"id\":3}"));
+        gateway.handle(rpc("tools/call", java.util.Map.of("name", "update_knowledge_folder", "arguments", folder)), manage, "Bearer alice");
+        verify(backend).write(eq("/api/v1/mcp/knowledge/bases/team/docs/folders/3"), eq("PUT"), argThat(body ->
+                !body.has("folderId") && !body.has("namespace") && body.path("parentId").asInt() == 4), eq("Bearer alice"));
+        assertThat(gateway.handle(rpc("tools/call", java.util.Map.of("name", "update_knowledge_folder", "arguments", folder)), update,
+                "Bearer alice").getBody().path("result").path("isError").asBoolean()).isTrue();
+    }
+
+    @Test
+    void scopedTokensExposeIndependentWriteTools() throws Exception {
         var auth = token("alice", "mcp:access", "knowledge:upload");
         gateway.checkTransport(auth, request());
         var listed = gateway.handle(rpc("tools/list", java.util.Map.of()), auth, "Bearer alice").getBody();
