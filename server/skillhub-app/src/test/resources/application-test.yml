@@ -43,6 +43,10 @@ spring:
             user-info-uri: https://api.github.com/user
 
 skillhub:
+  knowledge:
+    text:
+      # Background extraction would poll the in-memory database; tests drive the worker directly.
+      enabled: false
   auth:
     enforce-active-user-check: false
   access-policy:

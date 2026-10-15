@@ -2,11 +2,11 @@
   <img src="skillhive-docs/assets/skillhive-logo.svg" alt="SkillHive" width="360" />
 </p>
 
-<h3 align="center">私有部署的团队 AI 技能与资料共享中心</h3>
+<h3 align="center">团队 Agent 的私有上下文中心</h3>
 
 <p align="center">
-  技能经审核再发布，资料上传即共享，都放在同一个团队空间里；<br />
-  AI 工具通过 MCP 按你的权限直接查阅，数据留在你自己的服务器上。
+  把团队沉淀的做法（技能）和资料（知识）交给你正在用的每一个 Agent；<br />
+  按成员权限取用，每次读写都记入审计，数据留在你自己的服务器上。
 </p>
 
 <p align="center">
@@ -98,11 +98,11 @@ SkillHive 提供只读 [MCP 接入](mcp/README.md)，支持远程 Streamable HTT
 | --- | --- |
 | **只读** | 仅使用 `skill:read` 和 / 或 `knowledge:read`；带写入权限的 Token 无法接入，AI 不能修改任何内容。 |
 | **按团队权限读取** | 可读取公开的已发布技能和自己团队有权查看的内容，读取团队文件需要下载权限；平台管理员的 Token 也不能绕过团队成员及下载权限检查。 |
-| **原样传递** | 文本文件直接返回文本，PDF、Word 等返回原文件交给 AI 工具处理，平台不做内容解析。 |
+| **读得懂** | Word、PowerPoint、Excel、PDF 和文本文件会在服务端提取为 Markdown，`read_document` 默认返回 Markdown（可附 AI 摘要），其他文件原样返回。 |
 | **可追溯** | 通过 Token 读取的知识库文件和技能文件都记入审计日志，标明是哪个 Token。 |
 | **按需授权** | 技能库与知识库分开授权，Token 只授予哪一边，MCP 就只提供哪一边的工具。 |
 
-提供 12 个工具：`whoami`；技能库 `search_skills`、`get_skill`、`list_skill_versions`、`list_skill_files`、`read_skill_file`、`list_my_skills`；知识库 `list_knowledge_bases`、`browse_knowledge_base`、`search_knowledge`、`get_document`、`read_document`。
+提供 13 个工具：`whoami`、`get_team_guide`（团队说明书）；技能库 `search_skills`、`get_skill`、`list_skill_versions`、`list_skill_files`、`read_skill_file`、`list_my_skills`；知识库 `list_knowledge_bases`、`browse_knowledge_base`、`search_knowledge`、`get_document`、`read_document`。
 
 ### 远程接入：填写地址和 Token 即可使用
 
@@ -247,7 +247,7 @@ MDX 支持范围、配图与安全边界见 [MDX 受控预览](skillhive-docs/md
 
 </details>
 
-**边界说明**：SkillHive 通过 Web 管理资源，不在平台内执行技能脚本；MCP 服务只读，不能通过它发布或修改内容。知识文件搜索匹配标题和描述（标题默认取自文件名），不检索正文，也不提供文档解析、向量检索、RAG 问答或在线协同编辑。
+**边界说明**：SkillHive 通过 Web 管理资源，不在平台内执行技能脚本；MCP 服务只读，不能通过它发布或修改内容。知识文件搜索匹配标题、描述、AI 摘要和提取出的正文；不提供向量检索、RAG 问答、扫描件 OCR 或在线协同编辑。
 
 ## 部署
 

@@ -1,11 +1,11 @@
 # Introduction
 
-SkillHive is a self-hosted hub where a team shares AI skills and working files. It keeps two kinds of team assets in the same team space:
+SkillHive is the private context center for your team’s agents. It runs on your own server and hands the team’s practices and files to the agents members already use (Claude Code, Cursor, your own agents or any other MCP client), within their permissions. It keeps two kinds of team assets in the same team space:
 
 - **Skill library**: reusable AI skill packages in the `SKILL.md` format. Each upload goes through structure validation, security scanning and human review before release, so risky scripts do not slip into the team.
 - **Knowledge base**: the team's file center. Templates, handbooks and project files are organized in folders, previewed in the browser and versioned; they are visible to permitted members as soon as they are uploaded.
 
-Opening a team space shows both how to do the work (skills) and what to work with (files). All data stays on your own servers.
+Opening a team space shows both how to do the work (skills) and what to work with (files). Agents reach the same content over MCP with the member’s own token; permissions are checked on every call and reads and writes are audited. All data stays on your own servers.
 
 ## Highlights
 
@@ -21,7 +21,7 @@ Opening a team space shows both how to do the work (skills) and what to work wit
 ## Scope
 
 - SkillHive does not run skill scripts.
-- Knowledge search matches file titles and descriptions only; it does not index file contents and offers no document parsing, vector search or RAG Q&A.
+- Knowledge search matches titles, descriptions, AI summaries and extracted text; there is no vector search, RAG Q&A or OCR for scans.
 - Knowledge content is never open to anonymous users; public skills in the public library can be browsed and downloaded anonymously.
 
 ## Tech Stack

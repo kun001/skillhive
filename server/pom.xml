@@ -24,6 +24,9 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <byte-buddy.version>1.17.5</byte-buddy.version>
+        <!-- Knowledge text extraction (Apache-2.0). -->
+        <poi.version>5.4.1</poi.version>
+        <pdfbox.version>3.0.5</pdfbox.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 

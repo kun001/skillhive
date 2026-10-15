@@ -43,7 +43,7 @@ describe('tool registration', () => {
     })
     const mcp = await connect(client, { skills: false, knowledge: false, knowledgeUpload: true })
     const tools = (await mcp.listTools()).tools
-    expect(tools.map(tool => tool.name)).toEqual(['whoami', 'upload_document'])
+    expect(tools.map(tool => tool.name)).toEqual(['whoami', 'get_team_guide', 'upload_document'])
     expect(tools.find(tool => tool.name === 'upload_document')?.annotations?.readOnlyHint).toBe(false)
     const result = await mcp.callTool({ name: 'upload_document', arguments: {
       namespace: 'team', base: 'docs', fileName: 'guide.txt', contentBase64: 'aGVsbG8=', idempotencyKey: 'once',
@@ -150,6 +150,43 @@ describe('read_document', () => {
     expect(requested.some((url) => url.includes('/content'))).toBe(false)
   })
 
+  it('returns extracted Markdown with its summary by default', async () => {
+    const { client, requested } = fakeSkillHive({
+      '/api/v1/knowledge/documents/7/text': () => ok({
+        documentId: 7, versionNumber: 3, fileName: 'plan.pdf', status: 'COMPLETED', truncated: true,
+        summary: '迁移计划概要', content: '## Page 1\n\n迁移步骤',
+      }),
+    })
+    const mcp = await connect(client, { skills: false, knowledge: true })
+
+    const result = await mcp.callTool({ name: 'read_document', arguments: { documentId: 7 } })
+
+    const [notice, resource] = result.content as Array<{ type: string; text?: string; resource?: { text?: string; mimeType?: string } }>
+    expect(notice.text).toContain('Summary: 迁移计划概要')
+    expect(notice.text).toContain('truncated')
+    expect(resource.resource?.mimeType).toBe('text/markdown')
+    expect(resource.resource?.text).toBe('## Page 1\n\n迁移步骤')
+    expect(requested.some((url) => url.includes('/content'))).toBe(false)
+  })
+
+  it('falls back to the original file when no text exists, unless markdown is required', async () => {
+    const pdf = new Uint8Array([0x25, 0x50, 0x44, 0x46])
+    const { client, requested } = fakeSkillHive({
+      '/api/v1/knowledge/documents/7/text': () => ok({ documentId: 7, versionNumber: 3, fileName: 'plan.pdf', status: 'UNSUPPORTED', content: null }),
+      '/api/v1/knowledge/documents/7': () => ok(detail),
+      '/api/v1/knowledge/documents/7/content': () => new Response(pdf, { headers: { 'content-type': 'application/pdf' } }),
+    })
+    const mcp = await connect(client, { skills: false, knowledge: true })
+
+    expect((await mcp.callTool({ name: 'read_document', arguments: { documentId: 7 } })).isError).toBeFalsy()
+    expect(requested).toContain('/api/v1/knowledge/documents/7/content?version=3')
+    const strict = await mcp.callTool({ name: 'read_document', arguments: { documentId: 7, format: 'markdown' } })
+    expect(strict.isError).toBe(true)
+    requested.length = 0
+    await mcp.callTool({ name: 'read_document', arguments: { documentId: 7, format: 'original' } })
+    expect(requested.some((url) => url.includes('/text'))).toBe(false)
+  })
+
   it('passes SkillHive permission errors back to the model', async () => {
     const { client } = fakeSkillHive({
       '/api/v1/knowledge/documents/7': () => new Response(
@@ -161,5 +198,22 @@ describe('read_document', () => {
 
     expect(result.isError).toBe(true)
     expect(result.content).toEqual([{ type: 'text', text: 'Namespace membership required (HTTP 403)' }])
+  })
+})
+
+describe('get_team_guide', () => {
+  it('returns the guide as Markdown and reports a missing one plainly', async () => {
+    const { client, requested } = fakeSkillHive({
+      '/api/v1/namespaces/team/guide': () => ok({ namespace: 'team', namespaceDisplayName: 'Team', content: '# 约定' }),
+      '/api/v1/namespaces/empty/guide': () => ok({ namespace: 'empty', namespaceDisplayName: 'Empty', content: '' }),
+    })
+    const mcp = await connect(client, { skills: false, knowledge: false })
+
+    const guide = await mcp.callTool({ name: 'get_team_guide', arguments: { namespace: '@team' } })
+    const empty = await mcp.callTool({ name: 'get_team_guide', arguments: { namespace: 'empty' } })
+
+    expect((guide.content as Array<{ resource?: { text?: string } }>)[1].resource?.text).toBe('# 约定')
+    expect(JSON.stringify(empty.content)).toContain('no guide yet')
+    expect(requested).toContain('/api/v1/namespaces/team/guide')
   })
 })

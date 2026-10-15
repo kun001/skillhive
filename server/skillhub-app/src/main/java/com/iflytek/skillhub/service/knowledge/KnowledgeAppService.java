@@ -10,6 +10,9 @@ import com.iflytek.skillhub.domain.knowledge.KnowledgeBase;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeBaseRepository;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeBaseStats;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeBaseStatus;
+import com.iflytek.skillhub.domain.knowledge.KnowledgeContentSearchRepository;
+import com.iflytek.skillhub.domain.knowledge.KnowledgeDocumentSummary;
+import com.iflytek.skillhub.domain.knowledge.KnowledgeDocumentText;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeDocument;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeDocumentRepository;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeDocumentSearch;
@@ -38,6 +41,7 @@ import com.iflytek.skillhub.dto.knowledge.KnowledgeBaseResponse;
 import com.iflytek.skillhub.dto.knowledge.KnowledgeDocumentDetailResponse;
 import com.iflytek.skillhub.dto.knowledge.KnowledgeDocumentResponse;
 import com.iflytek.skillhub.dto.knowledge.KnowledgeDocumentSearchHitResponse;
+import com.iflytek.skillhub.dto.knowledge.KnowledgeDocumentTextResponse;
 import com.iflytek.skillhub.dto.knowledge.KnowledgeDocumentVersionResponse;
 import com.iflytek.skillhub.dto.knowledge.KnowledgeFolderPathItem;
 import com.iflytek.skillhub.dto.knowledge.KnowledgeFolderResponse;
@@ -75,6 +79,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
@@ -112,6 +117,7 @@ public class KnowledgeAppService {
     private final ObjectStorageService storageService;
     private final AuditLogService auditLogService;
     private final RequestIdAccessor requestIdAccessor;
+    private final KnowledgeTextService textService;
 
     public KnowledgeAppService(NamespaceRepository namespaceRepository,
                                KnowledgeBaseRepository baseRepository,
@@ -126,8 +132,10 @@ public class KnowledgeAppService {
                                ObjectStorageService storageService,
                                AuditLogService auditLogService,
                                RequestIdAccessor requestIdAccessor,
-                               com.iflytek.skillhub.domain.namespace.MemberResourcePolicy memberPolicy) {
+                               com.iflytek.skillhub.domain.namespace.MemberResourcePolicy memberPolicy,
+                               KnowledgeTextService textService) {
         this.memberPolicy = memberPolicy;
+        this.textService = textService;
         this.namespaceRepository = namespaceRepository;
         this.baseRepository = baseRepository;
         this.folderRepository = folderRepository;
@@ -386,8 +394,8 @@ public class KnowledgeAppService {
     }
 
     /**
-     * Searches file titles and descriptions across every knowledge base the caller can read,
-     * optionally limited to one namespace. A blank keyword returns an empty page.
+     * Searches title, description, summary and extracted text across every knowledge base the
+     * caller can read, optionally limited to one namespace. A blank keyword returns an empty page.
      */
     @Transactional(readOnly = true)
     public PageResponse<KnowledgeDocumentSearchHitResponse> searchDocuments(String keyword,
@@ -410,15 +418,25 @@ public class KnowledgeAppService {
         if (normalizedKeyword.isEmpty() || contexts.isEmpty()) {
             return new PageResponse<>(List.of(), 0, pageNumber, pageSize);
         }
-        KnowledgeDocumentSearch search = new KnowledgeDocumentSearch(
-                contexts.keySet(), null, normalizedKeyword, null, null, null, null);
-        Page<KnowledgeDocument> result = documentRepository.search(search, PageRequest.of(pageNumber, pageSize, sortFor("updated")));
-        List<KnowledgeDocumentSearchHitResponse> items = toDocumentResponses(contexts, result.getContent(), caller).stream()
+        Page<KnowledgeContentSearchRepository.Hit> result = textService.search(
+                contexts.keySet(), normalizedKeyword, PageRequest.of(pageNumber, pageSize));
+        Map<Long, KnowledgeDocument> found = documentRepository.findByIdIn(
+                result.getContent().stream().map(KnowledgeContentSearchRepository.Hit::documentId).toList()).stream()
+                .collect(Collectors.toMap(KnowledgeDocument::getId, Function.identity()));
+        List<KnowledgeDocument> documents = result.getContent().stream()
+                .map(hit -> found.get(hit.documentId())).filter(Objects::nonNull).toList();
+        Map<Long, String> snippets = new java.util.HashMap<>();
+        result.getContent().forEach(hit -> snippets.put(hit.documentId(), hit.snippet()));
+        Map<Long, KnowledgeDocumentSummary> summaries = textService.summaries(documents.stream()
+                .map(KnowledgeDocument::getPublishedVersionId).filter(Objects::nonNull).toList());
+        List<KnowledgeDocumentSearchHitResponse> items = toDocumentResponses(contexts, documents, caller).stream()
                 .map(document -> {
                     BaseContext context = contexts.get(document.knowledgeBaseId());
+                    KnowledgeDocumentSummary summary = summaries.get(found.get(document.id()).getPublishedVersionId());
                     return new KnowledgeDocumentSearchHitResponse(document,
                             context.namespace().getSlug(), context.namespace().getDisplayName(),
-                            context.base().getSlug(), context.base().getDisplayName());
+                            context.base().getSlug(), context.base().getDisplayName(),
+                            summary == null ? null : summary.getSummary(), snippets.get(document.id()));
                 })
                 .toList();
         return new PageResponse<>(items, result.getTotalElements(), result.getNumber(), result.getSize());
@@ -465,6 +483,7 @@ public class KnowledgeAppService {
         storeImages(version, markdown);
         document.publish(version, extension);
         KnowledgeDocument saved = documentRepository.save(document);
+        textService.versionPublished(saved.getId(), version.getId());
         recordAudit(caller, "KNOWLEDGE_DOCUMENT_UPLOAD", TARGET_DOCUMENT, saved.getId(), audit,
                 AuditDetail.builder()
                         .put("knowledgeBaseId", context.base().getId())
@@ -485,8 +504,11 @@ public class KnowledgeAppService {
         KnowledgeBase base = context.baseContext().base();
         KnowledgeBaseResponse baseResponse = toBaseResponse(context.baseContext(),
                 statsFor(List.of(base.getId())).get(base.getId()), caller);
+        Optional<KnowledgeDocumentSummary> summary = textService.summary(version.getId());
         return new KnowledgeDocumentDetailResponse(response, baseResponse, folderPath(base.getId(), document.getFolderId()),
-                version.getSha256());
+                version.getSha256(), textService.text(version.getId()).map(KnowledgeDocumentText::getStatus).orElse(null),
+                summary.map(KnowledgeDocumentSummary::getSummary).orElse(null),
+                summary.map(KnowledgeDocumentSummary::getKeywords).orElse(List.of()));
     }
 
     @Transactional
@@ -579,6 +601,7 @@ public class KnowledgeAppService {
         storeImages(version, markdown);
         document.publish(version, extension);
         documentRepository.save(document);
+        textService.versionPublished(document.getId(), version.getId());
         recordAudit(caller, "KNOWLEDGE_DOCUMENT_VERSION_UPLOAD", TARGET_DOCUMENT, document.getId(), audit,
                 AuditDetail.builder()
                         .put("version", version.getVersionNumber())
@@ -616,6 +639,7 @@ public class KnowledgeAppService {
         copyImages(source, restored, Set.of());
         document.publish(restored, filePolicy.extensionOf(source.getSourceFilename()));
         documentRepository.save(document);
+        textService.versionPublished(document.getId(), restored.getId());
         recordAudit(caller, "KNOWLEDGE_DOCUMENT_VERSION_RESTORE", TARGET_DOCUMENT, document.getId(), audit,
                 AuditDetail.builder()
                         .put("restoredFrom", versionNumber)
@@ -660,6 +684,43 @@ public class KnowledgeAppService {
         String objectKey = version.getContentObjectKey();
         return new FileContent(filename, version.getContentType(), version.getSizeBytes(),
                 filePolicy.previewKindFor(extension), () -> storageService.getObject(objectKey));
+    }
+
+    /**
+     * Returns the agent-readable Markdown of a file version. The text is derived from the file, so
+     * it requires the same download capability and every read is audited like a download.
+     */
+    @Transactional
+    public KnowledgeDocumentTextResponse openText(Long documentId, Integer versionNumber, Caller caller,
+                                                  AuditRequestContext audit) {
+        DocumentContext context = resolveDocument(documentId, caller);
+        KnowledgeDocument document = context.document();
+        KnowledgeDocumentVersion version = versionNumber == null
+                ? currentVersion(document)
+                : findPublishedVersion(document, versionNumber);
+        memberPolicy.assertDownload(context.baseContext().namespace().getId(), caller.userId(), caller.platformRoles());
+        Optional<KnowledgeDocumentText> text = textService.text(version.getId());
+        boolean completed = text.map(KnowledgeDocumentText::isCompleted).orElse(false);
+        if (completed) {
+            Long apiTokenId = audit != null ? audit.apiTokenId() : null;
+            recordAudit(caller, "KNOWLEDGE_DOCUMENT_TEXT_READ", TARGET_DOCUMENT, document.getId(), audit,
+                    AuditDetail.builder()
+                            .put("version", version.getVersionNumber())
+                            .put("charCount", text.get().getCharCount())
+                            .put("authMethod", apiTokenId != null ? "api_token" : "session")
+                            .put("apiTokenId", apiTokenId)
+                            .build());
+        }
+        Optional<KnowledgeDocumentSummary> summary = textService.summary(version.getId());
+        return new KnowledgeDocumentTextResponse(document.getId(), version.getVersionNumber(), document.getTitle(),
+                version.getSourceFilename(), text.map(KnowledgeDocumentText::getStatus).orElse(null),
+                text.map(KnowledgeDocumentText::getExtractor).orElse(null),
+                text.map(KnowledgeDocumentText::getCharCount).orElse(null),
+                text.map(KnowledgeDocumentText::isTruncated).orElse(false),
+                text.map(KnowledgeDocumentText::getExtractedAt).orElse(null),
+                summary.map(KnowledgeDocumentSummary::getSummary).orElse(null),
+                summary.map(KnowledgeDocumentSummary::getKeywords).orElse(List.of()),
+                completed ? text.get().getContent() : null);
     }
 
     @Transactional(readOnly = true)

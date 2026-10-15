@@ -77,6 +77,29 @@ class McpGatewayServiceTest {
     }
 
     @Test
+    void documentsReadAsExtractedMarkdownAndTeamGuidesNeedNoDomainScope() throws Exception {
+        when(backend.json("/api/v1/knowledge/documents/7/text", "Bearer alice")).thenReturn(mapper.readTree(
+                "{\"documentId\":7,\"versionNumber\":2,\"fileName\":\"plan.docx\",\"status\":\"COMPLETED\",\"truncated\":false,"
+                        + "\"summary\":\"迁移计划\",\"content\":\"# 计划\"}"));
+        var read = gateway.handle(rpc("tools/call", java.util.Map.of("name", "read_document", "arguments", java.util.Map.of("documentId", 7))),
+                token("alice", "knowledge:read"), "Bearer alice").getBody().path("result");
+        assertThat(read.path("content").path(0).path("text").asText()).contains("plan.docx", "Summary: 迁移计划", "untrusted");
+        assertThat(read.path("content").path(1).path("resource").path("mimeType").asText()).isEqualTo("text/markdown");
+        assertThat(read.path("content").path(1).path("resource").path("text").asText()).isEqualTo("# 计划");
+        verify(backend, never()).file(anyString(), anyString());
+
+        var badFormat = gateway.handle(rpc("tools/call", java.util.Map.of("name", "read_document", "arguments",
+                java.util.Map.of("documentId", 7, "format", "html"))), token("alice", "knowledge:read"), "Bearer alice").getBody();
+        assertThat(badFormat.path("error").path("code").asInt()).isEqualTo(-32602);
+
+        when(backend.json("/api/v1/namespaces/team/guide", "Bearer alice")).thenReturn(mapper.readTree(
+                "{\"namespace\":\"team\",\"namespaceDisplayName\":\"Team\",\"content\":\"# 约定\"}"));
+        var guide = gateway.handle(rpc("tools/call", java.util.Map.of("name", "get_team_guide", "arguments", java.util.Map.of("namespace", "team"))),
+                token("alice", "skill:read"), "Bearer alice").getBody().path("result");
+        assertThat(guide.path("content").path(1).path("resource").path("text").asText()).isEqualTo("# 约定");
+    }
+
+    @Test
     void invalidArgumentsCannotChooseAnArbitraryBackendUrl() {
         for (var arguments : List.of(java.util.Map.of("documentId", -1), java.util.Map.of("documentId", 1, "url", "https://hostile.example"))) {
             var response = gateway.handle(rpc("tools/call", java.util.Map.of("name", "get_document", "arguments", arguments)),
@@ -102,7 +125,8 @@ class McpGatewayServiceTest {
         gateway.checkTransport(auth, request());
         var listed = gateway.handle(rpc("tools/list", java.util.Map.of()), auth, "Bearer alice").getBody();
         assertThat(listed.toString()).contains("upload_document").doesNotContain("read_document", "delete_document", "upload_skill", "update_document");
-        var tool = listed.path("result").path("tools").get(1);
+        var tool = java.util.stream.StreamSupport.stream(listed.path("result").path("tools").spliterator(), false)
+                .filter(candidate -> "upload_document".equals(candidate.path("name").asText())).findFirst().orElseThrow();
         assertThat(tool.path("annotations").path("readOnlyHint").asBoolean()).isFalse();
         var call = rpc("tools/call", java.util.Map.of("name", "upload_document", "arguments", java.util.Map.of(
                 "namespace", "team", "base", "docs", "fileName", "guide.txt", "contentBase64", "aGVsbG8=", "idempotencyKey", "once")));

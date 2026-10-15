@@ -621,3 +621,11 @@ export interface NotificationPreferenceItem {
 export interface NotificationUnreadCount {
   count: number
 }
+
+/** A team space's Markdown guide; `content` is empty when none has been written. */
+export type NamespaceGuide = Omit<components['schemas']['NamespaceGuideResponse'], 'namespace' | 'namespaceDisplayName' | 'content' | 'canEdit'> & {
+  namespace: string
+  namespaceDisplayName: string
+  content: string
+  canEdit: boolean
+}

@@ -39,6 +39,11 @@ public class JpaKnowledgeDocumentRepositoryAdapter implements KnowledgeDocumentR
     }
 
     @Override
+    public List<KnowledgeDocument> findByIdIn(Collection<Long> ids) {
+        return ids == null || ids.isEmpty() ? List.of() : delegate.findAllById(ids);
+    }
+
+    @Override
     public boolean existsActiveFilename(Long baseId, Long folderId, String filename) {
         return delegate.existsActiveFilename(baseId, folderId, filename);
     }

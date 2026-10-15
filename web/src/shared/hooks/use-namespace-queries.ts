@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import type { Namespace, NamespaceMember, ManagedNamespace, CreateNamespaceRequest, NamespaceCandidateUser, NamespaceRole, BatchMemberResponse, PagedResponse } from '@/api/types'
+import type { Namespace, NamespaceGuide, NamespaceMember, ManagedNamespace, CreateNamespaceRequest, NamespaceCandidateUser, NamespaceRole, BatchMemberResponse, PagedResponse } from '@/api/types'
 import { namespaceApi } from '@/api/client'
 import { ApiError } from '@/shared/lib/api-error'
 import { shouldEnableNamespaceMemberCandidates } from './skill-query-helpers'
@@ -111,6 +111,25 @@ export function useNamespaceDetail(slug: string) {
     queryKey: ['namespaces', slug],
     queryFn: () => getNamespaceDetail(slug),
     enabled: !!slug,
+  })
+}
+
+/** The team guide; only members can read it, so the query waits until membership is known. */
+export function useNamespaceGuide(slug: string, enabled = true) {
+  return useQuery({
+    queryKey: ['namespaces', slug, 'guide'],
+    queryFn: () => namespaceApi.getGuide(slug),
+    enabled: !!slug && enabled,
+  })
+}
+
+export function useUpdateNamespaceGuide(slug: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (content: string) => namespaceApi.updateGuide(slug, content),
+    onSuccess: (guide: NamespaceGuide) => {
+      queryClient.setQueryData(['namespaces', slug, 'guide'], guide)
+    },
   })
 }
 

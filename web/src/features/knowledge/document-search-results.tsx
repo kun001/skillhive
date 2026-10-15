@@ -11,7 +11,10 @@ interface KnowledgeDocumentSearchResultsProps {
   showNamespace?: boolean
 }
 
-/** Files found across knowledge bases; each row says where the file lives and opens its detail page. */
+/**
+ * Files found across knowledge bases; each row says where the file lives, shows the matching excerpt
+ * (or the AI summary) and opens its detail page.
+ */
 export function KnowledgeDocumentSearchResults({ hits, showNamespace = true }: KnowledgeDocumentSearchResultsProps) {
   const { i18n } = useTranslation()
   return (
@@ -35,6 +38,9 @@ export function KnowledgeDocumentSearchResults({ hits, showNamespace = true }: K
                   {location}
                   {document.description ? ` · ${document.description}` : ''}
                 </p>
+                {hit.snippet || hit.summary ? (
+                  <p className="mt-1 line-clamp-2 text-xs leading-5 text-foreground/70">{hit.snippet ?? hit.summary}</p>
+                ) : null}
               </div>
               <div className="hidden shrink-0 text-right text-xs text-muted-foreground sm:block">
                 <p>{formatLocalDateTime(document.updatedAt, i18n.language, { dateStyle: 'medium' })}</p>

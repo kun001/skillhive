@@ -10,7 +10,7 @@ The knowledge base is the team's file center: members organize files in nested f
 - Every update keeps a version that can be downloaded or restored
 - Search files by title and description, across knowledge bases
 
-SkillHive does not parse file contents: search does not index file text, and there is no vector search, RAG Q&A or collaborative editing.
+SkillHive extracts Word, PowerPoint, Excel, PDF and text files to Markdown, and search covers titles, descriptions, AI summaries and text. There is no vector search, RAG Q&A, OCR for scans or collaborative editing.
 
 ## Supported Files
 

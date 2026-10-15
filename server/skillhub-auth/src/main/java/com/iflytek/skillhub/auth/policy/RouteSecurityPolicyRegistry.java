@@ -104,6 +104,8 @@ public class RouteSecurityPolicyRegistry {
             ApiTokenPolicy.allow(HttpMethod.GET, "/api/v1/namespaces/*"),
             ApiTokenPolicy.allow(HttpMethod.GET, "/api/web/namespaces"),
             ApiTokenPolicy.allow(HttpMethod.GET, "/api/web/namespaces/*"),
+            // A team guide is readable with any token; membership and the token's namespace scope apply.
+            ApiTokenPolicy.allow(HttpMethod.GET, "/api/v1/namespaces/*/guide"),
             // Read-only personal and knowledge surfaces for API tokens (e.g. MCP clients). Only
             // the versioned /api/v1 routes are opened, GET only; /api/web stays session-only and
             // every knowledge or /me write still has no token policy. Knowledge needs the opt-in
@@ -122,6 +124,7 @@ public class RouteSecurityPolicyRegistry {
             ApiTokenPolicy.require(HttpMethod.GET, "/api/v1/knowledge/documents/*", "knowledge:read"),
             ApiTokenPolicy.require(HttpMethod.GET, "/api/v1/knowledge/documents/*/versions", "knowledge:read"),
             ApiTokenPolicy.require(HttpMethod.GET, "/api/v1/knowledge/documents/*/content", "knowledge:read"),
+            ApiTokenPolicy.require(HttpMethod.GET, "/api/v1/knowledge/documents/*/text", "knowledge:read"),
             ApiTokenPolicy.require(HttpMethod.GET, "/api/v1/knowledge/documents/*/images", "knowledge:read"),
             ApiTokenPolicy.require(HttpMethod.GET, "/api/v1/knowledge/documents/*/images/*/content", "knowledge:read"),
             ApiTokenPolicy.allow(null, "/actuator/health"),

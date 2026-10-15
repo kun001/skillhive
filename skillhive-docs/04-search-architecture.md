@@ -1,6 +1,6 @@
 # SkillHive 技能搜索架构
 
-> 本文描述技能搜索。知识库搜索只匹配文件标题、描述和文件名，不做内容检索，见 [知识库文件中心实施计划](knowledge-file-hub-plan.md)。
+> 本文描述技能搜索。知识库搜索匹配标题、描述、AI 摘要和提取出的正文（应用内中文二元切分 + PostgreSQL `simple` 全文索引），见 [Agent 上下文能力路线图](29-agent-context-roadmap.md)。
 
 ## 1 SPI 接口
 

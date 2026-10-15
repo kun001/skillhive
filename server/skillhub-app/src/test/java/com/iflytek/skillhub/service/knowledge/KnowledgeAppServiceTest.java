@@ -80,6 +80,7 @@ class KnowledgeAppServiceTest {
     private final UserAccountRepository userAccountRepository = mock(UserAccountRepository.class);
     private final ObjectStorageService storageService = mock(ObjectStorageService.class);
     private final AuditLogService auditLogService = mock(AuditLogService.class);
+    private final KnowledgeTextService textService = mock(KnowledgeTextService.class);
 
     private final com.iflytek.skillhub.domain.namespace.NamespaceMemberRepository members = mock(com.iflytek.skillhub.domain.namespace.NamespaceMemberRepository.class);
     private final com.iflytek.skillhub.domain.namespace.MemberResourcePolicy memberPolicy = new com.iflytek.skillhub.domain.namespace.MemberResourcePolicy(members);
@@ -92,7 +93,7 @@ class KnowledgeAppServiceTest {
         service = new KnowledgeAppService(namespaceRepository, baseRepository, folderRepository, documentRepository,
                 versionRepository, attachmentRepository, userAccountRepository, new KnowledgeAccessPolicy(), new KnowledgeFilePolicy(),
                 new KnowledgeMarkdownPolicy(new KnowledgeFilePolicy()),
-                storageService, auditLogService, new RequestIdAccessor(), memberPolicy);
+                storageService, auditLogService, new RequestIdAccessor(), memberPolicy, textService);
         when(members.findByNamespaceIdAndUserId(eq(NAMESPACE_ID), anyString())).thenAnswer(invocation -> Optional.of(new com.iflytek.skillhub.domain.namespace.NamespaceMember(NAMESPACE_ID, invocation.getArgument(1), NamespaceRole.MEMBER)));
 
         namespace = new Namespace("team-a", "Team A", "owner");
@@ -134,6 +135,7 @@ class KnowledgeAppServiceTest {
         assertThat(response.currentVersion()).isEqualTo(1);
         verify(auditLogService).record(eq("alice"), eq("KNOWLEDGE_DOCUMENT_UPLOAD"), eq("KNOWLEDGE_DOCUMENT"),
                 eq(21L), any(), any(), any(), anyString());
+        verify(textService).versionPublished(21L, 31L);
     }
 
     @Test
@@ -231,6 +233,8 @@ class KnowledgeAppServiceTest {
         verify(attachmentRepository).save(image.capture());
         assertThat(image.getValue().getObjectKey()).isEqualTo("original-image");
         assertThat(image.getValue().getRelativePath()).isEqualTo("pack/a.png");
+        // Each new current version, uploaded or restored, gets its own text extraction.
+        verify(textService, org.mockito.Mockito.times(2)).versionPublished(21L, 32L);
     }
 
     @Test
@@ -344,15 +348,19 @@ class KnowledgeAppServiceTest {
         document.publish(version, "pdf");
         when(baseRepository.findByNamespaceIdInAndStatus(any(), eq(KnowledgeBaseStatus.ACTIVE))).thenReturn(List.of(base));
         when(namespaceRepository.findByIdIn(any())).thenReturn(List.of(namespace));
-        when(documentRepository.search(any(), any())).thenReturn(new PageImpl<>(List.of(document), PageRequest.of(0, 20), 1));
+        when(textService.search(any(), anyString(), any())).thenReturn(new PageImpl<>(
+                List.of(new com.iflytek.skillhub.domain.knowledge.KnowledgeContentSearchRepository.Hit(21L, "…年假按工龄计算…")),
+                PageRequest.of(0, 20), 1));
+        when(documentRepository.findByIdIn(any())).thenReturn(List.of(document));
+        when(textService.summaries(any())).thenReturn(Map.of());
         when(versionRepository.findByIdIn(any())).thenReturn(List.of(version));
 
         var page = service.searchDocuments(" 年假 ", null, 0, 20, member("alice"));
 
-        ArgumentCaptor<KnowledgeDocumentSearch> search = ArgumentCaptor.forClass(KnowledgeDocumentSearch.class);
-        verify(documentRepository).search(search.capture(), any());
-        assertThat(search.getValue().knowledgeBaseIds()).containsExactly(11L);
-        assertThat(search.getValue().keyword()).isEqualTo("年假");
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<java.util.Collection<Long>> bases = ArgumentCaptor.forClass(java.util.Collection.class);
+        verify(textService).search(bases.capture(), eq("年假"), any());
+        assertThat(bases.getValue()).containsExactly(11L);
         assertThat(page.total()).isEqualTo(1);
         assertThat(page.items()).singleElement().satisfies(hit -> {
             assertThat(hit.document().id()).isEqualTo(21L);
@@ -360,13 +368,46 @@ class KnowledgeAppServiceTest {
             assertThat(hit.namespaceDisplayName()).isEqualTo("Team A");
             assertThat(hit.knowledgeBaseSlug()).isEqualTo("handbook");
             assertThat(hit.knowledgeBaseDisplayName()).isEqualTo("Handbook");
+            assertThat(hit.snippet()).isEqualTo("…年假按工龄计算…");
+            assertThat(hit.summary()).isNull();
         });
 
-        org.mockito.Mockito.clearInvocations(documentRepository);
+        org.mockito.Mockito.clearInvocations(textService);
         assertThat(service.searchDocuments("   ", null, 0, 20, member("alice")).items()).isEmpty();
         assertThat(service.searchDocuments("年假", "other-team", 0, 20, member("alice")).items()).isEmpty();
         assertThat(service.searchDocuments("年假", null, 0, 20, new KnowledgeAppService.Caller("mallory", Map.of(), Set.of())).items()).isEmpty();
-        verify(documentRepository, never()).search(any(), any());
+        verify(textService, never()).search(any(), anyString(), any());
+    }
+
+    @Test
+    void extractedTextFollowsTheDownloadCapabilityAndAuditsReads() throws Exception {
+        KnowledgeDocument document = withId(new KnowledgeDocument(11L, null, "guide", "Guide", null, "alice"), 21L);
+        KnowledgeDocumentVersion version = withId(new KnowledgeDocumentVersion(21L, 1, "key", "application/pdf", "guide.pdf", 1, "sha", null, "alice"), 31L);
+        version.publishDirectly("alice");
+        document.publish(version, "pdf");
+        when(documentRepository.findById(21L)).thenReturn(Optional.of(document));
+        when(versionRepository.findById(31L)).thenReturn(Optional.of(version));
+        var text = new com.iflytek.skillhub.domain.knowledge.KnowledgeDocumentText(31L, 21L, java.time.Instant.EPOCH);
+        org.springframework.test.util.ReflectionTestUtils.setField(text, "status", "COMPLETED");
+        org.springframework.test.util.ReflectionTestUtils.setField(text, "content", "## Page 1\n\n年假");
+        org.springframework.test.util.ReflectionTestUtils.setField(text, "charCount", 12);
+        when(textService.text(31L)).thenReturn(Optional.of(text));
+        when(textService.summary(31L)).thenReturn(Optional.empty());
+
+        var response = service.openText(21L, null, member("alice"), null);
+
+        assertThat(response.status()).isEqualTo("COMPLETED");
+        assertThat(response.content()).contains("年假");
+        assertThat(response.fileName()).isEqualTo("guide.pdf");
+        verify(auditLogService).record(eq("alice"), eq("KNOWLEDGE_DOCUMENT_TEXT_READ"), eq("KNOWLEDGE_DOCUMENT"),
+                eq(21L), any(), any(), any(), anyString());
+
+        var readOnly = new com.iflytek.skillhub.domain.namespace.NamespaceMember(NAMESPACE_ID, "bob", NamespaceRole.MEMBER);
+        readOnly.setCanDownload(false);
+        when(members.findByNamespaceIdAndUserId(NAMESPACE_ID, "bob")).thenReturn(Optional.of(readOnly));
+        assertThatThrownBy(() -> service.openText(21L, null, member("bob"), null)).isInstanceOf(DomainForbiddenException.class);
+        assertThatThrownBy(() -> service.openText(21L, null, new KnowledgeAppService.Caller("outsider", Map.of(), Set.of()), null))
+                .isInstanceOf(DomainNotFoundException.class);
     }
 
     private static KnowledgeAppService.Caller member(String userId) {

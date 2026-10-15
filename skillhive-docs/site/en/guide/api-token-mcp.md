@@ -62,7 +62,8 @@ This endpoint uses personal Bearer tokens and does not provide OAuth sign-in. Cl
 
 - **Scoped access**: dedicated MCP tokens enable only the selected read, upload-new and archive tools. Legacy tokens must be read-only; ordinary publish or token-management credentials are rejected.
 - **Tools follow the token**: it only offers tools for the areas the token can read.
-- **Files are passed through unchanged**: text files come back as text, PDF, Office and other files as the original bytes, with no content parsing; the default per-file limit is 10 MB.
+- **Markdown first**: Word, PowerPoint, Excel, PDF and text files come back as the Markdown extracted on the server (`format=original` returns the file), other files unchanged; the default per-file limit is 10 MB.
+- **Team guide**: `get_team_guide` returns the team space's guide; agents should read it before they start.
 
 ### Build
 

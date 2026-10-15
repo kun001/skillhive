@@ -27,6 +27,15 @@ class McpTokenScopeTest {
         assertThat(policy.authorize("POST", "/api/v1/mcp/skills/team/uploads", Set.of("skill:publish", "skill:upload")).allowed()).isFalse();
         assertThat(policy.authorize("GET", "/api/v1/knowledge/bases", Set.of("mcp:access", "skill:read")).allowed()).isFalse();
     }
+    @Test void dedicatedTokensReadTeamGuidesButNoOtherNamespaceRoute() {
+        var scopes = Set.of("mcp:access", "skill:read");
+        assertThat(policy.authorize("GET", "/api/v1/namespaces/team/guide", scopes).allowed()).isTrue();
+        assertThat(policy.authorize("PUT", "/api/v1/namespaces/team/guide", scopes).allowed()).isFalse();
+        assertThat(policy.authorize("GET", "/api/v1/namespaces/team", scopes).allowed()).isFalse();
+        assertThat(policy.authorize("GET", "/api/v1/namespaces/team/members", scopes).allowed()).isFalse();
+        assertThat(policy.authorize("GET", "/api/v1/namespaces/team/guide/x", scopes).allowed()).isFalse();
+        assertThat(policy.authorize("GET", "/api/v1/knowledge/documents/1/text", Set.of("mcp:access", "knowledge:read")).allowed()).isTrue();
+    }
     @Test void resourceGrantsSeparateNamespacesAndKnowledgeBasesAndRejectCorruption() throws Exception {
         var grants = policy.parseResourceGrants("{\"namespaceIds\":[1],\"knowledgeBaseIds\":[5]}");
         assertThat(grants.allowsBase(1L, 5L)).isTrue();

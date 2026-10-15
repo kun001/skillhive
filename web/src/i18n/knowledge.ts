@@ -8,7 +8,7 @@ export const knowledgeZh = {
   },
   title: '知识库',
   subtitle: '团队文件中心，集中管理、预览与共享团队资料。',
-  searchBases: '搜索知识库名称、文件标题或描述…',
+  searchBases: '搜索知识库名称，或按标题、摘要和正文搜索文件…',
   allNamespaces: '全部团队空间',
   search: {
     basesHeading: '知识库',
@@ -195,6 +195,16 @@ export const knowledgeZh = {
     description: '描述',
     noDescription: '暂无描述',
     notFound: '文件不存在或你没有访问权限',
+    agentTitle: '供 Agent 使用',
+    summary: 'AI 摘要',
+    noSummary: '暂无摘要',
+    textStatus: {
+      PENDING: '正在提取文本，稍后 Agent 即可读取 Markdown 版本。',
+      RUNNING: '正在提取文本，稍后 Agent 即可读取 Markdown 版本。',
+      COMPLETED: '已提取 Markdown 文本，Agent 读取和搜索都会用到它。',
+      UNSUPPORTED: '该格式暂不提取文本，Agent 将读取原文件。',
+      FAILED: '文本提取失败，Agent 将读取原文件。',
+    },
   },
   preview: {
     noDownloadTitle: '无下载权限，无法预览',
@@ -230,7 +240,7 @@ export const knowledgeEn: typeof knowledgeZh = {
   },
   title: 'Knowledge base',
   subtitle: 'Your team\'s file hub: members upload, view and download shared files here.',
-  searchBases: 'Search knowledge bases, file titles or descriptions…',
+  searchBases: 'Search knowledge bases, or files by title, summary and content…',
   allNamespaces: 'All team spaces',
   search: {
     basesHeading: 'Knowledge bases',
@@ -417,7 +427,17 @@ export const knowledgeEn: typeof knowledgeZh = {
     description: 'Description',
     noDescription: 'No description',
     notFound: 'The file does not exist or you do not have access to it',
-  },
+
+    agentTitle: 'For agents',
+    summary: 'AI summary',
+    noSummary: 'No summary yet',
+    textStatus: {
+      PENDING: 'Extracting text. Agents can read a Markdown version shortly.',
+      RUNNING: 'Extracting text. Agents can read a Markdown version shortly.',
+      COMPLETED: 'Markdown text extracted. Agents use it for reading and search.',
+      UNSUPPORTED: 'Text is not extracted for this format; agents read the original file.',
+      FAILED: 'Text extraction failed; agents read the original file.',
+    },  },
   preview: {
     noDownloadTitle: 'No download permission, preview unavailable',
     noDownloadDescription: 'Preview uses the same permission as download. Ask a team admin to enable downloads for you.',

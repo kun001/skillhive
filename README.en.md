@@ -2,11 +2,11 @@
   <img src="skillhive-docs/assets/skillhive-logo.svg" alt="SkillHive" width="360" />
 </p>
 
-<h3 align="center">A self-hosted home for your team's AI skills and work files</h3>
+<h3 align="center">The private context center for your team’s agents</h3>
 
 <p align="center">
-  Skills are reviewed before they are published, files are shared as soon as they are uploaded, and both live in the same team space;<br />
-  AI tools read them directly over MCP with your permissions, and your data stays on your own server.
+  Hand your team's proven practices (skills) and working files (knowledge) to every agent you already use;<br />
+  access follows member permissions, every read and write is audited, and your data stays on your own server.
 </p>
 
 <p align="center">
@@ -98,11 +98,11 @@ Ask your AI things like:
 | --- | --- |
 | **Read-only** | Use only `skill:read` and/or `knowledge:read`. Tokens with write scopes are refused, so the AI cannot change anything. |
 | **Team permissions apply** | Read published public skills and authorized content in your teams. Reading team files requires download permission; platform administrators' tokens cannot bypass membership or download checks. |
-| **Files passed through unchanged** | Text files come back as text; PDF, Word and other files are handed to the AI tool as the original file. The platform does no content parsing. |
+| **Readable by agents** | Word, PowerPoint, Excel, PDF and text files are extracted to Markdown on the server; `read_document` returns that Markdown by default (with the AI summary when available) and other files unchanged. |
 | **Traceable** | Knowledge files and skill files read with a token are recorded in the audit log, naming the token. |
 | **Grant only what you need** | Skill and knowledge access are granted separately, and the MCP server only offers the tools for what the token can reach. |
 
-12 tools: `whoami`; skills: `search_skills`, `get_skill`, `list_skill_versions`, `list_skill_files`, `read_skill_file`, `list_my_skills`; knowledge: `list_knowledge_bases`, `browse_knowledge_base`, `search_knowledge`, `get_document`, `read_document`.
+13 tools: `whoami`, `get_team_guide` (team guide); skills: `search_skills`, `get_skill`, `list_skill_versions`, `list_skill_files`, `read_skill_file`, `list_my_skills`; knowledge: `list_knowledge_bases`, `browse_knowledge_base`, `search_knowledge`, `get_document`, `read_document`.
 
 ### Remote access: configure a URL and token
 
@@ -247,7 +247,7 @@ To upload a folder, choose **Upload files → Select folder**, check the destina
 
 </details>
 
-**Scope**: SkillHive manages resources through the Web and does not run skill scripts; the MCP server is read-only and cannot publish or change content. Knowledge search matches titles and descriptions (titles default to the file name). It does not search file contents, and it does not provide document parsing, vector search, RAG Q&A or online co-editing.
+**Scope**: SkillHive manages resources through the Web and does not run skill scripts; the MCP server is read-only and cannot publish or change content. Knowledge search matches titles, descriptions, AI summaries and extracted text. It does not provide vector search, RAG Q&A, OCR for scans or online co-editing.
 
 ## Deployment
 

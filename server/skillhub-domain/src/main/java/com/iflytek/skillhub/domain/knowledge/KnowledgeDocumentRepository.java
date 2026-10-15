@@ -13,6 +13,7 @@ import java.util.Optional;
  */
 public interface KnowledgeDocumentRepository {
     Optional<KnowledgeDocument> findById(Long id);
+    List<KnowledgeDocument> findByIdIn(Collection<Long> ids);
     boolean existsActiveFilename(Long knowledgeBaseId, Long folderId, String filename);
     boolean existsByKnowledgeBaseIdAndSlug(Long knowledgeBaseId, String slug);
     boolean existsActiveInFolder(Long folderId);
