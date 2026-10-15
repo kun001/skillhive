@@ -18,19 +18,20 @@ describe('theme preference', () => {
     document.documentElement.style.colorScheme = ''
   })
 
-  it('uses light when the browser has no saved preference', () => {
+  it('uses dark when the browser has no saved preference', () => {
+    expect(DEFAULT_THEME).toBe('dark')
     expect(initializeTheme()).toBe(DEFAULT_THEME)
-    expect(document.documentElement.classList.contains('dark')).toBe(false)
-    expect(document.documentElement.dataset.theme).toBe('light')
-    expect(document.documentElement.style.colorScheme).toBe('light')
+    expect(document.documentElement.classList.contains('dark')).toBe(true)
+    expect(document.documentElement.dataset.theme).toBe('dark')
+    expect(document.documentElement.style.colorScheme).toBe('dark')
   })
 
   it('restores a valid browser-local preference before render', () => {
-    window.localStorage.setItem(THEME_STORAGE_KEY, 'dark')
+    window.localStorage.setItem(THEME_STORAGE_KEY, 'light')
 
-    expect(initializeTheme()).toBe('dark')
-    expect(document.documentElement.classList.contains('dark')).toBe(true)
-    expect(document.documentElement.dataset.theme).toBe('dark')
+    expect(initializeTheme()).toBe('light')
+    expect(document.documentElement.classList.contains('dark')).toBe(false)
+    expect(document.documentElement.dataset.theme).toBe('light')
   })
 
   it('ignores invalid and inaccessible storage values', () => {

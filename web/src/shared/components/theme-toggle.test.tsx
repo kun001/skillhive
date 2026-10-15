@@ -14,6 +14,7 @@ vi.mock('react-i18next', () => ({
 describe('ThemeToggle', () => {
   beforeEach(() => {
     window.localStorage.clear()
+    window.localStorage.setItem(THEME_STORAGE_KEY, 'light')
     document.documentElement.classList.remove('dark')
     document.documentElement.dataset.theme = 'light'
     document.documentElement.style.colorScheme = 'light'

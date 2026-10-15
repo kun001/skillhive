@@ -2,7 +2,7 @@ import { defineConfig } from 'vitepress'
 
 export default defineConfig({
   title: 'SkillHive',
-  description: 'Self-hosted AI skills and knowledge hub for teams',
+  description: 'The private context center for team agents',
   base: '/skillhive/',
   ignoreDeadLinks: [/^http:\/\/localhost/],
 
@@ -18,7 +18,7 @@ export default defineConfig({
     root: {
       label: '中文',
       lang: 'zh-CN',
-      description: '私有部署的团队 AI 技能与资料共享中心',
+      description: '团队 Agent 的私有上下文中心',
       themeConfig: {
         nav: [
           { text: '首页', link: '/' },
@@ -66,7 +66,7 @@ export default defineConfig({
       label: 'English',
       lang: 'en',
       link: '/en/',
-      description: 'Self-hosted AI skills and knowledge hub for teams',
+      description: 'The private context center for team agents',
       themeConfig: {
         nav: [
           { text: 'Home', link: '/en/' },
