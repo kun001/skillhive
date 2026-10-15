@@ -1,93 +1,75 @@
-import { describe, expect, it, vi } from 'vitest'
+// @vitest-environment jsdom
+import type { ReactNode } from 'react'
+import { cleanup, render, screen } from '@testing-library/react'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import i18n from '@/i18n/config'
+import { hiveLandingEn, hiveLandingZh } from '@/i18n/hive-landing'
+
+const skills = vi.hoisted(() => ({ items: [] as unknown[] }))
 
 vi.mock('@tanstack/react-router', () => ({
-  Link: ({ children }: { children: unknown }) => children,
-  useNavigate: () => vi.fn(),
-}))
-
-vi.mock('react-i18next', async () => {
-  const actual = await vi.importActual<typeof import('react-i18next')>('react-i18next')
-  return {
-    ...actual,
-    useTranslation: () => ({
-      t: (key: string) => key,
-    }),
-  }
-})
-
-vi.mock('lucide-react', () => ({
-  ArrowRight: () => null,
-  BookOpen: () => null,
-  ChevronDown: () => null,
-  CheckCircle2: () => null,
-  Clock3: () => null,
-  Copy: () => null,
-  PackageOpen: () => null,
-  Terminal: () => null,
-  Shield: () => null,
-  Users: () => null,
-  GitBranch: () => null,
-  FileText: () => null,
-  Download: () => null,
-  Eye: () => null,
-  FolderOpen: () => null,
-  History: () => null,
-  Layers3: () => null,
-  Lock: () => null,
-  Monitor: () => null,
-  Search: () => null,
-  ShieldCheck: () => null,
-  Server: () => null,
-  Settings: () => null,
-}))
-
-vi.mock('@/features/skill/skill-card', () => ({
-  SkillCard: () => null,
-}))
-
-vi.mock('@/shared/components/skeleton-loader', () => ({
-  SkeletonList: () => null,
+  Link: ({ children, className }: { children: ReactNode; className?: string }) => <a className={className}>{children}</a>,
 }))
 
 vi.mock('@/shared/hooks/use-skill-queries', () => ({
-  useSearchSkills: () => ({
-    data: { items: [] },
-    isLoading: false,
-  }),
+  useSearchSkills: () => ({ data: { items: skills.items }, isLoading: false, isError: false }),
 }))
 
-vi.mock('@/shared/hooks/use-in-view', () => ({
-  useInView: () => ({ ref: vi.fn(), inView: true }),
-}))
-
-vi.mock('@/shared/ui/button', () => ({
-  Button: ({ children }: { children: unknown }) => children,
-}))
-
-import { renderToStaticMarkup } from 'react-dom/server'
 import { LandingPage } from './landing'
 
+function shapeOf(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(shapeOf)
+  if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, shapeOf(item)]))
+  return typeof value
+}
+
+function mockReducedMotion(reduced: boolean) {
+  vi.stubGlobal('matchMedia', (query: string) => ({ matches: reduced && query.includes('reduce'), addEventListener: vi.fn(), removeEventListener: vi.fn() }))
+}
+
+beforeAll(async () => {
+  await i18n.changeLanguage('zh')
+})
+
+afterEach(() => {
+  cleanup()
+  skills.items = []
+  vi.unstubAllGlobals()
+})
+
 describe('LandingPage', () => {
-  it('exports a named component function', () => {
-    expect(typeof LandingPage).toBe('function')
+  it('leads with the agent context positioning', () => {
+    mockReducedMotion(true)
+    render(<LandingPage />)
+
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('让每个 Agent，都懂你的团队。')
+    expect(screen.getByText('团队 Agent 的私有上下文中心')).toBeTruthy()
+    expect(screen.getAllByText('连接你的 Agent').length).toBeGreaterThan(0)
+    expect(screen.getByRole('figure', { name: hiveLandingZh.layers.flowLabel })).toBeTruthy()
   })
 
-  it('renders the new homepage sections without hard-coded registry totals', () => {
-    const html = renderToStaticMarkup(<LandingPage />)
+  it('renders the whole transcript at once when motion is reduced', () => {
+    mockReducedMotion(true)
+    const { container } = render(<LandingPage />)
+    const scenario = hiveLandingZh.console.scenarios.report
 
-    expect(html).toContain('hiveLanding.heroTitleFirst')
-    expect(html).toContain('hiveLanding.knowledgeTitle')
-    expect(html).toContain('hiveLanding.knowledgeBenefits.organize.title')
-    expect(html).toContain('hiveLanding.knowledgePreview.title')
-    expect(html).toContain('hiveLanding.knowledgeCta')
-    expect(html).toContain('hiveLanding.libraryTitle')
-    expect(html).not.toContain('Skill 已收录 24 个')
+    expect(container.querySelectorAll('.hv-step.is-done')).toHaveLength(scenario.steps.length)
+    expect(container.querySelector('.hv-console-result.is-shown')?.textContent).toContain(scenario.result)
   })
 
-  it('keeps the hero free of the registry search box and skill count', () => {
-    const html = renderToStaticMarkup(<LandingPage />)
+  it('omits zero download counts on skill cards', () => {
+    mockReducedMotion(true)
+    skills.items = [
+      { id: 1, displayName: 'weekly-report', slug: 'weekly-report', namespace: '@team', downloadCount: 0, summary: 'Draft reports' },
+      { id: 2, displayName: 'incident-triage', slug: 'incident-triage', namespace: '@team', downloadCount: 12, summary: 'Triage incidents' },
+    ]
+    render(<LandingPage />)
 
-    expect(html).not.toContain('role="search"')
-    expect(html).not.toContain('hiveLanding.skillTotal')
+    expect(screen.getByText('12 次下载')).toBeTruthy()
+    expect(screen.queryByText('0 次下载')).toBeNull()
+  })
+
+  it('keeps the Chinese and English copy in the same shape', () => {
+    expect(shapeOf(hiveLandingEn)).toEqual(shapeOf(hiveLandingZh))
   })
 })

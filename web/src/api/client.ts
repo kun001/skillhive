@@ -37,6 +37,7 @@ import type {
   AdminNamespace,
   AdminNamespaceList,
   Namespace,
+  NamespaceGuide,
   CreateNamespaceRequest,
   NamespaceMember,
   NamespaceCandidateUser,
@@ -685,6 +686,20 @@ export const namespaceApi = {
 
   async getDetail(slug: string): Promise<Namespace> {
     return fetchJson<Namespace>(`${WEB_API_PREFIX}/namespaces/${normalizeNamespaceSlug(slug)}`)
+  },
+
+  async getGuide(slug: string): Promise<NamespaceGuide> {
+    return fetchJson<NamespaceGuide>(`${WEB_API_PREFIX}/namespaces/${normalizeNamespaceSlug(slug)}/guide`)
+  },
+
+  async updateGuide(slug: string, content: string): Promise<NamespaceGuide> {
+    return fetchJson<NamespaceGuide>(`${WEB_API_PREFIX}/namespaces/${normalizeNamespaceSlug(slug)}/guide`, {
+      method: 'PUT',
+      headers: await ensureCsrfHeaders({
+        'Content-Type': 'application/json',
+      }),
+      body: JSON.stringify({ content }),
+    })
   },
 
   async freeze(slug: string): Promise<Namespace> {

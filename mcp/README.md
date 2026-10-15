@@ -32,7 +32,8 @@
 
 - 默认只读；新 MCP Token 可独立授予新增上传与归档删除。
 - 权限与网页一致：只能看到你所在团队的内容，读取知识库文件需要该团队的下载权限。
-- 文件原样返回：文本文件返回文本，PDF、DOCX 等返回原文件，不做内容解析。
+- 文件优先返回 Markdown：Word、PowerPoint、Excel、PDF 和文本文件返回服务端提取的 Markdown（`format=original` 取原文件），其他文件原样返回。
+- `get_team_guide` 返回团队说明书。
 - 可追溯：通过它读取的知识库文件和技能文件都会写入 SkillHive 审计日志。
 
 ## 1. 创建 Token

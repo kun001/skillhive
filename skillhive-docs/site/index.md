@@ -3,8 +3,8 @@ layout: home
 
 hero:
   name: SkillHive
-  text: 私有部署的团队 AI 技能与资料共享中心
-  tagline: 技能经审核再发布，资料上传即共享，都放在同一个团队空间里，数据留在你自己的服务器上。
+  text: 团队 Agent 的私有上下文中心
+  tagline: 把团队的做法（技能）和资料（知识）交给你正在用的每一个 Agent，按成员权限取用，读写留痕，数据留在你自己的服务器上。
   image:
     src: /logo.svg
     alt: SkillHive

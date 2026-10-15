@@ -34,11 +34,17 @@ export type KnowledgeDocument = Omit<
 
 export type KnowledgeFolderPathItem = Populated<Schemas['KnowledgeFolderPathItem'], 'id' | 'name'>
 
+/** State of the agent-readable Markdown text extracted from the current version. */
+export type KnowledgeTextStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'UNSUPPORTED' | 'FAILED'
+
 export type KnowledgeDocumentDetail = {
   document: KnowledgeDocument
   knowledgeBase: KnowledgeBase
   folderPath: KnowledgeFolderPathItem[]
   sha256: string
+  textStatus?: KnowledgeTextStatus | null
+  summary?: string | null
+  keywords?: string[]
 }
 
 export type KnowledgeDocumentVersion = Omit<

@@ -3,8 +3,8 @@ layout: home
 
 hero:
   name: SkillHive
-  text: Self-hosted AI skills and knowledge hub for teams
-  tagline: Skills are reviewed before release, files are shared on upload, both live in the same team space, and your data stays on your own servers.
+  text: The private context center for team agents
+  tagline: Hand your team’s practices (skills) and files (knowledge) to every agent you already use, within member permissions, with every read and write audited and your data on your own servers.
   image:
     src: /logo.svg
     alt: SkillHive

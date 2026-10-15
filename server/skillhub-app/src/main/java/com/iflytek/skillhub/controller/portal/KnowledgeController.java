@@ -14,6 +14,7 @@ import com.iflytek.skillhub.dto.knowledge.KnowledgeBaseResponse;
 import com.iflytek.skillhub.dto.knowledge.KnowledgeDocumentDetailResponse;
 import com.iflytek.skillhub.dto.knowledge.KnowledgeDocumentResponse;
 import com.iflytek.skillhub.dto.knowledge.KnowledgeDocumentSearchHitResponse;
+import com.iflytek.skillhub.dto.knowledge.KnowledgeDocumentTextResponse;
 import com.iflytek.skillhub.dto.knowledge.KnowledgeDocumentVersionResponse;
 import com.iflytek.skillhub.dto.knowledge.KnowledgeFolderResponse;
 import com.iflytek.skillhub.dto.knowledge.KnowledgeMarkdownImagesResponse;
@@ -228,7 +229,7 @@ public class KnowledgeController extends BaseApiController {
 
     @GetMapping("/documents/search")
     @Operation(operationId = "searchKnowledgeDocuments",
-            summary = "Search file titles and descriptions across the knowledge bases visible to the caller")
+            summary = "Search titles, descriptions, summaries and extracted text across the knowledge bases visible to the caller")
     public ApiResponse<PageResponse<KnowledgeDocumentSearchHitResponse>> searchDocuments(
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String namespace,
@@ -345,6 +346,24 @@ public class KnowledgeController extends BaseApiController {
                 documentId, version, caller(userId, userNsRoles, principal), "inline".equalsIgnoreCase(disposition),
                 AuditRequestContext.from(httpRequest));
         return streamContent(content, disposition);
+    }
+
+    /**
+     * Agent-readable Markdown derived from a file version, with its summary. Requires the member
+     * download capability, like the original file; reads of extracted text are audited.
+     */
+    @GetMapping("/documents/{documentId}/text")
+    @Operation(operationId = "getKnowledgeDocumentText", summary = "Read the extracted Markdown text of a file version")
+    @RateLimit(category = "download", authenticated = 120, anonymous = 0)
+    public ApiResponse<KnowledgeDocumentTextResponse> text(
+            @PathVariable Long documentId,
+            @RequestParam(required = false) Integer version,
+            @RequestAttribute("userId") String userId,
+            @RequestAttribute(value = "userNsRoles", required = false) Map<Long, NamespaceRole> userNsRoles,
+            @AuthenticationPrincipal PlatformPrincipal principal,
+            HttpServletRequest httpRequest) {
+        return ok("response.success.read", knowledgeAppService.openText(
+                documentId, version, caller(userId, userNsRoles, principal), AuditRequestContext.from(httpRequest)));
     }
 
     @GetMapping("/documents/{documentId}/images")

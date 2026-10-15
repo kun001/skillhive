@@ -8,6 +8,7 @@ import { KnowledgeBaseCard } from '@/features/knowledge/base-card'
 import { KnowledgeDocumentSearchResults } from '@/features/knowledge/document-search-results'
 import { useKnowledgeBases, useKnowledgeDocumentSearch } from '@/features/knowledge/use-knowledge-queries'
 import { NamespaceHeader } from '@/features/namespace/namespace-header'
+import { TeamGuidePanel } from '@/features/namespace/team-guide'
 import { SkillCard } from '@/features/skill/skill-card'
 import { SkeletonList } from '@/shared/components/skeleton-loader'
 import { EmptyState } from '@/shared/components/empty-state'
@@ -20,7 +21,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 
 const PAGE_SIZE = 20
 
-type NamespaceTab = 'skills' | 'knowledge'
+type NamespaceTab = 'skills' | 'knowledge' | 'guide'
 
 /**
  * Team space page: namespace metadata with its skills and knowledge bases side by side.
@@ -63,7 +64,8 @@ export function NamespacePage() {
   const fileHits = fileSearch.data?.items ?? []
   const fileTotal = fileSearch.data?.total ?? 0
 
-  const isMember = hasRole('SUPER_ADMIN') || (myNamespaces.data ?? []).some((item) => item.slug === namespace)
+  const isTeamMember = (myNamespaces.data ?? []).some((item) => item.slug === namespace)
+  const isMember = hasRole('SUPER_ADMIN') || isTeamMember
   const skillTotal = skillsData?.total ?? 0
   const totalPages = skillsData ? Math.max(Math.ceil(skillsData.total / skillsData.size), 1) : 1
   // Open the tab that has content when the link does not pick one.
@@ -74,7 +76,7 @@ export function NamespacePage() {
     navigate({
       to: '/space/$namespace',
       params: { namespace },
-      search: { tab: tab === 'knowledge' ? 'knowledge' : 'skills' },
+      search: { tab: tab === 'knowledge' || tab === 'guide' ? tab : 'skills' },
       replace: true,
     })
 
@@ -112,6 +114,7 @@ export function NamespacePage() {
             {t('namespace.tabKnowledge')}
             <span className="ml-1.5 text-xs text-muted-foreground">{bases.data && isMember ? namespaceBases.length : ''}</span>
           </TabsTrigger>
+          <TabsTrigger value="guide">{t('namespace.tabGuide')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="skills" className="space-y-6">
@@ -201,6 +204,12 @@ export function NamespacePage() {
               )}
             </>
           )}
+        </TabsContent>
+        <TabsContent value="guide">
+          {/* The guide follows real membership; a platform role alone does not open it. */}
+          {isTeamMember
+            ? <TeamGuidePanel namespace={namespace} />
+            : <EmptyState title={t('namespace.guideMembersOnly')} description={t('namespace.knowledgeMembersOnlyDescription')} />}
         </TabsContent>
       </Tabs>
     </div>

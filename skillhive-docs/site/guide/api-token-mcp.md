@@ -64,7 +64,8 @@ curl -H "Authorization: Bearer $SKILLHIVE_TOKEN" https://skillhive.example.com/a
 
 - **按授权操作**：支持旧只读 Token 和新 MCP 专用 Token；普通发布、删除或 Token 管理凭证仍被拒绝。
 - **按权限提供工具**：Token 能读哪个领域，就只提供哪个领域的工具。
-- **原样传递文件**：文本文件返回文本，PDF、Office 等返回原文件，不做内容解析；单个文件默认上限 10 MB。
+- **优先返回 Markdown**：Word、PowerPoint、Excel、PDF 和文本文件返回服务端提取的 Markdown（`format=original` 取原文件），其他文件原样返回；单个文件默认上限 10 MB。
+- **团队说明书**：`get_team_guide` 返回团队空间的说明书，建议 Agent 开始工作前先读。
 
 ### 构建
 

@@ -6,6 +6,8 @@ import { validateBasePath } from './base-path-config'
 const JS_BUILD_TARGET = 'es2020'
 const LEGACY_BROWSER_TARGETS = ['chrome83', 'edge83', 'firefox78', 'safari14']
 const basePath = validateBasePath(process.env.VITE_BASE_PATH ?? '/')
+// Lets a second dev server target another backend, e.g. SKILLHUB_API_PROXY=http://localhost:8081.
+const apiProxyTarget = process.env.SKILLHUB_API_PROXY ?? 'http://localhost:8080'
 export default defineConfig({
   base: basePath,
   plugins: [react()],
@@ -36,15 +38,15 @@ export default defineConfig({
     },
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
+        target: apiProxyTarget,
         changeOrigin: true,
       },
       '/oauth2': {
-        target: 'http://localhost:8080',
+        target: apiProxyTarget,
         changeOrigin: true,
       },
       '/login/oauth2': {
-        target: 'http://localhost:8080',
+        target: apiProxyTarget,
         // Preserve the browser-facing localhost:3000 host so Spring's
         // post-login redirect does not send the SPA to localhost:8080.
         changeOrigin: false,

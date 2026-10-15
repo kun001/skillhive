@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from '@tanstack/react-router'
-import { Download, History, MoreHorizontal, Pencil, Trash2, Upload } from 'lucide-react'
+import { Bot, Download, History, MoreHorizontal, Pencil, Trash2, Upload } from 'lucide-react'
 import { useMemo, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { knowledgeApi } from '@/api/client'
@@ -56,7 +56,7 @@ export function KnowledgeDocumentPage() {
     return <EmptyState title={t('knowledge.detail.notFound')} />
   }
 
-  const { document, knowledgeBase, folderPath, sha256 } = detail.data
+  const { document, knowledgeBase, folderPath, sha256, textStatus, summary, keywords = [] } = detail.data
   const formatTime = (value: string) => formatLocalDateTime(value, i18n.language, { dateStyle: 'medium', timeStyle: 'short' })
   const backToBase = (folder?: number) =>
     navigate({ to: '/knowledge/$namespace/$base', params: { namespace, base }, search: folder ? { folder } : {} })
@@ -137,6 +137,32 @@ export function KnowledgeDocumentPage() {
           <KnowledgeFilePreview key={`${document.id}-${document.currentVersion}`} document={document} />
         </section>
         <aside className="space-y-4 xl:sticky xl:top-24 xl:self-start">
+          {textStatus || summary ? (
+            <div className="rounded-xl border border-border/60 bg-card p-4">
+              <h2 className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                <Bot className="h-4 w-4 text-muted-foreground" aria-hidden />
+                {t('knowledge.detail.agentTitle')}
+              </h2>
+              {summary ? (
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground">{t('knowledge.detail.summary')}</p>
+                  <p className="text-sm leading-6 text-foreground/85">{summary}</p>
+                  {keywords.length > 0 ? (
+                    <ul className="flex flex-wrap gap-1.5 pt-1">
+                      {keywords.map((keyword) => (
+                        <li key={keyword} className="rounded-md bg-secondary px-1.5 py-0.5 text-xs text-secondary-foreground">{keyword}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </div>
+              ) : null}
+              {textStatus ? (
+                <p className={`text-xs text-muted-foreground${summary ? ' mt-3 border-t border-border/50 pt-3' : ''}`}>
+                  {t(`knowledge.detail.textStatus.${textStatus}`)}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
           <div className="rounded-xl border border-border/60 bg-card p-4">
             <h2 className="mb-3 text-sm font-semibold text-foreground">{t('knowledge.detail.description')}</h2>
             <p className="whitespace-pre-wrap text-sm text-foreground/85">

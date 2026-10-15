@@ -306,8 +306,8 @@ const namespaceRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/space/$namespace',
   beforeLoad: requireAuth,
-  validateSearch: (search: Record<string, unknown>): { tab?: 'skills' | 'knowledge' } => ({
-    tab: search.tab === 'skills' || search.tab === 'knowledge' ? search.tab : undefined,
+  validateSearch: (search: Record<string, unknown>): { tab?: 'skills' | 'knowledge' | 'guide' } => ({
+    tab: search.tab === 'skills' || search.tab === 'knowledge' || search.tab === 'guide' ? search.tab : undefined,
   }),
   component: NamespacePage,
 })

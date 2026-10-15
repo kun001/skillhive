@@ -90,7 +90,9 @@ public class ApiTokenScopeService {
             if (!"GET".equals(method) || !(path.equals("/api/v1/auth/me")
                     || path.startsWith("/api/v1/me/") || path.startsWith("/api/v1/skills/")
                     || path.startsWith("/api/v1/knowledge/") || path.equals("/api/web/skills")
-                    || path.startsWith("/api/web/skills/"))) return AuthorizationDecision.unsupported(path);
+                    || path.startsWith("/api/web/skills/")
+                    // Team guides only; other namespace routes stay closed to MCP credentials.
+                    || path.matches("/api/v1/namespaces/[^/]+/guide"))) return AuthorizationDecision.unsupported(path);
         }
         RouteSecurityPolicyRegistry.ApiTokenAuthorizationDecision decision =
                 routeSecurityPolicyRegistry.authorizeApiToken(method, path, tokenScopes);

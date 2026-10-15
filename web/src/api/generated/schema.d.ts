@@ -276,6 +276,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/web/namespaces/{slug}/guide": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read the Markdown guide of a team space */
+        get: operations["getNamespaceGuide"];
+        /** Replace the Markdown guide of a team space */
+        put: operations["updateNamespaceGuide"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/namespaces/{slug}/guide": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read the Markdown guide of a team space */
+        get: operations["getNamespaceGuide_1"];
+        /** Replace the Markdown guide of a team space */
+        put: operations["updateNamespaceGuide_1"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/namespaces/{slug}": {
         parameters: {
             query?: never;
@@ -3156,6 +3192,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/knowledge/documents/{documentId}/text": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read the extracted Markdown text of a file version */
+        get: operations["getKnowledgeDocumentText"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/web/knowledge/documents/{documentId}/text": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read the extracted Markdown text of a file version */
+        get: operations["getKnowledgeDocumentText_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/web/knowledge/documents/{documentId}/images/{imageId}/content": {
         parameters: {
             query?: never;
@@ -3265,7 +3335,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Search file titles and descriptions across the knowledge bases visible to the caller */
+        /** Search titles, descriptions, summaries and extracted text across the knowledge bases visible to the caller */
         get: operations["searchKnowledgeDocuments"];
         put?: never;
         post?: never;
@@ -3282,7 +3352,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Search file titles and descriptions across the knowledge bases visible to the caller */
+        /** Search titles, descriptions, summaries and extracted text across the knowledge bases visible to the caller */
         get: operations["searchKnowledgeDocuments_1"];
         put?: never;
         post?: never;
@@ -3934,6 +4004,27 @@ export interface components {
             canEdit?: boolean;
             canDownload?: boolean;
         };
+        NamespaceGuideRequest: {
+            content?: string;
+        };
+        ApiResponseNamespaceGuideResponse: {
+            /** Format: int32 */
+            code?: number;
+            msg?: string;
+            data?: components["schemas"]["NamespaceGuideResponse"];
+            /** Format: date-time */
+            timestamp?: string;
+            requestId?: string;
+        };
+        NamespaceGuideResponse: {
+            namespace?: string;
+            namespaceDisplayName?: string;
+            content?: string;
+            updatedBy?: string;
+            /** Format: date-time */
+            updatedAt?: string;
+            canEdit?: boolean;
+        };
         NamespaceRequest: {
             slug: string;
             displayName: string;
@@ -4480,7 +4571,6 @@ export interface components {
             timestamp?: string;
             requestId?: string;
         };
-        JsonNode: Record<string, never>;
         SessionBootstrapRequest: {
             provider: string;
         };
@@ -5278,6 +5368,33 @@ export interface components {
             timestamp?: string;
             requestId?: string;
         };
+        ApiResponseKnowledgeDocumentTextResponse: {
+            /** Format: int32 */
+            code?: number;
+            msg?: string;
+            data?: components["schemas"]["KnowledgeDocumentTextResponse"];
+            /** Format: date-time */
+            timestamp?: string;
+            requestId?: string;
+        };
+        KnowledgeDocumentTextResponse: {
+            /** Format: int64 */
+            documentId?: number;
+            /** Format: int32 */
+            versionNumber?: number;
+            title?: string;
+            fileName?: string;
+            status?: string;
+            extractor?: string;
+            /** Format: int32 */
+            charCount?: number;
+            truncated?: boolean;
+            /** Format: date-time */
+            extractedAt?: string;
+            summary?: string;
+            keywords?: string[];
+            content?: string;
+        };
         ApiResponseKnowledgeMarkdownImagesResponse: {
             /** Format: int32 */
             code?: number;
@@ -5310,6 +5427,9 @@ export interface components {
             knowledgeBase?: components["schemas"]["KnowledgeBaseResponse"];
             folderPath?: components["schemas"]["KnowledgeFolderPathItem"][];
             sha256?: string;
+            textStatus?: string;
+            summary?: string;
+            keywords?: string[];
         };
         KnowledgeFolderPathItem: {
             /** Format: int64 */
@@ -5331,6 +5451,8 @@ export interface components {
             namespaceDisplayName?: string;
             knowledgeBaseSlug?: string;
             knowledgeBaseDisplayName?: string;
+            summary?: string;
+            snippet?: string;
         };
         PageResponseKnowledgeDocumentSearchHitResponse: {
             items?: components["schemas"]["KnowledgeDocumentSearchHitResponse"][];
@@ -6652,6 +6774,102 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseMemberResponse"];
+                };
+            };
+        };
+    };
+    getNamespaceGuide: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseNamespaceGuideResponse"];
+                };
+            };
+        };
+    };
+    updateNamespaceGuide: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NamespaceGuideRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseNamespaceGuideResponse"];
+                };
+            };
+        };
+    };
+    getNamespaceGuide_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseNamespaceGuideResponse"];
+                };
+            };
+        };
+    };
+    updateNamespaceGuide_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NamespaceGuideRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseNamespaceGuideResponse"];
                 };
             };
         };
@@ -11934,6 +12152,54 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseListSkillLabelDto"];
+                };
+            };
+        };
+    };
+    getKnowledgeDocumentText: {
+        parameters: {
+            query?: {
+                version?: number;
+            };
+            header?: never;
+            path: {
+                documentId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseKnowledgeDocumentTextResponse"];
+                };
+            };
+        };
+    };
+    getKnowledgeDocumentText_1: {
+        parameters: {
+            query?: {
+                version?: number;
+            };
+            header?: never;
+            path: {
+                documentId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseKnowledgeDocumentTextResponse"];
                 };
             };
         };
