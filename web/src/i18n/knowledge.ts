@@ -71,7 +71,7 @@ export const knowledgeZh = {
     deleted: '文件夹已删除',
   },
   toolbar: {
-    search: '搜索文件名称或描述…',
+    search: '搜索文件名称或摘要…',
     allTypes: '全部类型',
     allUploaders: '全部上传人',
     mine: '我上传的',
@@ -169,7 +169,7 @@ export const knowledgeZh = {
   editDialog: {
     title: '编辑文件信息',
     fileTitle: '标题',
-    description: '描述',
+    description: '摘要',
     descriptionPlaceholder: '简单介绍文件内容，方便组员查找',
     folder: '所在文件夹',
     save: '保存',
@@ -192,8 +192,8 @@ export const knowledgeZh = {
     createdAt: '上传时间',
     updatedAt: '更新时间',
     sha256: 'SHA-256',
-    description: '描述',
-    noDescription: '暂无描述',
+    description: '摘要',
+    noDescription: '暂无摘要',
     notFound: '文件不存在或你没有访问权限',
     agentTitle: '供 Agent 使用',
     summary: 'AI 摘要',
@@ -303,7 +303,7 @@ export const knowledgeEn: typeof knowledgeZh = {
     deleted: 'Folder deleted',
   },
   toolbar: {
-    search: 'Search file names or descriptions…',
+    search: 'Search file names or summaries…',
     allTypes: 'All types',
     allUploaders: 'All uploaders',
     mine: 'Uploaded by me',
@@ -401,7 +401,7 @@ export const knowledgeEn: typeof knowledgeZh = {
   editDialog: {
     title: 'Edit file details',
     fileTitle: 'Title',
-    description: 'Description',
+    description: 'Summary',
     descriptionPlaceholder: 'Briefly describe the file so members can find it',
     folder: 'Folder',
     save: 'Save',
@@ -424,8 +424,8 @@ export const knowledgeEn: typeof knowledgeZh = {
     createdAt: 'Uploaded',
     updatedAt: 'Updated',
     sha256: 'SHA-256',
-    description: 'Description',
-    noDescription: 'No description',
+    description: 'Summary',
+    noDescription: 'No summary',
     notFound: 'The file does not exist or you do not have access to it',
 
     agentTitle: 'For agents',
