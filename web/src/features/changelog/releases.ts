@@ -14,6 +14,20 @@ export interface ReleaseNote {
 // Confirm the date and image tag when deploying; Git submission is not deployment.
 export const releases: ReleaseNote[] = [
   {
+    id: '20261015-agent-context-center',
+    version: 'v0.4.0',
+    date: '2026-10-15',
+    title: { zh: '团队 Agent 上下文中心：新首页、文档文本提取、摘要、全文检索与团队说明书', en: 'Team agent context center: new homepage, document text extraction, summaries, full-text search and team guides' },
+    summary: { zh: 'SkillHive 定位为团队 Agent 的私有上下文中心；知识文件自动转为 Agent 可读的 Markdown，跨知识库搜索覆盖正文，团队空间新增说明书。', en: 'SkillHive is now the private context center for team agents. Knowledge files become agent-readable Markdown, cross knowledge base search covers file text, and team spaces gain guides.' },
+    changes: [
+      { zh: '首页重新设计：Agent 调用演示、上下文流向、治理与审计、与网盘和 RAG 平台的对比，以及可复制的 MCP 配置；网页默认深色主题，已选择浅色的浏览器保持原选择。', en: 'Redesigned homepage with an agent transcript demo, context flow, governance and audit, a comparison with drives and RAG platforms, and a copyable MCP configuration. The web app defaults to dark theme; browsers that chose light keep it.' },
+      { zh: 'Word、PowerPoint、Excel、PDF 和文本文件在服务端提取 Markdown 文本，扫描件和不支持的格式跳过，已有文件自动补齐；MCP read_document 默认返回 Markdown，format=original 返回原文件。', en: 'Word, PowerPoint, Excel, PDF and text files are extracted to Markdown on the server; scans and unsupported formats are skipped and existing files are backfilled. MCP read_document returns Markdown by default; format=original returns the file.' },
+      { zh: '可选大模型摘要与关键词（默认关闭，启用后文件文本会发送给配置的 OpenAI 兼容接口）。', en: 'Optional model summaries and keywords (off by default; enabling them sends file text to the configured OpenAI-compatible endpoint).' },
+      { zh: '跨知识库搜索覆盖标题、描述、摘要与正文，中文按二元切分建全文索引，结果附摘要和命中片段；读取正文需要下载权限并记录审计。', en: 'Cross knowledge base search covers titles, descriptions, summaries and text with a CJK bigram full-text index, showing summaries and excerpts. Reading text requires download permission and is audited.' },
+      { zh: '新增团队说明书：所有者和管理员可在团队空间页编辑，Agent 通过 MCP get_team_guide 读取。', en: 'Team guides: owners and admins edit them on the team space page, and agents read them through MCP get_team_guide.' },
+    ],
+  },
+  {
     id: '20261014-mcp-scoped-writes',
     version: 'v0.3.0',
     date: '2026-10-14',
