@@ -1466,6 +1466,8 @@
       "skillDelete": "技能归档删除",
       "knowledgeUpload": "知识文件新增上传",
       "knowledgeDelete": "知识文件归档删除",
+      "knowledgeUpdate": "知识文件修改与新版本",
+      "knowledgeManage": "知识库与目录管理",
       "skillRead": "技能库只读",
       "knowledge": "知识库只读",
       "tokenManage": "Token 管理"

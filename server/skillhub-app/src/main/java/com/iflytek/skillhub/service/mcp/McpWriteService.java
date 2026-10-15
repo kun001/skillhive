@@ -13,6 +13,8 @@ import com.iflytek.skillhub.domain.skill.*;
 import com.iflytek.skillhub.domain.skill.service.SkillPublishService;
 import com.iflytek.skillhub.domain.skill.service.SkillGovernanceService;
 import com.iflytek.skillhub.dto.McpUploadRequest;
+import com.iflytek.skillhub.dto.McpKnowledgeRequest;
+import com.iflytek.skillhub.dto.knowledge.*;
 import com.iflytek.skillhub.dto.PublishResponse;
 import com.iflytek.skillhub.service.AuditRequestContext;
 import com.iflytek.skillhub.service.knowledge.KnowledgeAppService;
@@ -84,7 +86,7 @@ public class McpWriteService {
     @Transactional
     public JsonNode uploadDocument(String namespace, String base, McpUploadRequest upload, PlatformPrincipal actor,
             Map<Long, NamespaceRole> roles, HttpServletRequest request) {
-        writableNamespace(namespace, actor, request);
+        writableBase(namespace, base, actor, request);
         var caller = KnowledgeAppService.Caller.of(actor.userId(), roles, actor);
         knowledge.getBase(namespace, base, caller);
         byte[] bytes = decode(upload);
@@ -128,6 +130,129 @@ public class McpWriteService {
             knowledge.deleteDocument(id, caller, AuditRequestContext.from(request));
             return Map.of("documentId", id, "deleted", true);
         });
+    }
+
+    @Transactional
+    public JsonNode createBase(McpKnowledgeRequest.CreateBase change, PlatformPrincipal actor,
+            Map<Long, NamespaceRole> roles, HttpServletRequest request) {
+        Namespace target = writableNamespace(change.namespace(), actor, request);
+        var grants = (McpTokenGrants) request.getAttribute(McpTokenGrants.ATTRIBUTE);
+        // A token limited to existing base IDs cannot create a resource outside that ceiling.
+        if (grants.knowledgeBaseIds() != null) throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                "Creating a knowledge base requires a namespace-wide knowledge grant");
+        requireBaseManager(target, roles);
+        return once("knowledge_base_create", change.idempotencyKey(), change, request,
+                () -> knowledge.createBase(new CreateKnowledgeBaseRequest(change.namespace(), change.slug(),
+                        change.displayName(), change.description()), caller(actor, roles), AuditRequestContext.from(request)));
+    }
+
+    @Transactional
+    public JsonNode updateBase(String namespace, String base, McpKnowledgeRequest.UpdateBase change,
+            PlatformPrincipal actor, Map<Long, NamespaceRole> roles, HttpServletRequest request) {
+        writableBase(namespace, base, actor, request);
+        requireBaseManager(namespaces.findBySlug(namespace).orElseThrow(), roles);
+        return once("knowledge_base_update", change.idempotencyKey(),
+                Map.of("namespace", namespace, "base", base, "change", change), request,
+                () -> knowledge.updateBase(namespace, base, new UpdateKnowledgeBaseRequest(change.displayName(),
+                        change.description()), caller(actor, roles), AuditRequestContext.from(request)));
+    }
+
+    @Transactional
+    public JsonNode archiveBase(String namespace, String base, String key, PlatformPrincipal actor,
+            Map<Long, NamespaceRole> roles, HttpServletRequest request) {
+        var target = writableBase(namespace, base, actor, request);
+        requireBaseManager(namespaces.findBySlug(namespace).orElseThrow(), roles);
+        return once("knowledge_base_archive", key, Map.of("namespace", namespace, "base", base), request, () -> {
+            knowledge.archiveBase(namespace, base, caller(actor, roles), AuditRequestContext.from(request));
+            return Map.of("knowledgeBaseId", target.getId(), "status", "ARCHIVED");
+        });
+    }
+
+    @Transactional
+    public JsonNode createFolder(String namespace, String base, McpKnowledgeRequest.Folder change,
+            PlatformPrincipal actor, Map<Long, NamespaceRole> roles, HttpServletRequest request) {
+        writableBase(namespace, base, actor, request);
+        return once("knowledge_folder_create", change.idempotencyKey(),
+                Map.of("namespace", namespace, "base", base, "change", change), request,
+                () -> knowledge.createFolder(namespace, base, new CreateKnowledgeFolderRequest(change.name(), change.parentId()),
+                        caller(actor, roles), AuditRequestContext.from(request)));
+    }
+
+    @Transactional
+    public JsonNode updateFolder(String namespace, String base, Long folderId, McpKnowledgeRequest.Folder change,
+            PlatformPrincipal actor, Map<Long, NamespaceRole> roles, HttpServletRequest request) {
+        writableBase(namespace, base, actor, request);
+        return once("knowledge_folder_update", change.idempotencyKey(),
+                Map.of("namespace", namespace, "base", base, "folderId", folderId, "change", change), request,
+                () -> knowledge.updateFolder(namespace, base, folderId, new UpdateKnowledgeFolderRequest(change.name(), change.parentId()),
+                        caller(actor, roles), AuditRequestContext.from(request)));
+    }
+
+    @Transactional
+    public JsonNode deleteFolder(String namespace, String base, Long folderId, String key,
+            PlatformPrincipal actor, Map<Long, NamespaceRole> roles, HttpServletRequest request) {
+        writableBase(namespace, base, actor, request);
+        return once("knowledge_folder_delete", key, Map.of("namespace", namespace, "base", base, "folderId", folderId), request, () -> {
+            knowledge.deleteFolder(namespace, base, folderId, caller(actor, roles), AuditRequestContext.from(request));
+            return Map.of("folderId", folderId, "deleted", true);
+        });
+    }
+
+    @Transactional
+    public JsonNode updateDocument(Long documentId, McpKnowledgeRequest.UpdateDocument change,
+            PlatformPrincipal actor, Map<Long, NamespaceRole> roles, HttpServletRequest request) {
+        manageableDocument(documentId, actor, roles, request);
+        return once("knowledge_document_update", change.idempotencyKey(), Map.of("documentId", documentId, "change", change), request,
+                () -> knowledge.updateDocument(documentId, new UpdateKnowledgeDocumentRequest(change.title(), change.description(), change.folderId()),
+                        caller(actor, roles), AuditRequestContext.from(request)));
+    }
+
+    @Transactional
+    public JsonNode uploadVersion(Long documentId, McpKnowledgeRequest.UploadVersion change,
+            PlatformPrincipal actor, Map<Long, NamespaceRole> roles, HttpServletRequest request) {
+        manageableDocument(documentId, actor, roles, request);
+        byte[] bytes = decode(new McpUploadRequest(change.idempotencyKey(), change.fileName(), change.contentBase64(), null, null, null, null));
+        return once("knowledge_version_upload", change.idempotencyKey(), Map.of("documentId", documentId, "change", change), request, () -> {
+            // The document lock spans the expected-version check and publication, including web uploads.
+            int current = knowledge.getDocument(documentId, caller(actor, roles)).document().currentVersion();
+            if (change.expectedVersion() == null || change.expectedVersion() != current)
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "File changed; read its current version before retrying with a new key");
+            return knowledge.uploadVersion(documentId,
+                    new KnowledgeAppService.Upload(change.fileName(), bytes.length, () -> new ByteArrayInputStream(bytes)),
+                    change.changeNote(), caller(actor, roles), AuditRequestContext.from(request));
+        });
+    }
+
+    private com.iflytek.skillhub.domain.knowledge.KnowledgeBase writableBase(String namespace, String base,
+            PlatformPrincipal actor, HttpServletRequest request) {
+        Namespace target = writableNamespace(namespace, actor, request);
+        var found = bases.findByNamespaceIdAndSlugForUpdate(target.getId(), base)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        var grants = (McpTokenGrants) request.getAttribute(McpTokenGrants.ATTRIBUTE);
+        if (!grants.allowsBase(target.getId(), found.getId())) throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        // Serialize base archival against file creation without deleting any stored objects.
+        return found;
+    }
+
+    private void manageableDocument(Long documentId, PlatformPrincipal actor, Map<Long, NamespaceRole> roles, HttpServletRequest request) {
+        var document = documents.findByIdForUpdate(documentId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        var base = bases.findById(document.getKnowledgeBaseId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        var namespace = namespaces.findById(base.getNamespaceId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        writableBase(namespace.getSlug(), base.getSlug(), actor, request);
+        var role = roles.get(namespace.getId());
+        if (!document.getOwnerId().equals(actor.userId()) && role != NamespaceRole.OWNER && role != NamespaceRole.ADMIN)
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        knowledge.getBase(namespace.getSlug(), base.getSlug(), caller(actor, roles));
+    }
+
+    private void requireBaseManager(Namespace namespace, Map<Long, NamespaceRole> roles) {
+        if (namespace.getType() != NamespaceType.TEAM || roles.get(namespace.getId()) != NamespaceRole.OWNER
+                && roles.get(namespace.getId()) != NamespaceRole.ADMIN)
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Team administrator permission is required");
+    }
+
+    private KnowledgeAppService.Caller caller(PlatformPrincipal actor, Map<Long, NamespaceRole> roles) {
+        return KnowledgeAppService.Caller.of(actor.userId(), roles, actor);
     }
 
     private Namespace writableNamespace(String slug, PlatformPrincipal actor, HttpServletRequest request) {

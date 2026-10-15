@@ -2,91 +2,113 @@
   <img src="skillhive-docs/assets/skillhive-logo.svg" alt="SkillHive" width="360" />
 </p>
 
-<h3 align="center">The private context center for your team’s agents</h3>
+<h1 align="center">Make every agent understand your team.</h1>
 
 <p align="center">
-  Hand your team's proven practices (skills) and working files (knowledge) to every agent you already use;<br />
-  access follows member permissions, every read and write is audited, and your data stays on your own server.
+  <strong>SkillHive is the private context center for your team's agents.</strong><br />
+  It runs on your own server and sits between your team and its agents: one side gathers the team's skills and documents, the other hands them to agents over MCP, permission by permission.
 </p>
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache--2.0-blue.svg" alt="License: Apache-2.0" /></a>
+  <a href="https://github.com/kun001/skillhive/releases"><img src="https://img.shields.io/github/v/release/kun001/skillhive?label=release" alt="Latest release" /></a>
   <img src="https://img.shields.io/badge/Deploy-Self--hosted%20·%20Docker%20Compose-2496ed" alt="Self-hosted with Docker Compose" />
-  <img src="https://img.shields.io/badge/UI-中文%20·%20English-6b4f3a" alt="Chinese, English" />
-  <a href="#mcp-let-ai-read-your-teams-skills-and-files"><img src="https://img.shields.io/badge/AI%20access-MCP%20read--only-7c3aed" alt="Read-only MCP access" /></a>
+  <a href="#mcp-hand-team-context-to-your-agents"><img src="https://img.shields.io/badge/AI%20access-MCP-7c3aed" alt="Scoped MCP access" /></a>
 </p>
 
 <p align="center">
-  <a href="README.md">简体中文</a> · <strong>English</strong>
-  <br />
-  <a href="#why-skillhive">Why SkillHive</a> · <a href="#mcp-let-ai-read-your-teams-skills-and-files">MCP</a> · <a href="#live-demo">Live demo</a> · <a href="#product-demos">Product demos</a> · <a href="#features">Features</a> · <a href="#deployment">Deployment</a> · <a href="#development-and-documentation">Development</a>
+  <a href="README.md">简体中文</a> · <strong>English</strong> · <a href="https://skillhive.team">Live demo</a> · <a href="https://skillhive.team/changelog">Changelog</a>
 </p>
 
-## Why SkillHive
+<p align="center">
+  <a href="https://skillhive.team"><img src="docs/images/readme/landing-hero.png" alt="SkillHive home page" width="900" /></a>
+</p>
 
-**v0.2.0** adds controlled MDX previews, folder uploads that preserve the directory hierarchy, and remote MCP access. See the [release changelog](CHANGELOG.md); the [site changelog](https://skillhive.team/changelog) records the version deployed to the demo site.
+<sub>Screenshots show the Chinese UI; switch to English in the top bar.</sub>
 
-<table>
-  <tr>
-    <td width="33%" valign="top">
-      <strong>Self-hosted, your data stays in-house</strong><br /><br />
-      Deploy with Docker Compose on your own server or intranet, and store files on local disk, S3 or MinIO. The live demo runs on a single 2-core, 4 GB server.
-    </td>
-    <td width="33%" valign="top">
-      <strong>Skills are reviewed before they reach the team</strong><br /><br />
-      Uploaded skill packages pass structure and metadata validation, a <a href="https://github.com/cisco-ai-defense/skill-scanner">Cisco AI Skill Scanner</a> security scan and a human review before they are published, keeping risky scripts out of your team.
-    </td>
-    <td width="33%" valign="top">
-      <strong>Methods and materials in one place</strong><br /><br />
-      A team space page lists both its skills and its knowledge bases, and you can search files across knowledge bases. “How to do it” and “what to use” share one entry point.
-    </td>
-  </tr>
-  <tr>
-    <td valign="top">
-      <strong>Preview files, trace every change</strong><br /><br />
-      View PDFs, images and Markdown (with its images) online, preview MDX with built-in components and a source toggle, and preview Word / PowerPoint files in the browser. Every update keeps a version you can download or restore.
-    </td>
-    <td valign="top">
-      <strong>Permissions down to each member</strong><br /><br />
-      On top of space roles, set each member to read-only or editable, and decide separately whether they can download. Changes apply immediately, and key operations are recorded in the audit log.
-    </td>
-    <td valign="top">
-      <strong>AI tools read it directly (MCP)</strong><br /><br />
-      Through <a href="#mcp-let-ai-read-your-teams-skills-and-files">MCP</a>, Claude Code, Cursor and other AI tools use your read-only token to search and read skills and knowledge files. Connect over remote HTTP or local stdio; the backend checks permissions on each call and audits file reads. Skills use the common <code>SKILL.md</code> format and work with any AI tool; the platform never runs skill scripts itself.
-    </td>
-  </tr>
-</table>
+## Agents are smart, but they don't know your team
 
-### Compared with the usual way
+Models know most things about the world, yet nothing about your conventions, your templates, or the decision you made last week. So every conversation starts from scratch:
 
-| | Chat groups, shared drives, personal notes | SkillHive |
+- **01 Context by copy and paste**: download files from a drive, paste them into the chat, and repeat for every new tool or teammate.
+- **02 Good practices scattered everywhere**: the prompts and workflows that work live in personal notes and chat history; nobody knows which version is current or trustworthy.
+- **03 Files you can't hand over**: uploading internal documents to a third-party AI platform rarely survives a security and compliance review.
+
+**SkillHive puts all three in one place that you control.**
+
+## One center, three layers of context
+
+Practices, documents and boundaries, handed to agents in one go.
+
+<p align="center">
+  <img src="docs/images/readme/landing-layers.png" alt="One center, three layers: skills, knowledge and member permissions reach agents through SkillHive" width="900" />
+</p>
+
+| Layer | What it is | What the agent gets |
 | --- | --- | --- |
-| Useful AI skills | Scattered across chat history, latest version unclear | Kept in one place with instructions, versions and download counts |
-| Skill safety | Used as-is, nobody checks | Published only after validation, security scanning and review |
-| Templates and documents | Copies everywhere, hard to tell which is current | One home with traceable version history |
-| Finding things | Scroll through chats, ask colleagues | Browse by team space, search across knowledge bases |
-| Who can access | Anyone a link is forwarded to | Team members only, with downloads controlled separately |
-| Giving AI your team's material | Download and paste into the chat by hand | AI tools read it over MCP with your permissions, and reads are audited |
-| Where data lives | A third-party platform | Your own server |
+| **Skills · practices** | `SKILL.md` packages, published only after validation, security scanning and human review | "How our team does this" |
+| **Knowledge · documents** | Files organized as team space → knowledge base → folder; Word, PowerPoint, PDF and more are extracted to Markdown | "The material needed to do it" |
+| **Members & permissions · boundaries** | Space roles plus per-member read-only / edit / download permissions; every read is audited | "What I may and may not see" |
 
-### How it works
+One sentence is enough for an agent to work the way your team does. In Claude Code, for example:
+
+> "Draft this week's report the way our team writes weekly reports, using this sprint's retrospective."
+
+Over MCP the agent calls `get_skill` for the weekly-report skill, `search_knowledge` for the retrospective and `read_document` for its text, all with your own read-only token, within your permissions, and with an audit trail.
 
 ```mermaid
 flowchart LR
-    C[Contributor] -->|Upload skill package| V[Validate + security scan] --> R[Review] --> SK[(Skill library<br/>published versions)]
-    C -->|Upload files| KB[(Knowledge base<br/>folders · preview · versions)]
-    SK --> NS{{Team space<br/>per-member access}}
+    C[Contributors] -->|upload skill packages| V[Validation + scan + review] --> SK[(Skill library)]
+    C -->|upload files| KB[(Knowledge bases)]
+    SK --> NS{{SkillHive<br/>team spaces · permissions · audit}}
     KB --> NS
-    NS -->|Browse · search · download| M[Team member]
-    M --> T[Their own AI tool]
-    NS -.->|MCP · read-only token · audited| T
+    NS -->|Web: browse · search · preview| M[Team members]
+    NS -.->|MCP · read-only token| A[Claude Code / Cursor / your own agent]
 ```
 
-For example, a team publishes a meeting-notes skill to the skill library and keeps its meeting templates and project documents in a knowledge base. A new member opens the team space and finds the method and the materials together. Or they simply tell Claude Code "tidy up these notes with our team's meeting-notes skill and template", and the AI finds both over MCP and does the work.
+## Why SkillHive
 
-## MCP: let AI read your team's skills and files
+| | Chats, drives, personal notes | Knowledge bases on third-party AI platforms | SkillHive |
+| --- | --- | --- | --- |
+| Where data lives | Scattered | A third-party platform | **Your own server** |
+| Getting it to agents | Manual copy and paste | Only inside that platform | **Any MCP-capable agent** |
+| Are practices trustworthy | Nobody checks | Depends on the platform | **Validated, scanned and reviewed before publishing** |
+| Who can see it | Anyone with a forwarded link | The platform's accounts | **Team membership, with download permission controlled separately** |
+| Traceability | None | Depends on the platform | **Every read audited, including which token** |
 
-SkillHive provides read-only [MCP access](mcp/README.md) over remote Streamable HTTP or local stdio. Once configured, your AI tool uses your own API token to search, browse and read the skills and knowledge files you can access, with no manual downloading or copy-pasting. Read results are passed to the AI tool you choose.
+## See it in action
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/images/readme/knowledge-base.png" alt="Knowledge base folders and files" /><br /><sub><strong>Knowledge base</strong>: folders, batch uploads, filters by type and uploader</sub></td>
+    <td width="50%"><img src="docs/images/readme/knowledge-document.png" alt="File details with preview, summary and agent status" /><br /><sub><strong>File details</strong>: online preview, version history, whether agents can read it</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/images/readme/skills.png" alt="Skill library" /><br /><sub><strong>Skill library</strong>: team and public skills, browse by tag and downloads</sub></td>
+    <td width="50%"><img src="docs/images/readme/skill-detail.png" alt="Skill details" /><br /><sub><strong>Skill details</strong>: usage example, security review, versions</sub></td>
+  </tr>
+</table>
+
+<sub>Screenshots come from a local instance with test data.</sub>
+
+<details>
+<summary><strong>More: animated tours of knowledge, skills and publishing</strong></summary>
+
+![Knowledge: folders, preview and version history](skillhive-docs/assets/demos/knowledge-tour.gif)
+
+![Skills: description, file preview and versions](skillhive-docs/assets/demos/skill-tour.gif)
+
+![Publishing: entry, target space and visibility](skillhive-docs/assets/demos/publish-tour.gif)
+
+</details>
+
+## Live demo
+
+Demo site: **[https://skillhive.team](https://skillhive.team)**, running the latest release. The [site changelog](https://skillhive.team/changelog) lists what is deployed.
+
+## MCP: hand team context to your agents
+
+SkillHive provides operation-scoped [MCP access](mcp/README.md) over remote Streamable HTTP or local stdio. Once configured, your AI tool uses your own API token to search, browse and read the skills and knowledge files you can access, with no manual downloading or copy-pasting. Read results are passed to the AI tool you choose.
 
 Ask your AI things like:
 
@@ -96,19 +118,21 @@ Ask your AI things like:
 
 | Property | What it means |
 | --- | --- |
-| **Read-only** | Use only `skill:read` and/or `knowledge:read`. Tokens with write scopes are refused, so the AI cannot change anything. |
+| **Operation-scoped** | Grant reads, new uploads, archiving, file updates and versions, and base/folder management separately. Legacy read-only tokens remain compatible. |
 | **Team permissions apply** | Read published public skills and authorized content in your teams. Reading team files requires download permission; platform administrators' tokens cannot bypass membership or download checks. |
 | **Readable by agents** | Word, PowerPoint, Excel, PDF and text files are extracted to Markdown on the server; `read_document` returns that Markdown by default (with the AI summary when available) and other files unchanged. |
 | **Traceable** | Knowledge files and skill files read with a token are recorded in the audit log, naming the token. |
 | **Grant only what you need** | Skill and knowledge access are granted separately, and the MCP server only offers the tools for what the token can reach. |
 
-13 tools: `whoami`, `get_team_guide` (team guide); skills: `search_skills`, `get_skill`, `list_skill_versions`, `list_skill_files`, `read_skill_file`, `list_my_skills`; knowledge: `list_knowledge_bases`, `browse_knowledge_base`, `search_knowledge`, `get_document`, `read_document`.
+Read tools include: `whoami`, `get_team_guide` (team guide); skills: `search_skills`, `get_skill`, `list_skill_versions`, `list_skill_files`, `read_skill_file`, `list_my_skills`; knowledge: `list_knowledge_bases`, `browse_knowledge_base`, `search_knowledge`, `get_document`, `read_document`.
+
+Knowledge management also includes base and folder mutations, file metadata edits and version uploads. See [all tools and parameters](mcp/README.md). Existing tokens do not gain new grants automatically; deployment status is recorded in the changelog.
 
 ### Remote access: configure a URL and token
 
 The remote endpoint ships with the backend and needs no additional MCP container or local Node.js installation. **After deploying a version containing this feature**, configure an agent that supports Streamable HTTP and custom authentication headers:
 
-1. Open **Profile → API Tokens** and create a read-only token. Set skill access to **Read-only** or **None**; enable **Knowledge (read-only)** when needed.
+1. Open **Profile → API Tokens**, choose the required operations and allowed teams. Grant only read access for lookup tasks and enable mutations explicitly. Write tokens default to seven days and expire within thirty days.
 2. Click **Copy MCP configuration**, or use the JSON below with your own instance URL and token.
 3. Enable the MCP connection in your agent, then ask it to find skills or files. Call `whoami` first to confirm the current user and teams.
 
@@ -141,53 +165,12 @@ claude mcp add skillhive \
 
 See [mcp/README.md](mcp/README.md) for other clients, every tool and troubleshooting, and the [MCP server design](skillhive-docs/26-mcp-server.md) for the permission model.
 
-## Live demo
-
-Demo site: **[https://skillhive.team](https://skillhive.team)**
-
-On the [sign-in page](https://skillhive.team/login), use any account below. They are ordinary members and only see the team resources they have access to.
-
-| Username | Password | Uploaded skill |
-| --- | --- | --- |
-| `curator_ui` | `Sh!7VoU_FOwrzDZFdcvPQiwuVzxOzyPcUsux` | `web-design-guidelines` |
-| `curator_database` | `Sh!78xMg-9z_LvslyHrCWazr1zB30gCtwi2W` | `supabase-postgres-best-practices` |
-| `curator_content` | `Sh!7jspLLunXXasAgMlo-vXz1pc9ANLeeaTx` | `baoyu-markdown-to-html` |
-| `curator_ai` | `Sh!7x0hZiBWJ_8teeVCdT1NMMEEAtUFVa73u` | `huggingface-gradio` |
-
-## Product demos
-
-### Find a file, preview it and check its versions
-
-Open a folder in a knowledge base, preview a document, then view and download the version you need.
-
-![Knowledge base: folders, document preview and version history](skillhive-docs/assets/demos/knowledge-tour.gif)
-
-<details>
-<summary><strong>Read a skill's instructions, bundled files and published versions</strong></summary>
-
-Find a skill in the library, read its instructions, preview `SKILL.md` among the bundled files, then check its published versions.
-
-![Skill library: instructions, file preview and versions](skillhive-docs/assets/demos/skill-tour.gif)
-
-</details>
-
-<details>
-<summary><strong>Publish a skill: choose a team space and visibility</strong></summary>
-
-Click “Publish skill” in the skill library, choose the target space and visibility, and upload the package. Each submitted version is validated, scanned and reviewed before it is published.
-
-![Web publishing: entry point, target space and visibility](skillhive-docs/assets/demos/publish-tour.gif)
-
-</details>
-
-These recordings were made in a local Web interface; the knowledge base files are fictional test material.
-
 ## Features
 
 | Area | What you can do |
 | --- | --- |
 | **Skill library** | Upload packages containing `SKILL.md`; read instructions, bundled files and version history; publish after validation, security scanning and review; star and subscribe; browse by keyword, label and sort order; unpublish and hide. |
-| **Knowledge bases** | Nested folders; batch file or folder uploads that preserve the directory hierarchy and require a second confirmation; progress and retry; Markdown images and controlled MDX previews; version history, download or restore a chosen version; title and description search across knowledge bases. |
+| **Knowledge bases** | Nested folders; batch file or folder uploads that preserve the directory hierarchy and require a second confirmation; progress and retry; Markdown images and controlled MDX previews; version history, download or restore a chosen version; search by title, summary and text across knowledge bases. |
 | **Team spaces** | One page shows the space's skills and knowledge bases; member management with per-member read-only, editable and download permissions that apply immediately. |
 | **AI access** | Remote HTTP / local stdio MCP for reading skills and knowledge files with personal read-only tokens; copy connection configuration from your profile and grant skill and knowledge access separately. |
 | **Governance** | Platform and space roles; notifications; audit log of key operations, including knowledge file downloads and previews and token reads of skills and files. |
@@ -247,7 +230,7 @@ To upload a folder, choose **Upload files → Select folder**, check the destina
 
 </details>
 
-**Scope**: SkillHive manages resources through the Web and does not run skill scripts; the MCP server is read-only and cannot publish or change content. Knowledge search matches titles, descriptions, AI summaries and extracted text. It does not provide vector search, RAG Q&A, OCR for scans or online co-editing.
+**Scope**: SkillHive manages resources through the Web and does not run skill scripts; MCP executes explicitly granted operations and preserves file version history. Knowledge search matches titles, descriptions, AI summaries and extracted text. It does not provide vector search, RAG Q&A, OCR for scans or online co-editing.
 
 ## Deployment
 
@@ -311,7 +294,7 @@ Run `make generate-api` after changing backend API contracts, and do not edit `w
 
 ### Roadmap
 
-MCP currently supports remote HTTP and local stdio with personal read-only tokens. Future directions include remote OAuth authorization, write actions that the user confirms (such as publishing a skill), and tokens limited to a single team; see the [MCP server design](skillhive-docs/26-mcp-server.md). The backend API mainly serves the Web interface and MCP and is not yet published as a complete open API. See the [development changelog](CHANGELOG.md) for pending changes and the [site changelog](https://skillhive.team/changelog) for deployed releases.
+MCP supports remote HTTP and local stdio with personal tokens. Reads, uploads, archiving, knowledge file updates and base/folder management are granted separately within explicit team and knowledge base ceilings. See the [MCP permissions contract](skillhive-docs/27-mcp-permissions-and-writes.md) for knowledge management permissions. The backend API mainly serves the Web interface and MCP and is not yet published as a complete open API. See the [development changelog](CHANGELOG.md) for pending changes and the [site changelog](https://skillhive.team/changelog) for deployed releases.
 
 ## Acknowledgements
 

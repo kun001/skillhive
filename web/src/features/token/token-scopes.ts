@@ -8,7 +8,7 @@ export const KNOWLEDGE_TOKEN_SCOPES = ['knowledge:read'] as const
 
 export type SkillAccess = 'none' | 'read' | 'readWrite'
 
-export type TokenScopeDomain = 'skillReadWrite' | 'skillRead' | 'knowledge' | 'tokenManage' | 'skillUpload' | 'skillDelete' | 'knowledgeUpload' | 'knowledgeDelete'
+export type TokenScopeDomain = 'skillReadWrite' | 'skillRead' | 'knowledge' | 'tokenManage' | 'skillUpload' | 'skillDelete' | 'knowledgeUpload' | 'knowledgeDelete' | 'knowledgeUpdate' | 'knowledgeManage'
 
 export interface TokenScopeSelection {
   skill: SkillAccess
@@ -17,6 +17,8 @@ export interface TokenScopeSelection {
   skillDelete?: boolean
   knowledgeUpload?: boolean
   knowledgeDelete?: boolean
+  knowledgeUpdate?: boolean
+  knowledgeManage?: boolean
 }
 
 export const DEFAULT_TOKEN_SCOPE_SELECTION: TokenScopeSelection = { skill: 'read', knowledge: false }
@@ -25,7 +27,8 @@ export const DEFAULT_TOKEN_SCOPE_SELECTION: TokenScopeSelection = { skill: 'read
 export function scopesForSelection(selection: TokenScopeSelection, mcp = false): string[] {
   if (mcp) return [selection.skill !== 'none' && 'skill:read', selection.knowledge && 'knowledge:read',
     selection.skillUpload && 'skill:upload', selection.skillDelete && 'skill:delete',
-    selection.knowledgeUpload && 'knowledge:upload', selection.knowledgeDelete && 'knowledge:delete'].filter((value): value is string => typeof value === 'string')
+    selection.knowledgeUpload && 'knowledge:upload', selection.knowledgeDelete && 'knowledge:delete',
+    selection.knowledgeUpdate && 'knowledge:update', selection.knowledgeManage && 'knowledge:manage'].filter((value): value is string => typeof value === 'string')
   const skillScopes = selection.skill === 'readWrite'
     ? SKILL_READ_WRITE_SCOPES
     : selection.skill === 'read' ? SKILL_READ_SCOPES : []
@@ -40,7 +43,8 @@ export function domainsForScopes(scopes: readonly string[] | undefined): TokenSc
     if (granted.has('skill:read')) domains.push('skillRead')
     if (granted.has('knowledge:read')) domains.push('knowledge')
     for (const [scope, label] of [['skill:upload', 'skillUpload'], ['skill:delete', 'skillDelete'],
-      ['knowledge:upload', 'knowledgeUpload'], ['knowledge:delete', 'knowledgeDelete']] as const) {
+      ['knowledge:upload', 'knowledgeUpload'], ['knowledge:delete', 'knowledgeDelete'],
+      ['knowledge:update', 'knowledgeUpdate'], ['knowledge:manage', 'knowledgeManage']] as const) {
       if (granted.has(scope)) domains.push(label)
     }
     return domains

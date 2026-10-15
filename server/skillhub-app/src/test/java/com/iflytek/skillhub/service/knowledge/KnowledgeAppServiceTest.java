@@ -106,6 +106,7 @@ class KnowledgeAppServiceTest {
         when(namespaceRepository.findBySlug("team-a")).thenReturn(Optional.of(namespace));
         when(namespaceRepository.findById(NAMESPACE_ID)).thenReturn(Optional.of(namespace));
         when(baseRepository.findByNamespaceIdAndSlug(NAMESPACE_ID, "handbook")).thenReturn(Optional.of(base));
+        when(baseRepository.findByNamespaceIdAndSlugForUpdate(NAMESPACE_ID, "handbook")).thenReturn(Optional.of(base));
         when(baseRepository.findById(11L)).thenReturn(Optional.of(base));
         when(folderRepository.findByKnowledgeBaseId(11L)).thenReturn(List.of());
         when(userAccountRepository.findByIdIn(any())).thenReturn(List.of());
@@ -408,6 +409,25 @@ class KnowledgeAppServiceTest {
         assertThatThrownBy(() -> service.openText(21L, null, member("bob"), null)).isInstanceOf(DomainForbiddenException.class);
         assertThatThrownBy(() -> service.openText(21L, null, new KnowledgeAppService.Caller("outsider", Map.of(), Set.of()), null))
                 .isInstanceOf(DomainNotFoundException.class);
+    }
+
+    @Test
+    void onlyTeamAdministratorsCanArchiveEmptyBasesAndHistoryIsRetained() {
+        assertThatThrownBy(() -> service.archiveBase("team-a", "handbook", member("alice"), null))
+                .isInstanceOf(DomainForbiddenException.class);
+        var owner = new KnowledgeAppService.Caller("owner", Map.of(NAMESPACE_ID, NamespaceRole.OWNER), Set.of());
+        when(documentRepository.statsByKnowledgeBaseIds(List.of(11L))).thenReturn(List.of(
+                new com.iflytek.skillhub.domain.knowledge.KnowledgeBaseStats(11L, 1L, null)));
+        assertThatThrownBy(() -> service.archiveBase("team-a", "handbook", owner, null))
+                .isInstanceOf(com.iflytek.skillhub.domain.shared.exception.DomainConflictException.class);
+        assertThat(base.getStatus()).isEqualTo(KnowledgeBaseStatus.ACTIVE);
+        when(documentRepository.statsByKnowledgeBaseIds(List.of(11L))).thenReturn(List.of());
+        service.archiveBase("team-a", "handbook", owner, null);
+        assertThat(base.getStatus()).isEqualTo(KnowledgeBaseStatus.ARCHIVED);
+        verify(baseRepository).save(base);
+        verify(auditLogService).record(eq("owner"), eq("KNOWLEDGE_BASE_ARCHIVE"), eq("KNOWLEDGE_BASE"), eq(11L), any(), any(), any(), any());
+        org.mockito.Mockito.verifyNoInteractions(storageService, versionRepository);
+        assertThatThrownBy(() -> service.getBase("team-a", "handbook", owner)).isInstanceOf(DomainNotFoundException.class);
     }
 
     private static KnowledgeAppService.Caller member(String userId) {

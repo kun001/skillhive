@@ -2,91 +2,111 @@
   <img src="skillhive-docs/assets/skillhive-logo.svg" alt="SkillHive" width="360" />
 </p>
 
-<h3 align="center">团队 Agent 的私有上下文中心</h3>
+<h1 align="center">让每个 Agent，都懂你的团队。</h1>
 
 <p align="center">
-  把团队沉淀的做法（技能）和资料（知识）交给你正在用的每一个 Agent；<br />
-  按成员权限取用，每次读写都记入审计，数据留在你自己的服务器上。
+  <strong>SkillHive 是团队 Agent 的私有上下文中心。</strong><br />
+  部署在你自己的服务器上，位于团队和 Agent 之间：一侧汇集团队的技能与资料，另一侧通过 MCP 按权限交给 Agent。
 </p>
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache--2.0-blue.svg" alt="License: Apache-2.0" /></a>
+  <a href="https://github.com/kun001/skillhive/releases"><img src="https://img.shields.io/github/v/release/kun001/skillhive?label=release" alt="Latest release" /></a>
   <img src="https://img.shields.io/badge/部署-私有化%20·%20Docker%20Compose-2496ed" alt="私有化部署 Docker Compose" />
-  <img src="https://img.shields.io/badge/界面-中文%20·%20English-6b4f3a" alt="中文 English" />
-  <a href="#mcp让-ai-直接查阅团队技能和资料"><img src="https://img.shields.io/badge/AI%20接入-MCP%20只读-7c3aed" alt="MCP 只读接入" /></a>
+  <a href="#mcp把团队上下文交给-agent"><img src="https://img.shields.io/badge/AI%20接入-MCP-7c3aed" alt="MCP 接入" /></a>
 </p>
 
 <p align="center">
-  <strong>简体中文</strong> · <a href="README.en.md">English</a>
-  <br />
-  <a href="#为什么选择-skillhive">为什么选择</a> · <a href="#mcp让-ai-直接查阅团队技能和资料">MCP 接入</a> · <a href="#在线体验">在线体验</a> · <a href="#产品演示">产品演示</a> · <a href="#功能一览">功能一览</a> · <a href="#部署">部署</a> · <a href="#开发与文档">开发与文档</a>
+  <strong>简体中文</strong> · <a href="README.en.md">English</a> · <a href="https://skillhive.team">在线演示</a> · <a href="https://skillhive.team/changelog">更新日志</a>
 </p>
 
-## 为什么选择 SkillHive
+<p align="center">
+  <a href="https://skillhive.team"><img src="docs/images/readme/landing-hero.png" alt="SkillHive 首页：让每个 Agent，都懂你的团队" width="900" /></a>
+</p>
 
-**v0.2.0** 新增 MDX 受控预览、保留目录层级的文件夹上传与远程 MCP 接入。变更见 [版本更新记录](CHANGELOG.md)；演示站实际部署的版本以 [站点更新日志](https://skillhive.team/changelog) 为准。
+## Agent 很聪明，但它不认识你的团队
 
-<table>
-  <tr>
-    <td width="33%" valign="top">
-      <strong>私有部署，数据不出团队</strong><br /><br />
-      用 Docker Compose 部署在自己的服务器或内网，文件可存放在本地磁盘、S3 或 MinIO。线上演示站运行在一台 2 核 4 GB 的服务器上。
-    </td>
-    <td width="33%" valign="top">
-      <strong>技能先审核，再进团队</strong><br /><br />
-      技能包上传后要经过结构与元数据校验、<a href="https://github.com/cisco-ai-defense/skill-scanner">Cisco AI Skill Scanner</a> 安全扫描和人工审核，通过后才会发布，减少带风险的脚本流入团队。
-    </td>
-    <td width="33%" valign="top">
-      <strong>方法和资料，一处取用</strong><br /><br />
-      团队空间页同时列出该空间的技能和知识库，还能跨知识库搜索文件。“怎么做”和“用什么做”，在同一个入口找到。
-    </td>
-  </tr>
-  <tr>
-    <td valign="top">
-      <strong>资料能预览，改动可回溯</strong><br /><br />
-      PDF、图片、Markdown（含配图）在线查看，MDX 受控组件预览与源码切换，Word / PowerPoint 在浏览器中预览。每次更新都保留版本，可下载或恢复历史版本。
-    </td>
-    <td valign="top">
-      <strong>权限细到每位成员</strong><br /><br />
-      在空间角色之外，可为每位成员单独设置只读或可编辑，以及是否允许下载，调整后立即生效。关键操作都记入审计日志。
-    </td>
-    <td valign="top">
-      <strong>AI 工具直接查阅（MCP）</strong><br /><br />
-      Claude Code、Cursor 等 AI 工具通过 <a href="#mcp让-ai-直接查阅团队技能和资料">MCP 服务</a>，用你的只读 Token 搜索和读取技能与知识库文件。支持远程 HTTP 或本地 stdio 接入，后端逐次校验权限，文件读取记入审计。技能采用通用的 <code>SKILL.md</code> 格式，不绑定任何 AI 工具，平台本身不执行技能脚本。
-    </td>
-  </tr>
-</table>
+模型知道世界上的大多数事，却不知道你们的规范、模板，以及上周刚定下的结论。于是每次对话，都要从头交代一遍：
 
-### 和常见做法比一比
+- **01 靠复制粘贴的上下文**：资料从网盘下载，再粘进对话框；换个工具、换个同事，就得重来一遍。
+- **02 散落各处的好做法**：好用的提示词和工作流躺在个人笔记和聊天记录里，没人知道哪一版最新、是否可靠。
+- **03 不敢交出去的资料**：把内部文档传到第三方 AI 平台，安全和合规这一关很难过。
 
-| | 群聊、网盘、个人笔记 | SkillHive |
+**SkillHive 把这三件事收进一个你自己掌控的地方。**
+
+## 一个中心，三层上下文
+
+做法、资料和边界，一次交给 Agent。
+
+<p align="center">
+  <img src="docs/images/readme/landing-layers.png" alt="一个中心，三层上下文：技能、知识与成员权限经 SkillHive 交给 Agent" width="900" />
+</p>
+
+| 层 | 是什么 | Agent 拿到什么 |
 | --- | --- | --- |
-| 好用的 AI 技能 | 散落在聊天记录里，不知道哪个是最新版 | 集中存放，附说明、版本和下载量 |
-| 技能是否安全 | 拿来直接用，没人检查 | 校验、安全扫描、人工审核后才发布 |
-| 模板和资料 | 多处副本，难以确认哪份最新 | 统一入口，版本历史可回溯 |
-| 找东西 | 翻聊天记录、问同事 | 按团队空间浏览，跨知识库搜索 |
-| 谁能访问 | 链接一转发就能看 | 仅团队成员可见，下载权限单独控制 |
-| 让 AI 用上团队资料 | 手动下载、复制粘贴进对话框 | AI 工具通过 MCP 按你的权限直接查阅，读取留有审计 |
-| 数据在哪 | 第三方平台 | 你自己的服务器 |
+| **技能 · 做法** | 团队沉淀的 `SKILL.md` 技能包，经过校验、安全扫描和人工审核后发布 | “这件事在我们团队该怎么做” |
+| **知识 · 资料** | 按 团队空间 → 知识库 → 文件夹 组织的文档，Word / PPT / PDF 等会提取为 Markdown | “做这件事要用的资料” |
+| **成员与权限 · 边界** | 空间角色 + 每位成员的只读 / 可编辑 / 下载权限，每次读取记入审计 | “我能看什么、不能看什么” |
 
-### 它是怎么工作的
+一句话就能让 Agent 按团队的方式干活，例如在 Claude Code 里说：
+
+> “按团队的周报写法，结合本周的迭代复盘，起草一份周报。”
+
+Agent 会通过 MCP 依次调用 `get_skill` 取到周报技能、`search_knowledge` 找到复盘文件、`read_document` 读取正文——全程使用你自己的只读 Token，按你的权限取用，留下审计记录。
 
 ```mermaid
 flowchart LR
-    C[贡献者] -->|上传技能包| V[校验 + 安全扫描] --> R[审核] --> SK[(技能库<br/>已发布版本)]
-    C -->|上传文件| KB[(知识库<br/>文件夹 · 预览 · 版本)]
-    SK --> NS{{团队空间<br/>按成员授权}}
+    C[贡献者] -->|上传技能包| V[校验 + 安全扫描 + 审核] --> SK[(技能库)]
+    C -->|上传文件| KB[(知识库)]
+    SK --> NS{{SkillHive<br/>团队空间 · 成员权限 · 审计}}
     KB --> NS
-    NS -->|浏览 · 搜索 · 下载| M[团队成员]
-    M --> T[自己的 AI 工具]
-    NS -.->|MCP · 只读 Token · 审计| T
+    NS -->|Web：浏览 · 搜索 · 预览| M[团队成员]
+    NS -.->|MCP · 只读 Token| A[Claude Code / Cursor / 自建 Agent]
 ```
 
-举个例子：团队把“会议纪要整理”技能发布到技能库，把会议模板和项目资料放进知识库。新成员打开团队空间，就能同时找到这套方法和配套资料；也可以直接在 Claude Code 里说“用团队的会议纪要技能和模板整理这份记录”，AI 通过 MCP 自己找到技能和模板来完成。
+## 为什么是 SkillHive
 
-## MCP：让 AI 直接查阅团队技能和资料
+| | 群聊、网盘、个人笔记 | 第三方 AI 平台的知识库 | SkillHive |
+| --- | --- | --- | --- |
+| 数据在哪 | 分散在各处 | 第三方平台 | **你自己的服务器** |
+| 让 Agent 用上 | 手动复制粘贴 | 只能在该平台内用 | **任何支持 MCP 的 Agent** |
+| 好做法是否可靠 | 没人检查 | 视平台而定 | **校验 + 安全扫描 + 人工审核后发布** |
+| 谁能看 | 链接一转发就能看 | 平台账号体系 | **团队成员权限 + 下载权限单独控制** |
+| 可追溯 | 无 | 视平台而定 | **每次读取记入审计，标明 Token** |
 
-SkillHive 提供只读 [MCP 接入](mcp/README.md)，支持远程 Streamable HTTP 和本地 stdio 两种方式。配置后，AI 可以用你自己的 API Token 搜索、浏览和读取有权访问的技能与知识库文件，不用再手动下载、复制粘贴。读取结果会交给你选择的 AI 工具处理。
+## 看看它长什么样
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/images/readme/knowledge-base.png" alt="知识库：文件夹与文件列表" /><br /><sub><strong>知识库</strong>：文件夹、批量上传、按类型/上传人筛选</sub></td>
+    <td width="50%"><img src="docs/images/readme/knowledge-document.png" alt="文件详情：在线预览、摘要与 Agent 可用状态" /><br /><sub><strong>文件详情</strong>：在线预览、版本历史，标明 Agent 是否可读</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/images/readme/skills.png" alt="技能库列表" /><br /><sub><strong>技能库</strong>：团队与公共技能，按标签、下载量浏览</sub></td>
+    <td width="50%"><img src="docs/images/readme/skill-detail.png" alt="技能详情：使用方法、安全审核与版本" /><br /><sub><strong>技能详情</strong>：使用方法示例、安全审核结果、版本</sub></td>
+  </tr>
+</table>
+
+<sub>截图来自本地实例，内容为测试数据。</sub>
+
+<details>
+<summary><strong>更多动图：知识库浏览、技能查看与发布</strong></summary>
+
+![知识库：文件夹、文档预览和版本历史](skillhive-docs/assets/demos/knowledge-tour.gif)
+
+![技能库：技能说明、文件预览和版本](skillhive-docs/assets/demos/skill-tour.gif)
+
+![Web 发布：入口、目标空间和可见性](skillhive-docs/assets/demos/publish-tour.gif)
+
+</details>
+
+## 在线体验
+
+演示站：**[https://skillhive.team](https://skillhive.team)**（运行最新发布版本，实际上线内容见 [站点更新日志](https://skillhive.team/changelog)）。
+
+## MCP：把团队上下文交给 Agent
+
+SkillHive 提供按操作授权的 [MCP 接入](mcp/README.md)，支持远程 Streamable HTTP 和本地 stdio 两种方式。配置后，AI 可以用你自己的 API Token 搜索、浏览和读取有权访问的技能与知识库文件，不用再手动下载、复制粘贴。读取结果会交给你选择的 AI 工具处理。
 
 你可以直接这样问 AI：
 
@@ -96,19 +116,21 @@ SkillHive 提供只读 [MCP 接入](mcp/README.md)，支持远程 Streamable HTT
 
 | 特点 | 说明 |
 | --- | --- |
-| **只读** | 仅使用 `skill:read` 和 / 或 `knowledge:read`；带写入权限的 Token 无法接入，AI 不能修改任何内容。 |
+| **按操作授权** | 读取、新增上传、文件归档、文件修改与新版本、知识库和目录管理分别授权；旧只读 Token 继续可用。 |
 | **按团队权限读取** | 可读取公开的已发布技能和自己团队有权查看的内容，读取团队文件需要下载权限；平台管理员的 Token 也不能绕过团队成员及下载权限检查。 |
 | **读得懂** | Word、PowerPoint、Excel、PDF 和文本文件会在服务端提取为 Markdown，`read_document` 默认返回 Markdown（可附 AI 摘要），其他文件原样返回。 |
 | **可追溯** | 通过 Token 读取的知识库文件和技能文件都记入审计日志，标明是哪个 Token。 |
 | **按需授权** | 技能库与知识库分开授权，Token 只授予哪一边，MCP 就只提供哪一边的工具。 |
 
-提供 13 个工具：`whoami`、`get_team_guide`（团队说明书）；技能库 `search_skills`、`get_skill`、`list_skill_versions`、`list_skill_files`、`read_skill_file`、`list_my_skills`；知识库 `list_knowledge_bases`、`browse_knowledge_base`、`search_knowledge`、`get_document`、`read_document`。
+读取工具包括：`whoami`、`get_team_guide`（团队说明书）；技能库 `search_skills`、`get_skill`、`list_skill_versions`、`list_skill_files`、`read_skill_file`、`list_my_skills`；知识库 `list_knowledge_bases`、`browse_knowledge_base`、`search_knowledge`、`get_document`、`read_document`。
+
+知识管理工具还包括知识库和目录的增删改、文件信息修改与新版本上传，全部工具与参数见 [MCP 使用说明](mcp/README.md)。新增授权不会自动赋给旧 Token；部署状态以更新日志为准。
 
 ### 远程接入：填写地址和 Token 即可使用
 
 远程入口随后端一起部署，无需额外 MCP 容器或本地 Node.js。**部署包含此功能的版本后**，在支持 Streamable HTTP 和自定义认证 Header 的 Agent 中按以下步骤配置：
 
-1. 在 SkillHive「个人中心 → Token 凭证」创建只读 Token。技能库选「只读」或「不授予」，需要知识资料时勾选「知识库（只读）」。
+1. 在 SkillHive「个人中心 → Token 凭证」选择所需操作和团队范围；只查资料时仅勾选读取，需要写入时单独授予相应权限。写入 Token 默认 7 天、最长 30 天。
 2. 点击「复制 MCP 配置」，或使用下面的 JSON，将地址改为自己的 SkillHive 实例，并填入自己的 Token。
 3. 在 Agent 中启用该 MCP 服务，再用自然语言查找技能或资料。可先调用 `whoami` 确认当前用户和团队。
 
@@ -141,53 +163,12 @@ claude mcp add skillhive \
 
 其他客户端的配置、全部工具说明和常见问题见 [mcp/README.md](mcp/README.md)，设计与权限模型见 [MCP 服务设计](skillhive-docs/26-mcp-server.md)。
 
-## 在线体验
-
-演示地址：**[https://skillhive.team](https://skillhive.team)**
-
-在[登录页面](https://skillhive.team/login)使用下面任一账号登录。它们都是普通成员，只能看到各自有权限的团队资源。
-
-| 用户名 | 密码 | 上传的技能 |
-| --- | --- | --- |
-| `curator_ui` | `Sh!7VoU_FOwrzDZFdcvPQiwuVzxOzyPcUsux` | `web-design-guidelines` |
-| `curator_database` | `Sh!78xMg-9z_LvslyHrCWazr1zB30gCtwi2W` | `supabase-postgres-best-practices` |
-| `curator_content` | `Sh!7jspLLunXXasAgMlo-vXz1pc9ANLeeaTx` | `baoyu-markdown-to-html` |
-| `curator_ai` | `Sh!7x0hZiBWJ_8teeVCdT1NMMEEAtUFVa73u` | `huggingface-gradio` |
-
-## 产品演示
-
-### 找到资料，预览并查看版本
-
-从知识库进入文件夹，打开文档预览，再查看和下载需要的历史版本。
-
-![知识库：文件夹、文档预览和版本历史](skillhive-docs/assets/demos/knowledge-tour.gif)
-
-<details>
-<summary><strong>查看技能说明、包内文件和已发布版本</strong></summary>
-
-在技能库找到技能，阅读说明，切换到包内文件预览 `SKILL.md`，再查看已发布版本。
-
-![技能库：技能说明、文件预览和版本](skillhive-docs/assets/demos/skill-tour.gif)
-
-</details>
-
-<details>
-<summary><strong>发布技能：选择团队空间和可见范围</strong></summary>
-
-从技能库点击“发布技能”，选择目标空间和可见范围，再上传技能包。提交的版本经过校验、安全扫描和审核后发布。
-
-![Web 发布：入口、目标空间和可见性](skillhive-docs/assets/demos/publish-tour.gif)
-
-</details>
-
-以上动图录自本地 Web 界面，知识库资料为虚构的测试资料。
-
 ## 功能一览
 
 | 模块 | 能做什么 |
 | --- | --- |
 | **技能库** | 上传含 `SKILL.md` 的技能包；查看说明、包内文件和版本历史；校验、安全扫描、审核后发布；收藏、订阅；按关键词、标签和排序浏览；下架与隐藏。 |
-| **知识库** | 多层文件夹；批量上传文件或文件夹，保留目录层级并在上传前二次确认；进度查看与失败重试；Markdown 配图、MDX 受控预览；版本历史、指定版本下载与恢复；按标题和描述搜索，可跨知识库。 |
+| **知识库** | 多层文件夹；批量上传文件或文件夹，保留目录层级并在上传前二次确认；进度查看与失败重试；Markdown 配图、MDX 受控预览；版本历史、指定版本下载与恢复；按标题、摘要与正文搜索，可跨知识库。 |
 | **团队空间** | 一个页面同时展示空间内的技能和知识库；成员管理，按成员设置只读、可编辑和下载权限，调整即时生效。 |
 | **AI 接入** | 远程 HTTP / 本地 stdio MCP，让 AI 工具用个人只读 Token 查阅技能和知识文件；个人中心可复制连接配置，技能库与知识库分开授权。 |
 | **治理** | 平台角色与空间角色；业务通知；关键操作审计日志，包括知识文件的下载与预览、通过 Token 读取技能和资料。 |
@@ -247,7 +228,7 @@ MDX 支持范围、配图与安全边界见 [MDX 受控预览](skillhive-docs/md
 
 </details>
 
-**边界说明**：SkillHive 通过 Web 管理资源，不在平台内执行技能脚本；MCP 服务只读，不能通过它发布或修改内容。知识文件搜索匹配标题、描述、AI 摘要和提取出的正文；不提供向量检索、RAG 问答、扫描件 OCR 或在线协同编辑。
+**边界说明**：SkillHive 通过 Web 管理资源，不在平台内执行技能脚本；MCP 按明确授权执行操作，文件更新保留版本历史。知识文件搜索匹配标题、描述、AI 摘要和提取出的正文；不提供向量检索、RAG 问答、扫描件 OCR 或在线协同编辑。
 
 ## 部署
 
@@ -311,7 +292,7 @@ flowchart TB
 
 ### 扩展方向
 
-MCP 当前支持个人只读 Token 的远程 HTTP 与本地 stdio 接入。后续方向包括远程 OAuth 授权、需用户确认的写入能力（如发布技能）以及限定到单个团队的 Token，见 [MCP 服务设计](skillhive-docs/26-mcp-server.md)。现有后端 API 主要服务于 Web 界面和 MCP，尚未作为完整的开放 API 发布；待发布改动见 [开发更新记录](CHANGELOG.md)，实际上线内容见 [站点更新日志](https://skillhive.team/changelog)。
+MCP 支持个人 Token 的远程 HTTP 与本地 stdio 接入，读取、上传、归档、知识文件更新、知识库与目录管理独立授权，并限定团队和知识库范围。知识库完整管理的权限契约见 [MCP 权限与写入方案](skillhive-docs/27-mcp-permissions-and-writes.md)。现有后端 API 主要服务于 Web 界面和 MCP，尚未作为完整的开放 API 发布；待发布改动见 [开发更新记录](CHANGELOG.md)，实际上线内容见 [站点更新日志](https://skillhive.team/changelog)。
 
 ## 致谢
 

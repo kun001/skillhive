@@ -39,6 +39,11 @@ public class JpaKnowledgeDocumentRepositoryAdapter implements KnowledgeDocumentR
     }
 
     @Override
+    public Optional<KnowledgeDocument> findByIdForUpdate(Long id) {
+        return delegate.findByIdForUpdate(id);
+    }
+
+    @Override
     public List<KnowledgeDocument> findByIdIn(Collection<Long> ids) {
         return ids == null || ids.isEmpty() ? List.of() : delegate.findAllById(ids);
     }

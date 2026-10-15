@@ -11,8 +11,11 @@ describe('checkTokenScopes', () => {
   it('accepts explicitly scoped MCP mutations but refuses unknown or legacy elevated scopes', () => {
     expect(checkTokenScopes('api_token', ['mcp:access', 'knowledge:upload'])).toEqual({
       skills: false, knowledge: false, skillUpload: false, skillDelete: false, knowledgeUpload: true, knowledgeDelete: false,
+      knowledgeUpdate: false, knowledgeManage: false,
     })
-    expect(() => checkTokenScopes('api_token', ['mcp:access', 'knowledge:update'])).toThrow(TokenScopeError)
+    expect(checkTokenScopes('api_token', ['mcp:access', 'knowledge:update', 'knowledge:manage']))
+      .toMatchObject({ knowledgeUpdate: true, knowledgeManage: true, knowledgeUpload: false, knowledgeDelete: false })
+    expect(() => checkTokenScopes('api_token', ['knowledge:update'])).toThrow(TokenScopeError)
     expect(() => checkTokenScopes('api_token', ['mcp:access', 'skill:publish'])).toThrow(TokenScopeError)
     expect(() => checkTokenScopes('api_token', ['knowledge:upload'])).toThrow(TokenScopeError)
   })

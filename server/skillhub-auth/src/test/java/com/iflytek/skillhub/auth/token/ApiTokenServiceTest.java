@@ -155,6 +155,18 @@ class ApiTokenServiceTest {
         assertThat(service.validateToken("revoked-token")).isEmpty();
     }
 
+    @Test
+    void newKnowledgeWriteScopesCannotBeExtendedToNeverExpire() {
+        for (String scope : java.util.List.of("knowledge:update", "knowledge:manage")) {
+            var token = new ApiToken("user-1", "MCP", "sk_unit", "hash", "[\"mcp:access\",\"" + scope + "\"]");
+            token.setResourceGrantsJson("{\"namespaceIds\":[1]}");
+            when(tokenRepo.findById(7L)).thenReturn(Optional.of(token));
+            assertThatThrownBy(() -> service.updateExpiration(7L, "user-1", null))
+                    .isInstanceOf(DomainBadRequestException.class);
+        }
+        verify(tokenRepo, never()).save(any());
+    }
+
     private static String sha256(String input) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");

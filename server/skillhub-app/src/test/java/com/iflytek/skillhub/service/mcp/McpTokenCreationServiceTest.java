@@ -42,4 +42,13 @@ class McpTokenCreationServiceTest {
         assertThatThrownBy(() -> service.create(actor, new TokenCreateRequest("AI", List.of("knowledge:upload"), "2027-01-01T00:00:00Z", true, List.of(1L), null)))
                 .isInstanceOf(ResponseStatusException.class);
     }
+    @Test void updateAndManagementTokensHaveShortExpiryWithoutImplicitReadOrUpload() {
+        when(namespaces.findById(1L)).thenReturn(Optional.of(new Namespace("team", "Team", "alice")));
+        when(members.findByNamespaceIdAndUserId(1L, "alice")).thenReturn(Optional.of(new NamespaceMember(1L, "alice", NamespaceRole.MEMBER)));
+        for (String scope : List.of("knowledge:update", "knowledge:manage")) {
+            service.create(actor, new TokenCreateRequest(scope, List.of(scope), null, true, List.of(1L), null));
+            verify(tokens).rotateMcpToken(eq("alice"), eq(scope), eq("[\"" + scope + "\",\"mcp:access\"]"),
+                    eq("2026-10-21T00:00:00Z"), anyString());
+        }
+    }
 }

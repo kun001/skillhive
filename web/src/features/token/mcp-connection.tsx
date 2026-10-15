@@ -10,7 +10,7 @@ export function McpConnection({ token, scopes }: { token?: string; scopes?: read
   const [copied, copy] = useCopyToClipboard()
   const endpoint = new URL(withBasePath('/api/v1/mcp'), window.location.origin).toString()
   const readOnly = !scopes || scopes.length > 0 && scopes.every((scope) => (scopes.includes('mcp:access')
-    ? ['mcp:access', 'skill:read', 'skill:upload', 'skill:delete', 'knowledge:read', 'knowledge:upload', 'knowledge:delete']
+    ? ['mcp:access', 'skill:read', 'skill:upload', 'skill:delete', 'knowledge:read', 'knowledge:upload', 'knowledge:delete', 'knowledge:update', 'knowledge:manage']
     : ['skill:read', 'knowledge:read']).includes(scope))
   const config = JSON.stringify({ mcpServers: { skillhive: {
     type: 'http', url: endpoint, headers: { Authorization: `Bearer ${token ?? '<YOUR_API_TOKEN>'}` },

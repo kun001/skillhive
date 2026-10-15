@@ -33,6 +33,23 @@ describe('MCP token creation', () => {
     expect(tokenApi.createToken).not.toHaveBeenCalled()
   })
 
+  it('issues independent file-update and base-management grants with write expiry', async () => {
+    vi.mocked(tokenApi.createToken).mockResolvedValue({ id: 10, name: 'manage', tokenPrefix: 'unit', token: 'fixture', createdAt: new Date().toISOString(), scopes: ['mcp:access', 'knowledge:update', 'knowledge:manage'] })
+    openUploadOnly()
+    fireEvent.click(screen.getByRole('checkbox', { name: 'mcp.knowledgeUpload' }))
+    fireEvent.click(screen.getByRole('checkbox', { name: 'mcp.knowledgeUpdate' }))
+    fireEvent.click(screen.getByRole('checkbox', { name: 'mcp.knowledgeManage' }))
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Team @team' }))
+    expect(screen.getByText('mcp.manageBaseHint')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'createToken.create' }))
+    await waitFor(() => expect(tokenApi.createToken).toHaveBeenCalledTimes(1))
+    expect(vi.mocked(tokenApi.createToken).mock.calls[0][0]).toMatchObject({
+      scopes: ['knowledge:update', 'knowledge:manage'], namespaceIds: [7], knowledgeBaseIds: undefined,
+    })
+    expect(new Date(vi.mocked(tokenApi.createToken).mock.calls[0][0].expiresAt!).getTime() - Date.now())
+      .toBeLessThanOrEqual(7 * 24 * 60 * 60 * 1000)
+  })
+
   it('issues only upload permission with selected namespace/base and a seven-day write expiry', async () => {
     vi.mocked(tokenApi.createToken).mockResolvedValue({ id: 9, name: 'mcp-upload', tokenPrefix: 'unit', token: 'not-a-real-token-unit-fixture', createdAt: new Date().toISOString(), scopes: ['mcp:access', 'knowledge:upload'] })
     openUploadOnly()

@@ -7,6 +7,8 @@ const OPERATIONS = [
   { key: 'knowledgeRead', scope: 'knowledge:read' },
   { key: 'knowledgeUpload', scope: 'knowledge:upload' },
   { key: 'knowledgeDelete', scope: 'knowledge:delete' },
+  { key: 'knowledgeUpdate', scope: 'knowledge:update' },
+  { key: 'knowledgeManage', scope: 'knowledge:manage' },
 ] as const
 
 type PermissionKey = typeof OPERATIONS[number]['key']

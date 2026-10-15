@@ -25,7 +25,7 @@ async function main(): Promise<void> {
   await server.connect(new StdioServerTransport())
 
   const domains = [access.skills && 'skills', access.knowledge && 'knowledge'].filter(Boolean).join(' + ')
-  log(`connected to ${config.baseUrl} as ${me.userId}; read access: ${domains}; enabled mutations: ${['skillUpload', 'skillDelete', 'knowledgeUpload', 'knowledgeDelete'].filter(key => access[key as keyof typeof access]).join(', ') || 'none'}`)
+  log(`connected to ${config.baseUrl} as ${me.userId}; read access: ${domains}; enabled mutations: ${['skillUpload', 'skillDelete', 'knowledgeUpload', 'knowledgeDelete', 'knowledgeUpdate', 'knowledgeManage'].filter(key => access[key as keyof typeof access]).join(', ') || 'none'}`)
 }
 
 main().catch((error: unknown) => {

@@ -18,6 +18,9 @@ public interface KnowledgeBaseJpaRepository extends JpaRepository<KnowledgeBase,
     @org.springframework.data.jpa.repository.Query(value = "select * from knowledge_base where id = :id for update", nativeQuery = true)
     Optional<KnowledgeBase> findByIdForUpdate(@org.springframework.data.repository.query.Param("id") Long id);
     Optional<KnowledgeBase> findByNamespaceIdAndSlug(Long namespaceId, String slug);
+    @org.springframework.data.jpa.repository.Query(value = "select * from knowledge_base where namespace_id = :namespaceId and slug = :slug for update", nativeQuery = true)
+    Optional<KnowledgeBase> findByNamespaceIdAndSlugForUpdate(@org.springframework.data.repository.query.Param("namespaceId") Long namespaceId,
+            @org.springframework.data.repository.query.Param("slug") String slug);
     List<KnowledgeBase> findByNamespaceIdInAndStatus(Collection<Long> namespaceIds, KnowledgeBaseStatus status);
     List<KnowledgeBase> findByStatus(KnowledgeBaseStatus status);
     boolean existsByNamespaceIdAndSlug(Long namespaceId, String slug);

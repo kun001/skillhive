@@ -1,8 +1,8 @@
 # SkillHive MCP 服务
 
-本地 stdio MCP 服务：让 AI 客户端用你自己的 Token 读取技能和知识文件，或在明确授权范围内新增上传、归档删除。当前权限模型见 [MCP 权限与写入方案](../skillhive-docs/27-mcp-permissions-and-writes.md)。
+本地 stdio MCP 服务：让 AI 客户端用你自己的 Token 读取技能和知识文件，或在明确授权范围内上传、修改、管理目录和归档。当前权限模型见 [MCP 权限与写入方案](../skillhive-docs/27-mcp-permissions-and-writes.md)。
 
-新建 MCP Token 时分别选择读取、新增上传、归档删除与目标命名空间，可进一步限定知识库。没有修改、覆盖、追加版本、移动或永久清除工具，不需要回网站逐次确认。写入工具要求 `idempotencyKey`，文件为 base64，最多 10 MiB；写入 Token 默认 7 天、最长 30 天。
+新建 MCP Token 时分别选择读取、新增上传、文件归档、文件修改与新版本、知识库和目录管理，以及目标命名空间，可进一步限定知识库。旧 Token 不自动获得新增权限。写入工具要求 `idempotencyKey`，文件为 base64，最多 10 MiB；写入 Token 默认 7 天、最长 30 天。知识文件通过新版本更新，保留历史；不提供永久清除工具。
 
 旧只读 Token 的配置继续可用。以下只读示例适用于旧 Token；新 MCP Token 也可使用相同连接方式。
 
@@ -26,7 +26,7 @@
 
 服务每次请求验证个人 Token，按作用域显示工具。工具参数不能指定用户、Token 或后端地址；后端地址固定为本实例的 loopback。读取通过原有 GET 接口，写入通过受限 MCP 接口，均再次检查操作权限、资源范围、团队成员身份、生命周期、文件所有权与下载权限。Token 吊销、成员移除或下载权限撤销会影响后续调用。超级管理员 Token 的知识、团队技能访问同样受成员边界约束。
 
-协议支持 `2025-03-26`、`2025-06-18`、`2025-11-25`，以 JSON 返回 POST 请求，通知返回 202；不提供长连接 SSE 或服务器会话，根入口 GET/DELETE 返回 405。单个文件上限 10 MiB，超限请通过网页下载。旧 Token 只接受 `skill:read`、`knowledge:read`；MCP 专用 Token 支持六项操作权限与内部 `mcp:access` 标记，拒绝普通发布或 Token 管理作用域。
+协议支持 `2025-03-26`、`2025-06-18`、`2025-11-25`，以 JSON 返回 POST 请求，通知返回 202；不提供长连接 SSE 或服务器会话，根入口 GET/DELETE 返回 405。单个文件上限 10 MiB，超限请通过网页下载。旧 Token 只接受 `skill:read`、`knowledge:read`；MCP 专用 Token 支持八项操作权限与内部 `mcp:access` 标记，拒绝普通发布或 Token 管理作用域。
 
 代理已通过现有 `/api/` 路由转发该入口。生产发布仍按项目规定的 GitHub Actions 镜像和版本部署流程执行；此功能不需要修改生产容器或服务器配置。带 `Origin` 的请求仅允许 `SKILLHUB_PUBLIC_BASE_URL` 对应的源（本地默认 `http://localhost:3000`）。无 Origin 的原生 Agent 客户端仍需 Bearer 认证。
 
@@ -114,6 +114,19 @@ Token 有哪些作用域，就只注册对应领域的工具。
 | `delete_skill` | 归档技能，保留文件 | `skill:delete` |
 | `upload_document` | 新增知识文件，不覆盖同目录同名文件 | `knowledge:upload` |
 | `delete_document` | 归档知识文件，保留历史版本 | `knowledge:delete` |
+| `get_knowledge_base` | 知识库详情与当前权限 | `knowledge:read` |
+| `update_document` | 替换标题、描述和所在目录 | `knowledge:update` |
+| `upload_document_version` | 上传新版本并保留历史，要求 `expectedVersion` | `knowledge:update` |
+| `create_knowledge_base` | 新建知识库，要求团队管理员和未限定知识库 ID 的授权 | `knowledge:manage` |
+| `update_knowledge_base` | 修改显示名称、描述，slug 不变 | `knowledge:manage` |
+| `delete_knowledge_base` | 归档空知识库，保留历史文件 | `knowledge:manage` |
+| `create_knowledge_folder` | 新建目录 | `knowledge:manage` |
+| `update_knowledge_folder` | 重命名或在库内移动目录，禁止循环 | `knowledge:manage` |
+| `delete_knowledge_folder` | 删除空目录 | `knowledge:manage` |
+
+更新文件内容时，先调用 `get_document`，再将 `detail.document.currentVersion` 作为 `upload_document_version.expectedVersion`。版本已经变化时操作拒绝，应重读文件后决定是否提交，并使用新的幂等键；同一请求的网络重试沿用原键，不重复新增版本。
+
+元数据更新为完整替换：`update_document` 必填标题，省略描述会清空描述，省略 `folderId` 会移至根目录；目录更新省略 `parentId` 同样移至根目录。需要保留字段时，先读取当前值并原样传回。知识库删除前先归档全部文件，目录删除前清空文件和子目录。
 
 ## 常见问题
 

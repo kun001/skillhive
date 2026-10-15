@@ -2,9 +2,11 @@
 
 ## Dedicated MCP permissions
 
-New tokens use MCP by default. Grant skills and knowledge read, upload-new and archive permissions independently, choose allowed namespaces, and optionally restrict knowledge bases. “Skills: read” and “Knowledge: read” provide read-only access without a separate read-only mode.
+New tokens use MCP by default. Grant reads, new uploads, archiving, knowledge file updates and base/folder management independently, choose allowed namespaces, and optionally restrict knowledge bases. “Skills: read” and “Knowledge: read” provide read-only access without a separate read-only mode.
 
-New tools: `upload_skill`, `upload_document`, `delete_skill`, `delete_document`. Uploads only create new objects; no update, overwrite, new-version, move, rename, restore or permanent-purge tools are exposed. Skills follow scanning and review; knowledge files are published immediately.
+`upload_skill` and `upload_document` create new objects. Skills follow scanning and review; knowledge files publish immediately. The independent `knowledge:update` grant enables `update_document` and `upload_document_version`; `knowledge:manage` enables base and folder management. Existing tokens do not gain these permissions automatically. Files and bases are archived; only empty folders can be deleted.
+
+Before uploading a new version, read `get_document` and pass `detail.document.currentVersion` as `expectedVersion`. Stale versions are rejected and all history is retained. Creating, updating and archiving bases requires team administrator access. Creating a base also requires a namespace-wide knowledge grant. Archive all files before archiving a base. Metadata updates replace the documented fields: omitting a description clears it, and omitting the folder location moves it to the root.
 
 Calls execute after server authorization without a separate website approval workflow. Clients decide their own tool approval policy. Writes require an `idempotencyKey`; files are base64 with a 10 MiB limit. Write tokens default to 7 days and expire within 30 days.
 

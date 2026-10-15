@@ -73,7 +73,8 @@ export function CreateTokenDialog({ children, existingNames = [] }: CreateTokenD
   const bases = useKnowledgeBases(open)
   const [, copy] = useCopyToClipboard()
   const queryClient = useQueryClient()
-  const mcpWrites = !!(scopeSelection.skillUpload || scopeSelection.skillDelete || scopeSelection.knowledgeUpload || scopeSelection.knowledgeDelete)
+  const mcpWrites = !!(scopeSelection.skillUpload || scopeSelection.skillDelete || scopeSelection.knowledgeUpload || scopeSelection.knowledgeDelete || scopeSelection.knowledgeUpdate || scopeSelection.knowledgeManage)
+  const knowledgeSelected = !!(scopeSelection.knowledge || scopeSelection.knowledgeUpload || scopeSelection.knowledgeDelete || scopeSelection.knowledgeUpdate || scopeSelection.knowledgeManage)
   const effectiveExpiration = mcpWrites && (expirationMode === 'never' || expirationMode === '90d') ? '7d' : expirationMode
 
   const normalizedName = name.trim()
@@ -116,7 +117,7 @@ export function CreateTokenDialog({ children, existingNames = [] }: CreateTokenD
       return
     }
     if (namespaceIds.length === 0 || limitBases && knowledgeBaseIds.length === 0
-        && (scopeSelection.knowledge || scopeSelection.knowledgeUpload || scopeSelection.knowledgeDelete)) {
+        && knowledgeSelected) {
       setScopeError(t('mcp.resourcesRequired'))
       return
     }
@@ -256,8 +257,9 @@ export function CreateTokenDialog({ children, existingNames = [] }: CreateTokenD
                     {namespaces.isLoading && <p role="status" className="text-sm">{t('mcp.loading')}</p>}
                     {namespaces.isError && <p role="alert" className="text-sm text-destructive">{t('mcp.loadFailed')}</p>}
                   </fieldset>
-                  {(scopeSelection.knowledge || scopeSelection.knowledgeUpload || scopeSelection.knowledgeDelete) && <fieldset className="space-y-2 rounded-md border p-3">
+                  {knowledgeSelected && <fieldset className="space-y-2 rounded-md border p-3">
                     <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={limitBases} onChange={event => setLimitBases(event.target.checked)} />{t('mcp.limitBases')}</label>
+                    {scopeSelection.knowledgeManage && <p className="text-xs text-muted-foreground">{t('mcp.manageBaseHint')}</p>}
                     {limitBases && bases.data?.filter(base => namespaces.data?.some(item => namespaceIds.includes(item.id) && item.slug === base.namespace)).map(base => <label key={base.id} className="flex items-center gap-2 text-sm">
                       <input type="checkbox" checked={knowledgeBaseIds.includes(base.id)} onChange={event => setKnowledgeBaseIds(current => event.target.checked ? [...current, base.id] : current.filter(id => id !== base.id))} />{base.displayName}
                     </label>)}

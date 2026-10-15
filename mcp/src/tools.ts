@@ -143,6 +143,51 @@ function registerWriteTools(server: McpServer, client: SkillHiveClient, options:
     title: 'Archive a knowledge file', description: 'Archive a file you own or manage. Historical bytes are not permanently purged.',
     annotations: destructive, inputSchema: { documentId: z.number().int().positive(), idempotencyKey: key },
   }, ({ documentId, idempotencyKey }) => run(async () => jsonContent(await client.writeJson(`/api/v1/mcp/knowledge/documents/${documentId}`, 'DELETE', undefined, { idempotencyKey }))))
+  if (options.access.knowledgeUpdate) {
+    server.registerTool('update_document', {
+      title: 'Update knowledge file details',
+      description: 'Replace title, description and folder of a file you own or manage. Omitted description clears it; omitted folderId moves to root. File bytes stay unchanged.',
+      annotations: write, inputSchema: { documentId: z.number().int().positive(), title: z.string().min(1).max(256),
+        description: z.string().max(2000).optional(), folderId: z.number().int().positive().optional(), idempotencyKey: key },
+    }, ({ documentId, ...body }) => run(async () => jsonContent(await client.writeJson(`/api/v1/mcp/knowledge/documents/${documentId}`, 'PUT', body))))
+    server.registerTool('upload_document_version', {
+      title: 'Upload a knowledge file version',
+      description: 'Publish new file bytes, keeping every previous version. Read get_document first and supply currentVersion as expectedVersion; stale versions are rejected. Reuse the key only for identical retries.',
+      annotations: write, inputSchema: { documentId: z.number().int().positive(), fileName, contentBase64,
+        expectedVersion: z.number().int().positive(), changeNote: z.string().max(2000).optional(), idempotencyKey: key },
+    }, ({ documentId, ...body }) => run(async () => jsonContent(await client.writeJson(`/api/v1/mcp/knowledge/documents/${documentId}/versions`, 'POST', body))))
+  }
+  if (options.access.knowledgeManage) {
+    const basePath = (namespace: string, base: string) => `/api/v1/mcp/knowledge/bases/${seg(namespace)}/${seg(base)}`
+    const displayName = z.string().min(1).max(128)
+    const description = z.string().max(2000).optional()
+    const parentId = z.number().int().positive().optional().describe('Omit for the root; update replaces the location')
+    server.registerTool('create_knowledge_base', {
+      title: 'Create knowledge base',
+      description: 'Create a knowledge base as a team administrator. Requires a namespace-wide knowledge grant; tokens limited to existing base IDs cannot create bases.',
+      annotations: write, inputSchema: { namespace: z.string().max(64).pipe(coordinate), slug: z.string().max(64).pipe(coordinate), displayName, description, idempotencyKey: key },
+    }, body => run(async () => jsonContent(await client.writeJson('/api/v1/mcp/knowledge/bases', 'POST', body))))
+    server.registerTool('update_knowledge_base', {
+      title: 'Update knowledge base', description: 'Replace the display name and description as a team administrator. Omitted description clears it. Slug stays unchanged.',
+      annotations: write, inputSchema: { namespace: coordinate, base: coordinate, displayName, description, idempotencyKey: key },
+    }, ({ namespace, base, ...body }) => run(async () => jsonContent(await client.writeJson(basePath(namespace, base), 'PUT', body))))
+    server.registerTool('delete_knowledge_base', {
+      title: 'Archive empty knowledge base', description: 'Archive an empty knowledge base as a team administrator. Archive all files first; history and stored bytes are retained.',
+      annotations: destructive, inputSchema: { namespace: coordinate, base: coordinate, idempotencyKey: key },
+    }, ({ namespace, base, idempotencyKey }) => run(async () => jsonContent(await client.writeJson(basePath(namespace, base), 'DELETE', undefined, { idempotencyKey }))))
+    server.registerTool('create_knowledge_folder', {
+      title: 'Create knowledge folder', description: 'Create a folder; omit parentId for the root.',
+      annotations: write, inputSchema: { namespace: coordinate, base: coordinate, name: displayName, parentId, idempotencyKey: key },
+    }, ({ namespace, base, ...body }) => run(async () => jsonContent(await client.writeJson(basePath(namespace, base) + '/folders', 'POST', body))))
+    server.registerTool('update_knowledge_folder', {
+      title: 'Update knowledge folder', description: 'Replace a folder name and parent. Omit parentId to move to root. Moves stay inside the base and cycles are rejected.',
+      annotations: write, inputSchema: { namespace: coordinate, base: coordinate, folderId: z.number().int().positive(), name: displayName, parentId, idempotencyKey: key },
+    }, ({ namespace, base, folderId, ...body }) => run(async () => jsonContent(await client.writeJson(basePath(namespace, base) + `/folders/${folderId}`, 'PUT', body))))
+    server.registerTool('delete_knowledge_folder', {
+      title: 'Delete empty knowledge folder', description: 'Delete an empty folder you created or manage. Child folders and active files prevent deletion.',
+      annotations: destructive, inputSchema: { namespace: coordinate, base: coordinate, folderId: z.number().int().positive(), idempotencyKey: key },
+    }, ({ namespace, base, folderId, idempotencyKey }) => run(async () => jsonContent(await client.writeJson(basePath(namespace, base) + `/folders/${folderId}`, 'DELETE', undefined, { idempotencyKey }))))
+  }
 }
 
 function registerSkillTools(server: McpServer, client: SkillHiveClient, options: ToolOptions): void {
@@ -249,6 +294,10 @@ function registerSkillTools(server: McpServer, client: SkillHiveClient, options:
 }
 
 function registerKnowledgeTools(server: McpServer, client: SkillHiveClient, options: ToolOptions): void {
+  server.registerTool('get_knowledge_base', {
+    title: 'Get knowledge base', description: 'Get knowledge base metadata and current permissions.',
+    annotations: READ_ONLY, inputSchema: { namespace: z.string().min(1).max(64), base: z.string().min(1).max(64) },
+  }, ({ namespace, base }) => run(async () => jsonContent(await client.getJson(`/api/v1/knowledge/bases/${seg(namespace)}/${seg(base)}`))))
   server.registerTool('list_knowledge_bases', {
     title: 'List knowledge bases',
     description: 'Lists the knowledge bases of the teams you belong to.',

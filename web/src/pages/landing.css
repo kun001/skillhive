@@ -169,6 +169,9 @@
 /* ── Problem ── */
 .hv-problem-grid { display: grid; grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr); align-items: start; gap: clamp(40px, 6vw, 96px); }
 .hv-problem-grid .hv-head { margin-bottom: 0; }
+/* Problem and layers share the same paper background, so two full section paddings read as one oversized gap. */
+.hv-problem { padding-bottom: clamp(40px, 5vw, 72px); }
+.hv-problem + .hv-layers { padding-top: clamp(56px, 6vw, 88px); }
 .hv-problem-list li { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 20px; padding-block: 30px; border-top: 1px solid var(--hv-line); }
 .hv-problem-list li:last-child { border-bottom: 1px solid var(--hv-line); }
 .hv-index { color: var(--hv-copper); font-family: var(--hv-display); font-size: 44px; font-weight: 700; line-height: 1; opacity: .9; }

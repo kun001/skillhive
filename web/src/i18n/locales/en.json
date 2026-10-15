@@ -1466,6 +1466,8 @@
       "skillDelete": "Skills archive",
       "knowledgeUpload": "Knowledge upload new",
       "knowledgeDelete": "Knowledge archive",
+      "knowledgeUpdate": "Knowledge file edits and new versions",
+      "knowledgeManage": "Knowledge base and folder management",
       "skillRead": "Skills read-only",
       "knowledge": "Knowledge read-only",
       "tokenManage": "Token management"

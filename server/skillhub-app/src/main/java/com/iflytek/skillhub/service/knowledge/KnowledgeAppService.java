@@ -271,7 +271,7 @@ public class KnowledgeAppService {
                                             UpdateKnowledgeBaseRequest request,
                                             Caller caller,
                                             AuditRequestContext audit) {
-        BaseContext context = resolveBase(namespaceSlug, baseSlug, caller);
+        BaseContext context = resolveWritableBase(namespaceSlug, baseSlug, caller);
         if (!accessPolicy.canManageBase(context.namespace(), context.base(), context.role(), caller.platformRoles())) {
             throw new DomainForbiddenException("error.knowledge.permission.denied");
         }
@@ -281,6 +281,22 @@ public class KnowledgeAppService {
         recordAudit(caller, "KNOWLEDGE_BASE_UPDATE", TARGET_BASE, saved.getId(), audit, null);
         return toBaseResponse(new BaseContext(context.namespace(), saved, context.role()),
                 statsFor(List.of(saved.getId())).get(saved.getId()), caller);
+    }
+
+    /** Archive an empty base, retaining its folders and historical bytes. */
+    @Transactional
+    public void archiveBase(String namespaceSlug, String baseSlug, Caller caller, AuditRequestContext audit) {
+        BaseContext context = resolveWritableBase(namespaceSlug, baseSlug, caller);
+        if (!accessPolicy.canManageBase(context.namespace(), context.base(), context.role(), caller.platformRoles())) {
+            throw new DomainForbiddenException("error.knowledge.permission.denied");
+        }
+        if (documentRepository.statsByKnowledgeBaseIds(List.of(context.base().getId())).stream()
+                .anyMatch(stats -> stats.documentCount() > 0)) {
+            throw new DomainConflictException("error.knowledge.base.notEmpty");
+        }
+        context.base().archive(caller.userId());
+        baseRepository.save(context.base());
+        recordAudit(caller, "KNOWLEDGE_BASE_ARCHIVE", TARGET_BASE, context.base().getId(), audit, null);
     }
 
     // ---------------------------------------------------------------- folders
@@ -301,7 +317,7 @@ public class KnowledgeAppService {
                                                 CreateKnowledgeFolderRequest request,
                                                 Caller caller,
                                                 AuditRequestContext audit) {
-        BaseContext context = resolveBase(namespaceSlug, baseSlug, caller);
+        BaseContext context = resolveWritableBase(namespaceSlug, baseSlug, caller);
         requireContribute(context, caller);
         List<KnowledgeFolder> folders = folderRepository.findByKnowledgeBaseId(context.base().getId());
         requireFolderInBase(new KnowledgeFolderTree(folders), request.parentId());
@@ -321,7 +337,7 @@ public class KnowledgeAppService {
                                                 UpdateKnowledgeFolderRequest request,
                                                 Caller caller,
                                                 AuditRequestContext audit) {
-        BaseContext context = resolveBase(namespaceSlug, baseSlug, caller);
+        BaseContext context = resolveWritableBase(namespaceSlug, baseSlug, caller);
         KnowledgeFolder folder = findFolderInBase(context, folderId);
         if (!memberPolicy.canEdit(context.namespace().getId(), caller.userId(), caller.platformRoles()) || !accessPolicy.canManageFolder(context.namespace(), context.base(), folder, caller.userId(),
                 context.role(), caller.platformRoles())) {
@@ -348,7 +364,7 @@ public class KnowledgeAppService {
                              Long folderId,
                              Caller caller,
                              AuditRequestContext audit) {
-        BaseContext context = resolveBase(namespaceSlug, baseSlug, caller);
+        BaseContext context = resolveWritableBase(namespaceSlug, baseSlug, caller);
         KnowledgeFolder folder = findFolderInBase(context, folderId);
         if (!memberPolicy.canEdit(context.namespace().getId(), caller.userId(), caller.platformRoles()) || !accessPolicy.canManageFolder(context.namespace(), context.base(), folder, caller.userId(),
                 context.role(), caller.platformRoles())) {
@@ -459,7 +475,7 @@ public class KnowledgeAppService {
     public KnowledgeDocumentResponse uploadDocument(String namespaceSlug, String baseSlug, Upload upload,
                                                     MarkdownUpload markdown, Long folderId, String title,
                                                     String description, Caller caller, AuditRequestContext audit) {
-        BaseContext context = resolveBase(namespaceSlug, baseSlug, caller);
+        BaseContext context = resolveWritableBase(namespaceSlug, baseSlug, caller);
         requireContribute(context, caller);
         String extension = filePolicy.validateUpload(upload.filename(), upload.sizeBytes());
         String filename = filePolicy.validateFilename(upload.filename());
@@ -565,6 +581,7 @@ public class KnowledgeAppService {
     @Transactional
     public KnowledgeDocumentVersionResponse uploadVersion(Long documentId, Upload upload, MarkdownUpload markdown,
                                                           String changeNote, Caller caller, AuditRequestContext audit) {
+        documentRepository.findByIdForUpdate(documentId);
         DocumentContext context = resolveDocument(documentId, caller);
         if (!accessPolicy.canContribute(context.baseContext().namespace(), context.baseContext().base(),
                 context.baseContext().role(), caller.platformRoles())) {
@@ -814,12 +831,21 @@ public class KnowledgeAppService {
     }
 
     private BaseContext resolveBase(String namespaceSlug, String baseSlug, Caller caller) {
+        return resolveBase(namespaceSlug, baseSlug, caller, false);
+    }
+
+    private BaseContext resolveWritableBase(String namespaceSlug, String baseSlug, Caller caller) {
+        return resolveBase(namespaceSlug, baseSlug, caller, true);
+    }
+
+    private BaseContext resolveBase(String namespaceSlug, String baseSlug, Caller caller, boolean lock) {
         Namespace namespace = findNamespace(namespaceSlug);
         NamespaceRole role = caller.roleIn(namespace);
         if (!accessPolicy.canRead(namespace, role, caller.platformRoles())) {
             throw new DomainNotFoundException("error.knowledge.base.notFound", baseSlug);
         }
-        KnowledgeBase base = baseRepository.findByNamespaceIdAndSlug(namespace.getId(), baseSlug)
+        KnowledgeBase base = (lock ? baseRepository.findByNamespaceIdAndSlugForUpdate(namespace.getId(), baseSlug)
+                : baseRepository.findByNamespaceIdAndSlug(namespace.getId(), baseSlug))
                 .filter(candidate -> candidate.getStatus() == KnowledgeBaseStatus.ACTIVE)
                 .orElseThrow(() -> new DomainNotFoundException("error.knowledge.base.notFound", baseSlug));
         if (!com.iflytek.skillhub.auth.token.McpTokenGrants.baseAllowed(namespace.getId(), base.getId())) {

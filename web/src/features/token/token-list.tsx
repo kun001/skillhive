@@ -137,7 +137,7 @@ export function TokenList() {
       tokenName: token.name,
       mode: token.expiresAt ? 'custom' : 'never',
       customExpiresAt: token.expiresAt ? toLocalDateTimeInputValue(token.expiresAt) : '',
-      mcpWrites: !!token.scopes?.includes('mcp:access') && token.scopes.some(scope => ['skill:upload', 'skill:delete', 'knowledge:upload', 'knowledge:delete'].includes(scope)),
+      mcpWrites: !!token.scopes?.includes('mcp:access') && token.scopes.some(scope => ['skill:upload', 'skill:delete', 'knowledge:upload', 'knowledge:delete', 'knowledge:update', 'knowledge:manage'].includes(scope)),
     })
   }
 
