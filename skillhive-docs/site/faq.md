@@ -26,17 +26,17 @@ A: 本地账号（用户名密码，部署时可初始化首个管理员），�
 
 ## Q: 技能包有什么要求和限制？
 
-A: 根目录必须包含 `SKILL.md`，其 frontmatter 需要 `name` 和 `description`。默认最多 100 个文件，单个文件不超过 10MB，整包不超过 100MB，文件扩展名需在白名单内。
+A: 根目录必须包含 `SKILL.md`，其 frontmatter 需要 `name` 和 `description`。默认最多 500 个文件，单个文件不超过 10MB，整包不超过 100MB，文件扩展名需在白名单内。
 
 ## Q: 技能包能包含多少个文件？提示文件数超限怎么办？
 
-A: 默认上限为 **100 个文件**（这与单文件 10MB、整包 100MB 的大小限制是两回事）。如需放宽，修改配置项 `skillhub.publish.max-file-count`，或在部署时用环境变量覆盖：
+A: 默认上限为 **500 个文件**（这与单文件 10MB、整包 100MB 的大小限制是两回事）。如需放宽，修改配置项 `skillhub.publish.max-file-count`，或在部署时用环境变量覆盖：
 
 ```bash
-SKILLHUB_PUBLISH_MAX_FILE_COUNT=500
+SKILLHUB_PUBLISH_MAX_FILE_COUNT=1000
 ```
 
-修改后需重新创建容器才会生效；仅执行 `restart` 不会重新注入环境变量。注意 `compose.release.yml` 中也需引用该变量。
+修改后需重新创建容器才会生效；仅执行 `restart` 不会重新注入环境变量。注意 compose 文件中服务端（`server`）的 `environment` 也需引用该变量，否则变量不会传进容器。
 
 ## Q: 发布时报“技能包校验失败 / malformed input”怎么办？
 
