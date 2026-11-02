@@ -265,9 +265,15 @@ skillhub:
       poll-interval-ms: ${SKILLHUB_KNOWLEDGE_SUMMARY_POLL_INTERVAL_MS:5000}
       # Optional reasoning_effort for thinking models (none|minimal|low|medium|high); omitted when blank.
       reasoning-effort: ${SKILLHUB_KNOWLEDGE_SUMMARY_REASONING_EFFORT:}
+  storage-quota:
+    # Max bytes each user's uploads may occupy (skill package files + knowledge files/images).
+    # 104857600 = 100MB. 0 or a negative value disables the quota.
+    per-user-bytes: ${SKILLHUB_USER_STORAGE_QUOTA_BYTES:104857600}
+    # Platform roles that are never limited (comma-separated). System accounts are always exempt.
+    exempt-roles: ${SKILLHUB_USER_STORAGE_QUOTA_EXEMPT_ROLES:SUPER_ADMIN,SKILL_ADMIN,USER_ADMIN}
   publish:
     max-file-count: 500
-    max-single-file-size: 10485760 # 10MB
+    max-single-file-size: 15728640 # 15MB
     max-package-size: 104857600 # 100MB
     # allowed-file-extensions: uses SkillPackagePolicy.ALLOWED_EXTENSIONS by default
     # Override via SKILLHUB_PUBLISH_ALLOWED_FILE_EXTENSIONS env var if needed

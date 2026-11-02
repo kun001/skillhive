@@ -210,6 +210,28 @@ class SkillPackageValidatorTest {
     }
 
     @Test
+    void defaultSingleFileLimitIsFifteenMegabytes() {
+        long limit = 15L * 1024 * 1024;
+        assertEquals(limit, SkillPackagePolicy.MAX_SINGLE_FILE_SIZE);
+
+        byte[] atLimit = new byte[(int) limit];
+        java.util.Arrays.fill(atLimit, (byte) 'a');
+        ValidationResult accepted = validator.validate(List.of(
+                skillMdEntry(),
+                new PackageEntry("data.txt", atLimit, atLimit.length, "text/plain")));
+        assertTrue(accepted.errors().stream().noneMatch(e -> e.contains("File too large")), accepted.errors().toString());
+        assertTrue(accepted.passed());
+
+        byte[] overLimit = new byte[(int) limit + 1];
+        java.util.Arrays.fill(overLimit, (byte) 'a');
+        ValidationResult rejected = validator.validate(List.of(
+                skillMdEntry(),
+                new PackageEntry("data.txt", overLimit, overLimit.length, "text/plain")));
+        assertFalse(rejected.passed());
+        assertTrue(rejected.errors().stream().anyMatch(e -> e.contains("File too large") && e.contains("data.txt")));
+    }
+
+    @Test
     void testPackageTooLarge() {
         // Use a custom validator with 2KB total limit to test the logic
         SkillPackageValidator smallValidator = new SkillPackageValidator(

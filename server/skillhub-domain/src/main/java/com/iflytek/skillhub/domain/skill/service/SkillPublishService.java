@@ -26,6 +26,7 @@ import com.iflytek.skillhub.domain.skill.validation.PackageEntry;
 import com.iflytek.skillhub.domain.skill.validation.PrePublishValidator;
 import com.iflytek.skillhub.domain.skill.validation.SkillPackageValidator;
 import com.iflytek.skillhub.domain.skill.validation.ValidationResult;
+import com.iflytek.skillhub.domain.storage.StorageQuotaGuard;
 import com.iflytek.skillhub.storage.ObjectStorageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -109,6 +110,7 @@ public class SkillPublishService {
     private final SkillStorageDeletionCompensationService compensationService;
     private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
+    private final StorageQuotaGuard storageQuotaGuard;
 
     public SkillPublishService(
             NamespaceRepository namespaceRepository,
@@ -125,7 +127,8 @@ public class SkillPublishService {
             SecurityScanService securityScanService,
             SkillStorageDeletionCompensationService compensationService,
             ApplicationEventPublisher eventPublisher,
-            Clock clock) {
+            Clock clock,
+            StorageQuotaGuard storageQuotaGuard) {
         this.namespaceRepository = namespaceRepository;
         this.namespaceMemberRepository = namespaceMemberRepository;
         this.skillRepository = skillRepository;
@@ -141,6 +144,7 @@ public class SkillPublishService {
         this.compensationService = compensationService;
         this.eventPublisher = eventPublisher;
         this.clock = clock;
+        this.storageQuotaGuard = storageQuotaGuard == null ? StorageQuotaGuard.UNLIMITED : storageQuotaGuard;
     }
 
     public record DryRunResult(
@@ -471,12 +475,21 @@ public class SkillPublishService {
 
         // 7. Check version doesn't already exist
         java.util.Optional<SkillVersion> existingVersion = skillVersionRepository.findBySkillIdAndVersion(skill.getId(), metadata.version());
+        if (existingVersion.isPresent()
+                && existingVersion.get().getStatus() == SkillVersionStatus.PUBLISHED) {
+            throw new DomainBadRequestException("error.skill.version.exists", metadata.version());
+        }
+
+        // 7b. Enforce the uploader's storage quota before anything is written to object storage.
+        // Re-uploading an unpublished version replaces (and frees) the publisher's previous files.
+        long reclaimableBytes = existingVersion
+                .filter(replaced -> publisherId.equals(replaced.getCreatedBy()))
+                .map(SkillVersion::getTotalSize)
+                .orElse(0L);
+        storageQuotaGuard.assertCanStore(publisherId, incomingBytes(entries), reclaimableBytes);
+
         if (existingVersion.isPresent()) {
-            SkillVersion matchedVersion = existingVersion.get();
-            if (matchedVersion.getStatus() == SkillVersionStatus.PUBLISHED) {
-                throw new DomainBadRequestException("error.skill.version.exists", metadata.version());
-            }
-            deleteReplaceableVersionArtifacts(skill, matchedVersion, namespaceSlug);
+            deleteReplaceableVersionArtifacts(skill, existingVersion.get(), namespaceSlug);
         }
 
         // 8. Create SkillVersion
@@ -837,6 +850,14 @@ public class SkillPublishService {
         parsedMetadata.put("frontmatter", metadata.frontmatter());
         parsedMetadata.put(ComplianceMetadataService.SNAPSHOT_FIELD_NAME, complianceSnapshot);
         return parsedMetadata;
+    }
+
+    private static long incomingBytes(List<PackageEntry> entries) {
+        long total = 0;
+        for (PackageEntry entry : entries) {
+            total += Math.max(0L, entry.size());
+        }
+        return total;
     }
 
     private void deleteTemporaryFile(Path path) {

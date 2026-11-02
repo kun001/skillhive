@@ -113,6 +113,10 @@ class RouteSecurityPolicyRegistryTest {
                 new String[] {"DELETE", "/api/v1/knowledge/documents/10"},
                 new String[] {"POST", "/api/v1/knowledge/documents/10/versions"},
                 new String[] {"POST", "/api/v1/knowledge/documents/10/versions/2/restore"},
+                // Permanent purge of archived files is web-session only (no MCP or API token tool).
+                new String[] {"DELETE", "/api/v1/knowledge/documents/10/purge"},
+                new String[] {"DELETE", "/api/v1/knowledge/bases/team-a/handbook/archived-documents"},
+                new String[] {"GET", "/api/v1/knowledge/bases/team-a/handbook/archived-documents"},
                 new String[] {"POST", "/api/v1/me/skills"},
                 new String[] {"DELETE", "/api/v1/me/namespaces"},
                 new String[] {"GET", "/api/web/me/skills"},

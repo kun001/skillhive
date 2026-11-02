@@ -447,5 +447,19 @@ Admin API 按最小权限拆分，不再统一要求 SUPER_ADMIN：
 | POST | `/documents/{id}/versions/{version}/restore` | 恢复历史版本 |
 | GET | `/documents/{id}/content` | 下载或预览（`disposition=inline`），需成员下载权限，写审计 |
 | GET | `/documents/{id}/images`、`/documents/{id}/images/{imageId}/content` | Markdown 版本绑定的图片 |
+| GET | `/bases/{namespace}/{base}/archived-documents` | 已删除（归档）文件分页列表（`page`、`size`≤100），含版本数、占用字节和 `canPurge`；团队所有者/管理员与超级管理员看到全部，其他成员只看到自己的；归档的知识库也可查询 |
+| DELETE | `/documents/{id}/purge?confirm=true` | 永久删除一个已归档文件 |
+| DELETE | `/bases/{namespace}/{base}/archived-documents?confirm=true` | 永久删除该库中调用者可清理的已归档文件，每次最多 100 个，返回 `remainingArchived` 供继续调用 |
+
+网页入口：知识库页面右上角「已归档文件」抽屉（`web/src/features/knowledge/archived-drawer.tsx`）调用以上三个接口和 `GET /api/web/me/storage-quota`。
+
+### 永久删除已归档文件
+
+- **对象**：只处理 `ARCHIVED` 文件；未删除的文件返回 409 `error.knowledge.purge.notArchived`。缺少或 `confirm` 不为 `true` 返回 400 `error.knowledge.purge.confirmRequired`。
+- **权限**：与文件管理一致——文件所有者（`owner_id`，即首次上传者）、团队 OWNER/ADMIN 或 `SUPER_ADMIN`，且需团队 `ACTIVE`、当前成员具备编辑能力；知识库已归档时仍可清理。非成员返回 404。仅网页会话可调用：API Token（含 MCP 专用 Token）没有对应路由策略，MCP 也没有永久删除工具。
+- **限流与审计**：`knowledge-purge` 类别每用户每分钟 30 次；每个文件写一条 `KNOWLEDGE_DOCUMENT_PURGE` 审计（标题、所有者、版本数、删除对象数、保留的共享对象数、释放字节）。
+- **顺序**：同一事务内锁定文件行，按外键顺序删除摘要、提取文本、配图、版本和文件，再把不再被任何版本或配图引用的对象键写入 `skill_storage_delete_compensation`（每条最多 500 个键）；提交后立即删除对象，失败由每 5 分钟的补偿任务重试。事务回滚时不会删除任何对象。恢复版本和继承配图共用的对象只有在最后一个引用删除后才会删除。
+- **配额**：配额按数据库行实时统计，提交后立即释放，与对象删除是否完成无关。所有版本（包括其他成员上传的新版本）占用都会释放。
+- **重复请求**：并发的重复请求在行锁后发现文件已不存在，返回 `purgedDocuments=0`；提交后再请求同一 ID 返回 404，均不会再删除任何内容。
 
 API Token 只能以 `knowledge:read` 调用 `/api/v1/knowledge` 下的 GET 接口，详见 [认证与授权设计](03-authentication-design.md)。

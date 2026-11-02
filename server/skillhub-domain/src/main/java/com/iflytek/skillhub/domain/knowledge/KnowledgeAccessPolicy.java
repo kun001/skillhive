@@ -58,6 +58,28 @@ public class KnowledgeAccessPolicy {
                         || isSuperAdmin(platformRoles));
     }
 
+    /**
+     * Permanently purging an archived file uses the same people as managing it (its owner, a team
+     * owner or admin, or a super admin) but also works when the base itself is archived, so files
+     * left behind in an archived base can still be cleaned up. The team must still be active.
+     */
+    public boolean canPurgeDocument(Namespace namespace,
+                                    String documentOwnerId,
+                                    String userId,
+                                    NamespaceRole role,
+                                    Set<String> platformRoles) {
+        return namespace.getStatus() == NamespaceStatus.ACTIVE
+                && (role != null || isSuperAdmin(platformRoles))
+                && (Objects.equals(documentOwnerId, userId)
+                        || isNamespaceAdmin(role)
+                        || isSuperAdmin(platformRoles));
+    }
+
+    /** Team owners, team admins and super admins see and purge every member's archived files. */
+    public boolean canPurgeAnyDocument(NamespaceRole role, Set<String> platformRoles) {
+        return isNamespaceAdmin(role) || isSuperAdmin(platformRoles);
+    }
+
     public boolean canManageFolder(Namespace namespace,
                                    KnowledgeBase base,
                                    KnowledgeFolder folder,

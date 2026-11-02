@@ -26,17 +26,30 @@ A: 本地账号（用户名密码，部署时可初始化首个管理员），�
 
 ## Q: 技能包有什么要求和限制？
 
-A: 根目录必须包含 `SKILL.md`，其 frontmatter 需要 `name` 和 `description`。默认最多 500 个文件，单个文件不超过 10MB，整包不超过 100MB，文件扩展名需在白名单内。
+A: 根目录必须包含 `SKILL.md`，其 frontmatter 需要 `name` 和 `description`。默认最多 500 个文件，单个文件不超过 15MB，整包不超过 100MB，文件扩展名需在白名单内。
 
 ## Q: 技能包能包含多少个文件？提示文件数超限怎么办？
 
-A: 默认上限为 **500 个文件**（这与单文件 10MB、整包 100MB 的大小限制是两回事）。如需放宽，修改配置项 `skillhub.publish.max-file-count`，或在部署时用环境变量覆盖：
+A: 默认上限为 **500 个文件**（这与单文件 15MB、整包 100MB 的大小限制是两回事）。如需放宽，修改配置项 `skillhub.publish.max-file-count`，或在部署时用环境变量覆盖：
 
 ```bash
 SKILLHUB_PUBLISH_MAX_FILE_COUNT=1000
 ```
 
 修改后需重新创建容器才会生效；仅执行 `restart` 不会重新注入环境变量。注意 compose 文件中服务端（`server`）的 `environment` 也需引用该变量，否则变量不会传进容器。
+
+## Q: 每个用户能用多少存储空间？
+
+A: 默认每个用户 **100MB**，统计其上传的技能包文件和知识库文件（含历史版本、配图和已删除但尚未永久删除的文件）。管理员（`SUPER_ADMIN`、`SKILL_ADMIN`、`USER_ADMIN`）不受限制。超出时上传会被拒绝（413），提示配额、已用和本次大小。可在 `GET /api/v1/me/storage-quota` 查看用量。该配额与单文件上限同时生效：技能包单文件 15MB、知识库单文件 100MB，但都不能超过剩余配额。本地部署可调整：
+
+```bash
+SKILLHUB_USER_STORAGE_QUOTA_BYTES=524288000   # 500MB；0 或负数表示不限制
+SKILLHUB_USER_STORAGE_QUOTA_EXEMPT_ROLES=SUPER_ADMIN,SKILL_ADMIN,USER_ADMIN
+```
+
+删除知识库文件只是归档，仍计入配额。要释放空间，在知识库页面右上角打开「已归档文件」，文件上传者或团队管理员可单个或批量永久删除（不可恢复，配额立即释放）；该面板也会显示你的已用空间和配额。对应接口为 `DELETE /api/web/knowledge/documents/{id}/purge?confirm=true`（需网页登录）。MCP 和 API Token 不能永久删除。
+
+详见 [部署架构与运维](https://github.com/kun001/skillhive/blob/main/skillhive-docs/09-deployment.md) 的“上传大小与用户存储配额”。
 
 ## Q: 发布时报“技能包校验失败 / malformed input”怎么办？
 

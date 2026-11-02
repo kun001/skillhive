@@ -21,6 +21,7 @@ import com.iflytek.skillhub.domain.skill.validation.PackageEntry;
 import com.iflytek.skillhub.domain.skill.validation.PrePublishValidator;
 import com.iflytek.skillhub.domain.skill.validation.SkillPackageValidator;
 import com.iflytek.skillhub.domain.skill.validation.ValidationResult;
+import com.iflytek.skillhub.domain.storage.StorageQuotaGuard;
 import com.iflytek.skillhub.storage.ObjectStorageService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -83,6 +84,9 @@ class SkillPublishServiceTest {
     @Mock
     private SkillStorageDeletionCompensationService compensationService;
 
+    @Mock
+    private StorageQuotaGuard storageQuotaGuard;
+
     private SkillPublishService service;
     private ObjectMapper objectMapper;
 
@@ -104,7 +108,8 @@ class SkillPublishServiceTest {
                 securityScanService,
                 compensationService,
                 eventPublisher,
-                CLOCK
+                CLOCK,
+                storageQuotaGuard
         );
         lenient().when(securityScanService.isEnabled()).thenReturn(true);
         lenient().when(skillVersionRepository.findBySkillIdAndStatus(anyLong(), eq(SkillVersionStatus.PENDING_REVIEW)))
@@ -738,6 +743,70 @@ class SkillPublishServiceTest {
         inOrder.verify(skillVersionRepository).flush();
         inOrder.verify(skillVersionRepository, times(2)).save(any(SkillVersion.class));
         inOrder.verify(skillRepository).save(skill);
+    }
+
+    @Test
+    void publishOverStorageQuotaIsRejectedBeforeAnyVersionOrStorageWrite() throws Exception {
+        String publisherId = "user-100";
+        String skillMdContent = "---\nname: test-skill\ndescription: Test\nversion: 1.0.0\n---\nBody";
+        PackageEntry skillMd = new PackageEntry("SKILL.md", skillMdContent.getBytes(), skillMdContent.length(), "text/markdown");
+        PackageEntry file1 = new PackageEntry("file1.txt", "content".getBytes(), 7, "text/plain");
+        List<PackageEntry> entries = List.of(skillMd, file1);
+        Namespace namespace = new Namespace("test-ns", "Test NS", "user-1");
+        setId(namespace, 1L);
+        Skill skill = new Skill(1L, "test-skill", publisherId, SkillVisibility.PUBLIC);
+        setId(skill, 1L);
+        when(namespaceRepository.findBySlug("test-ns")).thenReturn(Optional.of(namespace));
+        when(namespaceMemberRepository.findByNamespaceIdAndUserId(any(), eq(publisherId))).thenReturn(Optional.of(mock(NamespaceMember.class)));
+        when(skillPackageValidator.validate(entries)).thenReturn(ValidationResult.pass());
+        when(skillMetadataParser.parse(skillMdContent)).thenReturn(new SkillMetadata("test-skill", "Test", "1.0.0", "Body", Map.of()));
+        when(prePublishValidator.validate(any())).thenReturn(ValidationResult.pass());
+        when(skillRepository.findByNamespaceIdAndSlug(any(), eq("test-skill"))).thenReturn(List.of(skill));
+        when(skillRepository.findByNamespaceIdAndSlugAndOwnerId(any(), eq("test-skill"), eq(publisherId))).thenReturn(Optional.of(skill));
+        when(skillVersionRepository.findBySkillIdAndVersion(any(), eq("1.0.0"))).thenReturn(Optional.empty());
+        long incoming = skillMdContent.length() + 7L;
+        doThrow(new com.iflytek.skillhub.domain.storage.StorageQuotaExceededException(100, 100, incoming))
+                .when(storageQuotaGuard).assertCanStore(publisherId, incoming, 0L);
+
+        assertThrows(com.iflytek.skillhub.domain.storage.StorageQuotaExceededException.class,
+                () -> service.publishFromEntries("test-ns", entries, publisherId, SkillVisibility.PUBLIC, Set.of()));
+
+        verify(skillVersionRepository, never()).save(any(SkillVersion.class));
+        verifyNoInteractions(objectStorageService, skillFileRepository);
+    }
+
+    @Test
+    void replacingOwnUnpublishedVersionCountsItsBytesAsReclaimable() throws Exception {
+        String publisherId = "user-100";
+        String skillMdContent = "---\nname: test-skill\ndescription: Test\nversion: 1.0.0-beta\n---\nBody";
+        PackageEntry skillMd = new PackageEntry("SKILL.md", skillMdContent.getBytes(), skillMdContent.length(), "text/markdown");
+        List<PackageEntry> entries = List.of(skillMd);
+        Namespace namespace = new Namespace("test-ns", "Test NS", "user-1");
+        setId(namespace, 1L);
+        Skill skill = new Skill(1L, "test-skill", publisherId, SkillVisibility.PUBLIC);
+        setId(skill, 1L);
+        SkillVersion draftVersion = new SkillVersion(1L, "1.0.0-beta", publisherId);
+        draftVersion.setStatus(SkillVersionStatus.DRAFT);
+        draftVersion.setTotalSize(4096L);
+        setId(draftVersion, 8L);
+        when(namespaceRepository.findBySlug("test-ns")).thenReturn(Optional.of(namespace));
+        when(namespaceMemberRepository.findByNamespaceIdAndUserId(any(), eq(publisherId))).thenReturn(Optional.of(mock(NamespaceMember.class)));
+        when(skillPackageValidator.validate(entries)).thenReturn(ValidationResult.pass());
+        when(skillMetadataParser.parse(skillMdContent)).thenReturn(new SkillMetadata("test-skill", "Test", "1.0.0-beta", "Body", Map.of()));
+        when(prePublishValidator.validate(any())).thenReturn(ValidationResult.pass());
+        when(skillRepository.findByNamespaceIdAndSlug(any(), eq("test-skill"))).thenReturn(List.of(skill));
+        when(skillRepository.findByNamespaceIdAndSlugAndOwnerId(any(), eq("test-skill"), eq(publisherId))).thenReturn(Optional.of(skill));
+        when(skillVersionRepository.findBySkillIdAndVersion(1L, "1.0.0-beta")).thenReturn(Optional.of(draftVersion));
+        doThrow(new com.iflytek.skillhub.domain.storage.StorageQuotaExceededException(1, 1, 1))
+                .when(storageQuotaGuard).assertCanStore(anyString(), anyLong(), anyLong());
+
+        assertThrows(com.iflytek.skillhub.domain.storage.StorageQuotaExceededException.class,
+                () -> service.publishFromEntries("test-ns", entries, publisherId, SkillVisibility.PUBLIC, Set.of()));
+
+        verify(storageQuotaGuard).assertCanStore(publisherId, (long) skillMdContent.length(), 4096L);
+        // The rejected upload must not delete the version it would have replaced.
+        verify(skillVersionRepository, never()).delete(any(SkillVersion.class));
+        verifyNoInteractions(objectStorageService);
     }
 
     @Test

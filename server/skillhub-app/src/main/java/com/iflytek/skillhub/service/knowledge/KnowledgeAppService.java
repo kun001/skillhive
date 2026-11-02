@@ -32,6 +32,7 @@ import com.iflytek.skillhub.domain.shared.exception.DomainBadRequestException;
 import com.iflytek.skillhub.domain.shared.exception.DomainConflictException;
 import com.iflytek.skillhub.domain.shared.exception.DomainForbiddenException;
 import com.iflytek.skillhub.domain.shared.exception.DomainNotFoundException;
+import com.iflytek.skillhub.domain.storage.StorageQuotaGuard;
 import com.iflytek.skillhub.domain.user.UserAccount;
 import com.iflytek.skillhub.domain.user.UserAccountRepository;
 import com.iflytek.skillhub.dto.PageResponse;
@@ -118,6 +119,7 @@ public class KnowledgeAppService {
     private final AuditLogService auditLogService;
     private final RequestIdAccessor requestIdAccessor;
     private final KnowledgeTextService textService;
+    private final StorageQuotaGuard storageQuotaGuard;
 
     public KnowledgeAppService(NamespaceRepository namespaceRepository,
                                KnowledgeBaseRepository baseRepository,
@@ -133,7 +135,9 @@ public class KnowledgeAppService {
                                AuditLogService auditLogService,
                                RequestIdAccessor requestIdAccessor,
                                com.iflytek.skillhub.domain.namespace.MemberResourcePolicy memberPolicy,
-                               KnowledgeTextService textService) {
+                               KnowledgeTextService textService,
+                               StorageQuotaGuard storageQuotaGuard) {
+        this.storageQuotaGuard = storageQuotaGuard == null ? StorageQuotaGuard.UNLIMITED : storageQuotaGuard;
         this.memberPolicy = memberPolicy;
         this.textService = textService;
         this.namespaceRepository = namespaceRepository;
@@ -486,6 +490,7 @@ public class KnowledgeAppService {
         }
         String sourcePath = validateMarkdownUpload(upload, markdown);
         requireFolderInBase(new KnowledgeFolderTree(folderRepository.findByKnowledgeBaseId(context.base().getId())), folderId);
+        storageQuotaGuard.assertCanStore(caller.userId(), incomingBytes(upload, markdown));
 
         KnowledgeDocument document = documentRepository.save(new KnowledgeDocument(
                 context.base().getId(),
@@ -609,6 +614,8 @@ public class KnowledgeAppService {
             }
             markdownPolicy.validate(filename, upload.sizeBytes(), sourcePath, combined);
         }
+        // Images carried forward from the previous version reuse their stored objects; only new bytes count.
+        storageQuotaGuard.assertCanStore(caller.userId(), incomingBytes(upload, markdown));
         KnowledgeDocumentVersion version = storeVersion(context.baseContext().base(), document, nextVersionNumber(document),
                 upload, filename, extension, filePolicy.normalizeChangeNote(changeNote), caller);
         version.setSourcePath(sourcePath);
@@ -775,6 +782,15 @@ public class KnowledgeAppService {
             images.add(new KnowledgeMarkdownPolicy.Image(markdown.imagePaths().get(i), image.filename(), image.sizeBytes()));
         }
         return markdownPolicy.validate(filePolicy.validateFilename(upload.filename()), upload.sizeBytes(), markdown.sourcePath(), images);
+    }
+
+    /** Bytes an upload adds to object storage: the file itself plus any newly uploaded Markdown images. */
+    private static long incomingBytes(Upload upload, MarkdownUpload markdown) {
+        long total = Math.max(0L, upload.sizeBytes());
+        for (Upload image : markdown.images()) {
+            total += Math.max(0L, image.sizeBytes());
+        }
+        return total;
     }
 
     private void storeImages(KnowledgeDocumentVersion version, MarkdownUpload markdown) {

@@ -57,6 +57,15 @@ class SkillPublishPropertiesTest {
         assertThat(properties.getMaxFileCount()).isEqualTo(800);
     }
 
+    @Test
+    void singleFileLimitDefaultsTo15MegabytesAndPackageLimitStays100() throws IOException {
+        SkillPublishProperties properties = bindFromApplicationYml(Map.of());
+
+        assertThat(properties.getMaxSingleFileSize()).isEqualTo(15L * 1024 * 1024);
+        assertThat(properties.getMaxPackageSize()).isEqualTo(100L * 1024 * 1024);
+        assertThat(new SkillPublishProperties().getMaxSingleFileSize()).isEqualTo(15L * 1024 * 1024);
+    }
+
     private SkillPublishProperties bindFromApplicationYml(Map<String, Object> envVars) throws IOException {
         ConfigurableEnvironment environment = new StandardEnvironment();
         environment.getPropertySources().remove(StandardEnvironment.SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME);

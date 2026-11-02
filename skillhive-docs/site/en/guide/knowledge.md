@@ -36,6 +36,7 @@ DOCX and PPTX are rendered by the browser, so layout may differ slightly from Mi
 | Preview and download file content | Members with download permission (space owners and admins always have it) |
 | Upload files and new versions, create folders | Members with edit permission |
 | Edit, move or delete files, restore versions | The uploader, space owners / admins |
+| Permanently delete archived files | The uploader, space owners / admins (edit permission required) |
 | Create or edit knowledge bases | Space owners / admins |
 
 Knowledge bases are never open to anonymous users. Platform super admins can see every team's knowledge bases on the web, but access through an API token is decided by team membership only.
@@ -49,10 +50,11 @@ Previews send file data to the browser, so download permission controls the down
 3. **Upload files**: drag and drop or select files; Markdown can be uploaded with its referenced local images.
 4. **Preview and download**: open a file to preview it; members with download permission can download the current or any earlier version.
 5. **Update and roll back**: add a change note when uploading a new version; download or restore any version from the history.
+6. **Free up space**: deleted files are archived and still count toward the uploader's storage quota. Open **Archived files** at the top right of the knowledge base to see each file's versions and stored size, and delete files permanently one at a time or in batches (up to 100 per run). This cannot be undone. Space admins see every archived file; other members see only their own.
 
 ## Audit
 
-Uploads, new versions, edits, deletions, restores, and folder and knowledge base changes are audit-logged. Every permitted download and preview is recorded too, noting whether it came from a web session or which API token.
+Uploads, new versions, edits, deletions, permanent deletions, restores, and folder and knowledge base changes are audit-logged. Every permitted download and preview is recorded too, noting whether it came from a web session or which API token.
 
 ## AI Tool Access
 

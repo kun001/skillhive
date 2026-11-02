@@ -108,3 +108,40 @@ export interface KnowledgeDocumentSearchPage {
   page: number
   size: number
 }
+
+/** A deleted (archived) file that still occupies storage until it is permanently purged. */
+export interface ArchivedKnowledgeDocument {
+  id: number
+  knowledgeBaseId: number
+  folderId?: number | null
+  title: string
+  owner: KnowledgeUser
+  updatedAt: string
+  versionCount: number
+  storedBytes: number
+  canPurge: boolean
+}
+
+export interface ArchivedKnowledgeDocumentPage {
+  items: ArchivedKnowledgeDocument[]
+  total: number
+  page: number
+  size: number
+}
+
+/** Outcome of a permanent purge; {@code remainingArchived} is only set for base-wide purges. */
+export interface KnowledgePurgeResult {
+  purgedDocuments: number
+  freedBytes: number
+  remainingArchived?: number | null
+}
+
+/** The signed-in user's stored bytes and per-user storage quota. */
+export interface UserStorageQuota {
+  usedBytes: number
+  skillBytes: number
+  knowledgeBytes: number
+  quotaBytes?: number | null
+  unlimited: boolean
+  exempt: boolean
+}

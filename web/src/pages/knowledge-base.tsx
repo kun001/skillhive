@@ -1,9 +1,10 @@
 import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
-import { LayoutGrid, List, Search, Settings2, Upload, UploadCloud } from 'lucide-react'
+import { Archive, LayoutGrid, List, Search, Settings2, Upload, UploadCloud } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { KnowledgeDocument, KnowledgeFolder } from '@/api/knowledge-types'
 import { useAuth } from '@/features/auth/use-auth'
+import { KnowledgeArchivedDrawer } from '@/features/knowledge/archived-drawer'
 import { EditKnowledgeBaseDialog } from '@/features/knowledge/base-dialog'
 import { EditKnowledgeDocumentDialog, NewKnowledgeVersionDialog } from '@/features/knowledge/document-dialogs'
 import { KnowledgeDocumentGrid, KnowledgeDocumentTable } from '@/features/knowledge/document-list'
@@ -93,6 +94,7 @@ export function KnowledgeBasePage() {
   const [editing, setEditing] = useState<{ document: KnowledgeDocument; open: boolean } | null>(null)
   const [versioning, setVersioning] = useState<{ document: KnowledgeDocument; open: boolean } | null>(null)
   const [editBaseOpen, setEditBaseOpen] = useState(false)
+  const [archivedOpen, setArchivedOpen] = useState(false)
   const [deletingDocument, setDeletingDocument] = useState<KnowledgeDocument | null>(null)
   const deleteFolder = useDeleteKnowledgeFolder(namespace, base)
   const deleteDocument = useDeleteKnowledgeDocument()
@@ -157,6 +159,12 @@ export function KnowledgeBasePage() {
             {knowledgeBase?.canManage ? (
               <Button variant="outline" size="icon" aria-label={t('knowledge.baseSettings')} title={t('knowledge.baseSettings')} onClick={() => setEditBaseOpen(true)}>
                 <Settings2 className="h-4 w-4" />
+              </Button>
+            ) : null}
+            {canContribute || knowledgeBase?.canManage ? (
+              <Button variant="outline" onClick={() => setArchivedOpen(true)}>
+                <Archive className="mr-1.5 h-4 w-4" aria-hidden />
+                {t('knowledge.archived.open')}
               </Button>
             ) : null}
             {canContribute ? (
@@ -346,6 +354,7 @@ export function KnowledgeBasePage() {
         </section>
       </div>
 
+      <KnowledgeArchivedDrawer open={archivedOpen} onOpenChange={setArchivedOpen} namespace={namespace} base={base} />
       <KnowledgeUploadDialog
         open={upload.open}
         onOpenChange={(open) => setUpload(open ? upload : { open: false })}
