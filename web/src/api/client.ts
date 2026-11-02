@@ -67,6 +67,11 @@ import type {
   UpdateKnowledgeDocumentRequest,
   UpdateKnowledgeFolderRequest,
 } from './knowledge-types'
+import type {
+  ArchivedKnowledgeDocumentPage,
+  KnowledgePurgeResult,
+  UserStorageQuota,
+} from './knowledge-types'
 import i18n from '@/i18n/config'
 
 /**
@@ -1717,6 +1722,35 @@ export const knowledgeApi = {
       method: 'DELETE',
       headers: await ensureCsrfHeaders(),
     })
+  },
+
+  /** Deleted (archived) files of a base the caller may see: all for team admins, otherwise their own. */
+  listArchivedDocuments(namespace: string, base: string, query?: { page?: number; size?: number }): Promise<ArchivedKnowledgeDocumentPage> {
+    const params = new URLSearchParams()
+    params.set('page', String(query?.page ?? 0))
+    params.set('size', String(query?.size ?? 20))
+    return fetchJson<ArchivedKnowledgeDocumentPage>(`${knowledgeBasePath(namespace, base)}/archived-documents?${params.toString()}`)
+  },
+
+  /** Permanently deletes one archived file; cannot be undone. */
+  async purgeDocument(documentId: number): Promise<KnowledgePurgeResult> {
+    return fetchJson<KnowledgePurgeResult>(`${KNOWLEDGE_PREFIX}/documents/${documentId}/purge?confirm=true`, {
+      method: 'DELETE',
+      headers: await ensureCsrfHeaders(),
+    })
+  },
+
+  /** Permanently deletes up to 100 archived files the caller may purge; check {@code remainingArchived}. */
+  async purgeArchivedDocuments(namespace: string, base: string): Promise<KnowledgePurgeResult> {
+    return fetchJson<KnowledgePurgeResult>(`${knowledgeBasePath(namespace, base)}/archived-documents?confirm=true`, {
+      method: 'DELETE',
+      headers: await ensureCsrfHeaders(),
+    })
+  },
+
+  /** The signed-in user's storage usage and quota. */
+  getMyStorageQuota(): Promise<UserStorageQuota> {
+    return fetchJson<UserStorageQuota>(`${WEB_API_PREFIX}/me/storage-quota`)
   },
 
   listVersions(documentId: number): Promise<KnowledgeDocumentVersion[]> {

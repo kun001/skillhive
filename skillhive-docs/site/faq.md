@@ -47,7 +47,7 @@ SKILLHUB_USER_STORAGE_QUOTA_BYTES=524288000   # 500MB；0 或负数表示不限�
 SKILLHUB_USER_STORAGE_QUOTA_EXEMPT_ROLES=SUPER_ADMIN,SKILL_ADMIN,USER_ADMIN
 ```
 
-删除知识库文件只是归档，仍计入配额。要释放空间，文件上传者或团队管理员可永久删除已归档的文件：`DELETE /api/web/knowledge/documents/{id}/purge?confirm=true`（需网页登录，不可恢复，配额立即释放）。目前网页上还没有入口，MCP 和 API Token 也不能永久删除。
+删除知识库文件只是归档，仍计入配额。要释放空间，在知识库页面右上角打开「已归档文件」，文件上传者或团队管理员可单个或批量永久删除（不可恢复，配额立即释放）；该面板也会显示你的已用空间和配额。对应接口为 `DELETE /api/web/knowledge/documents/{id}/purge?confirm=true`（需网页登录）。MCP 和 API Token 不能永久删除。
 
 详见 [部署架构与运维](https://github.com/kun001/skillhive/blob/main/skillhive-docs/09-deployment.md) 的“上传大小与用户存储配额”。
 

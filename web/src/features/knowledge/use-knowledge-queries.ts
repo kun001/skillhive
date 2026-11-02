@@ -23,6 +23,11 @@ export const knowledgeKeys = {
   search: (query: KnowledgeDocumentSearchQuery) => [...knowledgeKeys.all, 'search', query] as const,
   document: (documentId: number) => [...knowledgeKeys.all, 'document', documentId] as const,
   versions: (documentId: number) => [...knowledgeKeys.all, 'versions', documentId] as const,
+  archived: (namespace: string, base: string, page?: number) =>
+    page === undefined
+      ? ([...knowledgeKeys.all, 'archived', namespace, base] as const)
+      : ([...knowledgeKeys.all, 'archived', namespace, base, page] as const),
+  storageQuota: () => [...knowledgeKeys.all, 'storage-quota'] as const,
 }
 
 export function useKnowledgeBases(enabled = true) {
@@ -168,5 +173,44 @@ export function useRestoreKnowledgeVersion(documentId: number) {
     mutationFn: ({ versionNumber, changeNote }: { versionNumber: number; changeNote?: string }) =>
       knowledgeApi.restoreVersion(documentId, versionNumber, changeNote),
     onSuccess: invalidate,
+  })
+}
+
+export function useArchivedKnowledgeDocuments(namespace: string, base: string, page: number, size: number, enabled = true) {
+  const { user, isLoading } = useAuth()
+  const scope = user?.userId ?? 'guest'
+  return useQuery({
+    queryKey: [...knowledgeKeys.archived(namespace, base, page), size, scope],
+    enabled: enabled && !isLoading && Boolean(user),
+    retry: false,
+    queryFn: () => knowledgeApi.listArchivedDocuments(namespace, base, { page, size }),
+  })
+}
+
+/** Current user's storage usage; lives under the knowledge keys so file changes refresh it. */
+export function useMyStorageQuota(enabled = true) {
+  const { user, isLoading } = useAuth()
+  const scope = user?.userId ?? 'guest'
+  return useQuery({
+    queryKey: [...knowledgeKeys.storageQuota(), scope],
+    enabled: enabled && !isLoading && Boolean(user),
+    retry: false,
+    queryFn: () => knowledgeApi.getMyStorageQuota(),
+  })
+}
+
+export function usePurgeKnowledgeDocument() {
+  const invalidate = useInvalidateKnowledge()
+  return useMutation({
+    mutationFn: (documentId: number) => knowledgeApi.purgeDocument(documentId),
+    onSettled: invalidate,
+  })
+}
+
+export function usePurgeArchivedKnowledgeDocuments(namespace: string, base: string) {
+  const invalidate = useInvalidateKnowledge()
+  return useMutation({
+    mutationFn: () => knowledgeApi.purgeArchivedDocuments(namespace, base),
+    onSettled: invalidate,
   })
 }

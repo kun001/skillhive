@@ -47,7 +47,7 @@ SKILLHUB_USER_STORAGE_QUOTA_BYTES=524288000   # 500MB; 0 or a negative value mea
 SKILLHUB_USER_STORAGE_QUOTA_EXEMPT_ROLES=SUPER_ADMIN,SKILL_ADMIN,USER_ADMIN
 ```
 
-Deleting a knowledge file only archives it, so it still counts. To free the space, the uploader or a team admin can permanently delete archived files with `DELETE /api/web/knowledge/documents/{id}/purge?confirm=true` (web session required, cannot be undone, the quota is released immediately). There is no button in the web app yet, and MCP and API tokens cannot purge.
+Deleting a knowledge file only archives it, so it still counts. To free the space, open **Archived files** at the top right of the knowledge base page; the uploader or a team admin can permanently delete files one at a time or in batches (cannot be undone, the quota is released immediately). The panel also shows your storage usage and quota. The matching endpoint is `DELETE /api/web/knowledge/documents/{id}/purge?confirm=true` (web session required). MCP and API tokens cannot purge.
 
 See "Upload sizes and per-user storage quota" in [Deployment](https://github.com/kun001/skillhive/blob/main/skillhive-docs/09-deployment.md).
 

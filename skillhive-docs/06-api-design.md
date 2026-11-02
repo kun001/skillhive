@@ -451,6 +451,8 @@ Admin API 按最小权限拆分，不再统一要求 SUPER_ADMIN：
 | DELETE | `/documents/{id}/purge?confirm=true` | 永久删除一个已归档文件 |
 | DELETE | `/bases/{namespace}/{base}/archived-documents?confirm=true` | 永久删除该库中调用者可清理的已归档文件，每次最多 100 个，返回 `remainingArchived` 供继续调用 |
 
+网页入口：知识库页面右上角「已归档文件」抽屉（`web/src/features/knowledge/archived-drawer.tsx`）调用以上三个接口和 `GET /api/web/me/storage-quota`。
+
 ### 永久删除已归档文件
 
 - **对象**：只处理 `ARCHIVED` 文件；未删除的文件返回 409 `error.knowledge.purge.notArchived`。缺少或 `confirm` 不为 `true` 返回 400 `error.knowledge.purge.confirmRequired`。
