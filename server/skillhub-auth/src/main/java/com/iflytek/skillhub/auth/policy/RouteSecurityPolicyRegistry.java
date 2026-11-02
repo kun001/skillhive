@@ -116,6 +116,8 @@ public class RouteSecurityPolicyRegistry {
             ApiTokenPolicy.require(HttpMethod.GET, "/api/v1/me/subscriptions", "skill:read"),
             ApiTokenPolicy.allow(HttpMethod.GET, "/api/v1/me/namespaces"),
             ApiTokenPolicy.allow(HttpMethod.GET, "/api/v1/me/namespaces/page"),
+            // Read-only storage usage, so CLI/MCP clients can check room before uploading.
+            ApiTokenPolicy.allow(HttpMethod.GET, "/api/v1/me/storage-quota"),
             ApiTokenPolicy.require(HttpMethod.GET, "/api/v1/knowledge/bases", "knowledge:read"),
             ApiTokenPolicy.require(HttpMethod.GET, "/api/v1/knowledge/bases/*/*", "knowledge:read"),
             ApiTokenPolicy.require(HttpMethod.GET, "/api/v1/knowledge/bases/*/*/folders", "knowledge:read"),

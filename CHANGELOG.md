@@ -4,7 +4,10 @@
 
 ## 待发布 / Unreleased
 
-暂无。
+- 技能包单文件上限由 10MB 调整为 15MB（网页上传与 API 发布一致），整包 100MB 不变。
+- 新增用户存储配额：每个用户上传的技能包文件和知识库文件（含历史版本、配图和已删除但仍保留的文件）合计默认不超过 100MB，超出时上传前直接拒绝（413），提示配额、已用和本次大小，不写入任何内容。`SUPER_ADMIN`、`SKILL_ADMIN`、`USER_ADMIN` 与系统账号不受限制。可用 `SKILLHUB_USER_STORAGE_QUOTA_BYTES` 调整（0 或负数为不限制），`SKILLHUB_USER_STORAGE_QUOTA_EXEMPT_ROLES` 调整豁免角色；`GET /api/v1/me/storage-quota` 返回当前用量。无需数据库迁移；已超出的用户保留现有数据，但不能再上传新内容。
+- The per-file limit for skill packages is now 15MB instead of 10MB (web upload and API publishing alike); the 100MB package limit is unchanged.
+- Per-user storage quota: the skill package files and knowledge files a user uploads (including older versions, images and deleted files that are still retained) are limited to 100MB in total by default. Uploads over the quota are rejected up front with 413 and a message showing the quota, the space used and the upload size; nothing is written. `SUPER_ADMIN`, `SKILL_ADMIN`, `USER_ADMIN` and system accounts are exempt. `SKILLHUB_USER_STORAGE_QUOTA_BYTES` changes the quota (0 or a negative value means unlimited) and `SKILLHUB_USER_STORAGE_QUOTA_EXEMPT_ROLES` the exempt roles; `GET /api/v1/me/storage-quota` returns current usage. No database migration is needed; users already over the quota keep their data but cannot upload more.
 
 ## v0.4.2 — 2026-11-02
 

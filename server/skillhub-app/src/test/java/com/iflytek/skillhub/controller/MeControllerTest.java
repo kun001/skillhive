@@ -6,7 +6,9 @@ import com.iflytek.skillhub.domain.namespace.NamespaceMemberRepository;
 import com.iflytek.skillhub.dto.PageResponse;
 import com.iflytek.skillhub.dto.SkillLifecycleVersionResponse;
 import com.iflytek.skillhub.dto.SkillSummaryResponse;
+import com.iflytek.skillhub.dto.UserStorageQuotaResponse;
 import com.iflytek.skillhub.service.MySkillAppService;
+import com.iflytek.skillhub.service.storage.UserStorageQuotaService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -42,6 +44,37 @@ class MeControllerTest {
 
     @MockBean
     private MySkillAppService mySkillAppService;
+
+    @MockBean
+    private UserStorageQuotaService userStorageQuotaService;
+
+    @Test
+    void storageQuota_returnsCurrentUsersUsageAndQuota() throws Exception {
+        PlatformPrincipal principal = new PlatformPrincipal(
+                "user-42", "tester", "tester@example.com", "", "github", Set.of("USER")
+        );
+        var auth = new UsernamePasswordAuthenticationToken(
+                principal, null, List.of(new SimpleGrantedAuthority("ROLE_USER"))
+        );
+        given(userStorageQuotaService.usageOf("user-42"))
+                .willReturn(new UserStorageQuotaResponse(3072L, 1024L, 2048L, 104857600L, false, false));
+
+        mockMvc.perform(get("/api/v1/me/storage-quota").with(authentication(auth)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.usedBytes").value(3072))
+                .andExpect(jsonPath("$.data.skillBytes").value(1024))
+                .andExpect(jsonPath("$.data.knowledgeBytes").value(2048))
+                .andExpect(jsonPath("$.data.quotaBytes").value(104857600))
+                .andExpect(jsonPath("$.data.unlimited").value(false))
+                .andExpect(jsonPath("$.data.exempt").value(false));
+    }
+
+    @Test
+    void storageQuota_requiresAuthentication() throws Exception {
+        mockMvc.perform(get("/api/v1/me/storage-quota"))
+                .andExpect(status().isUnauthorized());
+    }
 
     @Test
     void listMySkills_returns_paginated_items() throws Exception {

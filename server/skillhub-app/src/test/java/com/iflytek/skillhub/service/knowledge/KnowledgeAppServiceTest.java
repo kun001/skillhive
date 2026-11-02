@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -35,6 +36,8 @@ import com.iflytek.skillhub.domain.namespace.NamespaceStatus;
 import com.iflytek.skillhub.domain.namespace.NamespaceType;
 import com.iflytek.skillhub.domain.shared.exception.DomainForbiddenException;
 import com.iflytek.skillhub.domain.shared.exception.DomainNotFoundException;
+import com.iflytek.skillhub.domain.storage.StorageQuotaExceededException;
+import com.iflytek.skillhub.domain.storage.StorageQuotaGuard;
 import com.iflytek.skillhub.domain.user.UserAccountRepository;
 import com.iflytek.skillhub.dto.knowledge.KnowledgeDocumentResponse;
 import com.iflytek.skillhub.observability.RequestIdAccessor;
@@ -81,6 +84,7 @@ class KnowledgeAppServiceTest {
     private final ObjectStorageService storageService = mock(ObjectStorageService.class);
     private final AuditLogService auditLogService = mock(AuditLogService.class);
     private final KnowledgeTextService textService = mock(KnowledgeTextService.class);
+    private final StorageQuotaGuard storageQuotaGuard = mock(StorageQuotaGuard.class);
 
     private final com.iflytek.skillhub.domain.namespace.NamespaceMemberRepository members = mock(com.iflytek.skillhub.domain.namespace.NamespaceMemberRepository.class);
     private final com.iflytek.skillhub.domain.namespace.MemberResourcePolicy memberPolicy = new com.iflytek.skillhub.domain.namespace.MemberResourcePolicy(members);
@@ -93,7 +97,7 @@ class KnowledgeAppServiceTest {
         service = new KnowledgeAppService(namespaceRepository, baseRepository, folderRepository, documentRepository,
                 versionRepository, attachmentRepository, userAccountRepository, new KnowledgeAccessPolicy(), new KnowledgeFilePolicy(),
                 new KnowledgeMarkdownPolicy(new KnowledgeFilePolicy()),
-                storageService, auditLogService, new RequestIdAccessor(), memberPolicy, textService);
+                storageService, auditLogService, new RequestIdAccessor(), memberPolicy, textService, storageQuotaGuard);
         when(members.findByNamespaceIdAndUserId(eq(NAMESPACE_ID), anyString())).thenAnswer(invocation -> Optional.of(new com.iflytek.skillhub.domain.namespace.NamespaceMember(NAMESPACE_ID, invocation.getArgument(1), NamespaceRole.MEMBER)));
 
         namespace = new Namespace("team-a", "Team A", "owner");
@@ -137,6 +141,44 @@ class KnowledgeAppServiceTest {
         verify(auditLogService).record(eq("alice"), eq("KNOWLEDGE_DOCUMENT_UPLOAD"), eq("KNOWLEDGE_DOCUMENT"),
                 eq(21L), any(), any(), any(), anyString());
         verify(textService).versionPublished(21L, 31L);
+    }
+
+    @Test
+    void uploadChecksQuotaWithFileAndImageBytesBeforeWritingAnything() {
+        var markdown = new KnowledgeAppService.MarkdownUpload("pack/guide.md",
+                List.of(new KnowledgeAppService.Upload("a.png", 30, () -> new ByteArrayInputStream(new byte[30]))),
+                List.of("pack/a.png"));
+        doThrow(new StorageQuotaExceededException(100, 80, 50)).when(storageQuotaGuard).assertCanStore("alice", 50L);
+
+        assertThatThrownBy(() -> service.uploadDocument("team-a", "handbook",
+                new KnowledgeAppService.Upload("guide.md", 20, () -> new ByteArrayInputStream(new byte[20])),
+                markdown, null, null, null, member("alice"), null))
+                .isInstanceOf(StorageQuotaExceededException.class);
+
+        verify(storageService, never()).putObject(anyString(), any(), anyLong(), anyString());
+        verify(documentRepository, never()).save(any(KnowledgeDocument.class));
+        verify(versionRepository, never()).save(any(KnowledgeDocumentVersion.class));
+    }
+
+    @Test
+    void newVersionOverQuotaIsRejectedBeforeStorageAndCarriedImagesAreNotCounted() throws Exception {
+        KnowledgeDocument document = withId(new KnowledgeDocument(11L, null, "guide", "Guide", null, "alice"), 21L);
+        KnowledgeDocumentVersion original = withId(new KnowledgeDocumentVersion(21L, 1, "key", "text/markdown", "guide.md", 1, "sha", null, "alice"), 31L);
+        original.publishDirectly("alice");
+        original.setSourcePath("pack/guide.md");
+        document.publish(original, "md");
+        when(documentRepository.findById(21L)).thenReturn(Optional.of(document));
+        when(versionRepository.findById(31L)).thenReturn(Optional.of(original));
+        when(attachmentRepository.findByDocumentVersionId(31L)).thenReturn(List.of(
+                new KnowledgeAttachment(31L, "pack/a.png", "a.png", "image/png", 500, "sha", "original-image")));
+        doThrow(new StorageQuotaExceededException(100, 100, 1)).when(storageQuotaGuard).assertCanStore("alice", 1L);
+
+        assertThatThrownBy(() -> service.uploadVersion(21L, upload("guide.md"), null, member("alice"), null))
+                .isInstanceOf(StorageQuotaExceededException.class);
+
+        verify(storageQuotaGuard).assertCanStore("alice", 1L);
+        verify(storageService, never()).putObject(anyString(), any(), anyLong(), anyString());
+        verify(versionRepository, never()).save(any(KnowledgeDocumentVersion.class));
     }
 
     @Test

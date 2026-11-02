@@ -12,7 +12,7 @@ import java.util.Set;
 public class SkillPublishProperties {
 
     private int maxFileCount = 500;
-    private long maxSingleFileSize = 10 * 1024 * 1024;  // 10MB
+    private long maxSingleFileSize = 15 * 1024 * 1024;  // 15MB
     private long maxPackageSize = 100 * 1024 * 1024;
     private Set<String> allowedFileExtensions = new LinkedHashSet<>(SkillPackagePolicy.ALLOWED_EXTENSIONS);
 

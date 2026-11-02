@@ -26,17 +26,28 @@ A: Local accounts (username and password, with an optional first administrator c
 
 ## Q: What are the requirements and limits for skill packages?
 
-A: The package root must contain `SKILL.md` with `name` and `description` in its frontmatter. By default a package may contain up to 500 files, each up to 10MB, and up to 100MB in total; file extensions must be on the allowlist.
+A: The package root must contain `SKILL.md` with `name` and `description` in its frontmatter. By default a package may contain up to 500 files, each up to 15MB, and up to 100MB in total; file extensions must be on the allowlist.
 
 ## Q: How many files can a skill package contain? What if I hit the file-count limit?
 
-A: The default limit is **500 files** (this is separate from the 100MB size limit). To raise it, change the `skillhub.publish.max-file-count` setting, or override it via an environment variable at deploy time:
+A: The default limit is **500 files** (this is separate from the 15MB per-file and 100MB per-package size limits). To raise it, change the `skillhub.publish.max-file-count` setting, or override it via an environment variable at deploy time:
 
 ```bash
 SKILLHUB_PUBLISH_MAX_FILE_COUNT=1000
 ```
 
 Recreate the containers for the change to take effect; `restart` alone does not re-inject environment variables. The variable must also be listed under the `server` service's `environment` in your compose file, otherwise it never reaches the container.
+
+## Q: How much storage can each user use?
+
+A: By default each user gets **100MB**, counting the skill package files and knowledge files they uploaded (including older versions, images and deleted files that are still retained). Administrators (`SUPER_ADMIN`, `SKILL_ADMIN`, `USER_ADMIN`) are exempt. Uploads over the quota are rejected with 413 and a message showing the quota, the space used and the upload size. `GET /api/v1/me/storage-quota` returns your usage. The quota applies on top of the per-file limits: 15MB per skill package file and 100MB per knowledge file, but never more than the remaining quota. Self-hosted deployments can change it:
+
+```bash
+SKILLHUB_USER_STORAGE_QUOTA_BYTES=524288000   # 500MB; 0 or a negative value means unlimited
+SKILLHUB_USER_STORAGE_QUOTA_EXEMPT_ROLES=SUPER_ADMIN,SKILL_ADMIN,USER_ADMIN
+```
+
+See "Upload sizes and per-user storage quota" in [Deployment](https://github.com/kun001/skillhive/blob/main/skillhive-docs/09-deployment.md).
 
 ## Q: Publishing fails with "package validation failed / malformed input" — what do I do?
 

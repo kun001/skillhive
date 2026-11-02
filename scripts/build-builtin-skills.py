@@ -22,7 +22,7 @@ DEFAULT_EVALS = REPO_ROOT / "builtin-skills" / "evals.json"
 DEFAULT_OUTPUT = REPO_ROOT / "builtin-skills" / "dist"
 FIXED_ZIP_TIME = (1980, 1, 1, 0, 0, 0)
 MAX_FILE_COUNT = 500
-MAX_SINGLE_FILE_SIZE = 10 * 1024 * 1024
+MAX_SINGLE_FILE_SIZE = 15 * 1024 * 1024
 MAX_TOTAL_PACKAGE_SIZE = 100 * 1024 * 1024
 ALLOWED_EXTENSIONS = {
     ".md", ".txt", ".json", ".yaml", ".yml", ".html", ".css", ".csv", ".pdf",

@@ -6,8 +6,10 @@ import com.iflytek.skillhub.dto.ApiResponse;
 import com.iflytek.skillhub.dto.ApiResponseFactory;
 import com.iflytek.skillhub.dto.PageResponse;
 import com.iflytek.skillhub.dto.SkillSummaryResponse;
+import com.iflytek.skillhub.dto.UserStorageQuotaResponse;
 import com.iflytek.skillhub.exception.UnauthorizedException;
 import com.iflytek.skillhub.service.MySkillAppService;
+import com.iflytek.skillhub.service.storage.UserStorageQuotaService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -23,10 +25,23 @@ import org.springframework.web.bind.annotation.RestController;
 public class MeController extends BaseApiController {
 
     private final MySkillAppService mySkillAppService;
+    private final UserStorageQuotaService storageQuotaService;
 
-    public MeController(MySkillAppService mySkillAppService, ApiResponseFactory responseFactory) {
+    public MeController(MySkillAppService mySkillAppService,
+                        UserStorageQuotaService storageQuotaService,
+                        ApiResponseFactory responseFactory) {
         super(responseFactory);
         this.mySkillAppService = mySkillAppService;
+        this.storageQuotaService = storageQuotaService;
+    }
+
+    /** The current user's stored bytes and storage quota (read-only). */
+    @GetMapping("/storage-quota")
+    public ApiResponse<UserStorageQuotaResponse> storageQuota(@AuthenticationPrincipal PlatformPrincipal principal) {
+        if (principal == null) {
+            throw new UnauthorizedException("error.auth.required");
+        }
+        return ok("response.success.read", storageQuotaService.usageOf(principal.userId()));
     }
 
     @GetMapping("/skills")
