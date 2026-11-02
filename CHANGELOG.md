@@ -4,6 +4,10 @@
 
 ## 待发布 / Unreleased
 
+暂无。
+
+## v0.4.3 — 2026-11-02
+
 - 技能包单文件上限由 10MB 调整为 15MB（网页上传与 API 发布一致），整包 100MB 不变。
 - 新增用户存储配额：每个用户上传的技能包文件和知识库文件（含历史版本、配图和已删除但尚未永久删除的文件）合计默认不超过 100MB，超出时上传前直接拒绝（413），提示配额、已用和本次大小，不写入任何内容。`SUPER_ADMIN`、`SKILL_ADMIN`、`USER_ADMIN` 与系统账号不受限制。可用 `SKILLHUB_USER_STORAGE_QUOTA_BYTES` 调整（0 或负数为不限制），`SKILLHUB_USER_STORAGE_QUOTA_EXEMPT_ROLES` 调整豁免角色；`GET /api/v1/me/storage-quota` 返回当前用量。无需数据库迁移；已超出的用户保留现有数据，但不能再上传新内容。
 - 新增永久删除已删除（归档）的知识库文件：文件上传者、团队所有者/管理员或超级管理员可调用 `DELETE /api/web/knowledge/documents/{id}/purge?confirm=true` 删除单个文件，或用 `DELETE /api/web/knowledge/bases/{namespace}/{base}/archived-documents?confirm=true` 每次最多清理 100 个；`GET /api/web/knowledge/bases/{namespace}/{base}/archived-documents` 列出可清理的文件及占用空间。只对已删除的文件生效，必须显式 `confirm=true`，有频率限制并写审计。所有版本、Markdown 配图、提取文本和摘要一并删除，仍被其他版本引用的存储对象保留；占用的配额在提交后立即释放，存储删除失败会自动重试。网页知识库页面新增「已归档文件」入口：列出文件的版本数、占用空间和更新时间，显示个人存储用量/配额，可单个或批量永久删除（二次确认，批量剩余时可继续清理）。仅限网页登录调用，API Token 与 MCP 不提供永久删除。无需数据库迁移。
