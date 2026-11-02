@@ -100,7 +100,7 @@ my-skill/
 校验规则：
 - 根目录必须包含规范入口文件 `SKILL.md`；上传时服务端兼容 `skill.md`、`Skill.md` 等大小写变体，并在内部归一化为 `SKILL.md`
 - 文件类型白名单：以 `SkillPackagePolicy.ALLOWED_EXTENSIONS` 为准，覆盖文档（`.md`、`.txt`、`.json`、`.yaml`、`.pdf` 等）、配置（`.toml`、`.xml`、`.ini` 等）、脚本与源码（`.js`、`.ts`、`.py`、`.sh`、`.go`、`.java` 等）、图片（`.png`、`.jpg`、`.svg`、`.webp` 等）和 Office 文档；可用 `SKILLHUB_PUBLISH_ALLOWED_FILE_EXTENSIONS` 覆盖
-- 单文件大小限制：15MB（`skillhub.publish.max-single-file-size`）
+- 单文件大小限制：100MB（`skillhub.publish.max-single-file-size`）；单文件上限与整包上限相同，整包合计仍不能超过 100MB，因此带 `SKILL.md` 的包里单个文件实际要略小于 100MB
 - 总包大小限制：100MB（`skillhub.publish.max-package-size`）
 - 文件数量限制：500 个（`skillhub.publish.max-file-count`，可用 `SKILLHUB_PUBLISH_MAX_FILE_COUNT` 覆盖）
 

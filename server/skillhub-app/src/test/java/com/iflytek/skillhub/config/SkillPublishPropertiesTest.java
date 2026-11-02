@@ -14,6 +14,7 @@ import org.springframework.core.env.PropertySource;
 import org.springframework.core.env.StandardEnvironment;
 import org.springframework.core.env.SystemEnvironmentPropertySource;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.util.unit.DataSize;
 
 import java.io.IOException;
 import java.util.List;
@@ -58,15 +59,38 @@ class SkillPublishPropertiesTest {
     }
 
     @Test
-    void singleFileLimitDefaultsTo15MegabytesAndPackageLimitStays100() throws IOException {
+    void singleFileLimitDefaultsTo100MegabytesAndPackageLimitStays100() throws IOException {
         SkillPublishProperties properties = bindFromApplicationYml(Map.of());
 
-        assertThat(properties.getMaxSingleFileSize()).isEqualTo(15L * 1024 * 1024);
+        assertThat(properties.getMaxSingleFileSize()).isEqualTo(100L * 1024 * 1024);
         assertThat(properties.getMaxPackageSize()).isEqualTo(100L * 1024 * 1024);
-        assertThat(new SkillPublishProperties().getMaxSingleFileSize()).isEqualTo(15L * 1024 * 1024);
+        assertThat(new SkillPublishProperties().getMaxSingleFileSize()).isEqualTo(100L * 1024 * 1024);
+    }
+
+    @Test
+    void multipartLimitsLeaveHeadroomAbovePackageLimit() throws IOException {
+        ConfigurableEnvironment environment = yamlEnvironment(Map.of());
+        DataSize maxFileSize = Binder.get(environment)
+                .bind("spring.servlet.multipart.max-file-size", DataSize.class).get();
+        DataSize maxRequestSize = Binder.get(environment)
+                .bind("spring.servlet.multipart.max-request-size", DataSize.class).get();
+        SkillPublishProperties properties = bindFromApplicationYml(Map.of());
+
+        assertThat(maxFileSize).isEqualTo(DataSize.ofMegabytes(110));
+        assertThat(maxRequestSize).isEqualTo(DataSize.ofMegabytes(110));
+        assertThat(maxRequestSize.toBytes()).isGreaterThan(properties.getMaxPackageSize());
+        assertThat(maxFileSize.toBytes()).isGreaterThan(properties.getMaxSingleFileSize());
     }
 
     private SkillPublishProperties bindFromApplicationYml(Map<String, Object> envVars) throws IOException {
+        ConfigurableEnvironment environment = yamlEnvironment(envVars);
+
+        return Binder.get(environment)
+                .bind("skillhub.publish", SkillPublishProperties.class)
+                .orElseThrow(() -> new IllegalStateException("Failed to bind skill publish properties"));
+    }
+
+    private ConfigurableEnvironment yamlEnvironment(Map<String, Object> envVars) throws IOException {
         ConfigurableEnvironment environment = new StandardEnvironment();
         environment.getPropertySources().remove(StandardEnvironment.SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME);
         environment.getPropertySources().addFirst(new SystemEnvironmentPropertySource("test-env", envVars));
@@ -74,10 +98,7 @@ class SkillPublishPropertiesTest {
                 .load("application.yml", new ClassPathResource("application.yml"));
         yamlSources.forEach(source -> environment.getPropertySources().addLast(source));
         ConfigurationPropertySources.attach(environment);
-
-        return Binder.get(environment)
-                .bind("skillhub.publish", SkillPublishProperties.class)
-                .orElseThrow(() -> new IllegalStateException("Failed to bind skill publish properties"));
+        return environment;
     }
 
     @Configuration

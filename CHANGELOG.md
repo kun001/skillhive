@@ -4,7 +4,10 @@
 
 ## 待发布 / Unreleased
 
-暂无。
+- 技能包单文件上限由 15MB 提高到 100MB（网页上传与 API 发布一致）；整包合计仍不超过 100MB，因此带上 `SKILL.md` 后单个文件实际要略小于 100MB。默认用户存储配额仍为 100MB，普通用户上传一个接近 100MB 的包后配额基本用完。
+- Spring multipart 请求上限、镜像内 nginx 的 `client_max_body_size` 和 K8s Ingress 的 `proxy-body-size` 由 100MB 调整为 110MB，为 multipart 编码和表单字段留出余量，使接近 100MB 的技能包和知识库文件能实际上传；应用层的 100MB 大小校验不变。站点前面若有其他反向代理（如宝塔 Nginx），其请求体上限也需不低于 110MB。
+- The per-file limit for skill packages rises from 15MB to 100MB (web upload and API publishing alike). The package total is still capped at 100MB, so with `SKILL.md` included a single file must be slightly smaller than 100MB. The default per-user storage quota stays at 100MB, so one package of nearly 100MB uses up almost all of a regular user's quota.
+- The Spring multipart request limit, the bundled nginx `client_max_body_size` and the K8s Ingress `proxy-body-size` go from 100MB to 110MB, leaving room for multipart encoding and form fields so skill packages and knowledge files close to 100MB can actually be uploaded. The 100MB size checks in the application are unchanged. Any reverse proxy in front of the site (such as a Baota Nginx site) must also allow request bodies of at least 110MB.
 
 ## v0.4.3 — 2026-11-02
 

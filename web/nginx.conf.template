@@ -5,7 +5,8 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
-    client_max_body_size 100M;
+    # Slightly above the 100MB application limits to leave room for multipart overhead.
+    client_max_body_size 110M;
 
     gzip on;
     gzip_types text/plain text/css application/json application/javascript text/xml;

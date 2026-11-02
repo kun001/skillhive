@@ -210,21 +210,44 @@ class SkillPackageValidatorTest {
     }
 
     @Test
-    void defaultSingleFileLimitIsFifteenMegabytes() {
-        long limit = 15L * 1024 * 1024;
+    void defaultSingleFileLimitIsOneHundredMegabytesAndPackageTotalStillApplies() {
+        long limit = 100L * 1024 * 1024;
         assertEquals(limit, SkillPackagePolicy.MAX_SINGLE_FILE_SIZE);
+        assertEquals(limit, SkillPackagePolicy.MAX_TOTAL_PACKAGE_SIZE);
 
-        byte[] atLimit = new byte[(int) limit];
+        // The validator checks the declared entry size, so no 100MB buffer is needed here.
+        byte[] placeholder = new byte[16];
+        ValidationResult atLimit = validator.validate(List.of(
+                skillMdEntry(),
+                new PackageEntry("data.txt", placeholder, limit, "text/plain")));
+        assertTrue(atLimit.errors().stream().noneMatch(e -> e.contains("File too large")), atLimit.errors().toString());
+        // A 100MB file plus SKILL.md exceeds the unchanged 100MB package total, by design.
+        assertTrue(atLimit.errors().stream().anyMatch(e -> e.contains("Package too large")), atLimit.errors().toString());
+
+        ValidationResult overLimit = validator.validate(List.of(
+                skillMdEntry(),
+                new PackageEntry("data.txt", placeholder, limit + 1, "text/plain")));
+        assertFalse(overLimit.passed());
+        assertTrue(overLimit.errors().stream().anyMatch(e -> e.contains("File too large") && e.contains("data.txt")));
+    }
+
+    @Test
+    void singleFileAtLimitPassesWhenPackageTotalAllowsIt() {
+        long singleLimit = 1024;
+        SkillPackageValidator smallValidator = new SkillPackageValidator(
+                new SkillMetadataParser(), 100, singleLimit, singleLimit * 4,
+                SkillPackagePolicy.ALLOWED_EXTENSIONS);
+
+        byte[] atLimit = new byte[(int) singleLimit];
         java.util.Arrays.fill(atLimit, (byte) 'a');
-        ValidationResult accepted = validator.validate(List.of(
+        ValidationResult accepted = smallValidator.validate(List.of(
                 skillMdEntry(),
                 new PackageEntry("data.txt", atLimit, atLimit.length, "text/plain")));
-        assertTrue(accepted.errors().stream().noneMatch(e -> e.contains("File too large")), accepted.errors().toString());
-        assertTrue(accepted.passed());
+        assertTrue(accepted.passed(), accepted.errors().toString());
 
-        byte[] overLimit = new byte[(int) limit + 1];
+        byte[] overLimit = new byte[(int) singleLimit + 1];
         java.util.Arrays.fill(overLimit, (byte) 'a');
-        ValidationResult rejected = validator.validate(List.of(
+        ValidationResult rejected = smallValidator.validate(List.of(
                 skillMdEntry(),
                 new PackageEntry("data.txt", overLimit, overLimit.length, "text/plain")));
         assertFalse(rejected.passed());

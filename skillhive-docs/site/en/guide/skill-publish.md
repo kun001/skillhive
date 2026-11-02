@@ -189,6 +189,6 @@ GET /api/v1/skills/{namespace}/{slug}/resolve?version=^1.2.0
 - **First Publish**: Version should start from `0.1.0` or `1.0.0`
 - **Tag Management**: `latest` tag automatically points to the latest stable version
 - **Review Process**: If namespace has review enabled, new versions need admin approval
-- **File Size Limit**: Each file max 15MB and the whole package max 100MB (configurable); regular users are also limited by a total storage quota (100MB by default, administrators exempt)
+- **File Size Limit**: Each file max 100MB and the whole package max 100MB in total (configurable); regular users are also limited by a total storage quota (100MB by default, administrators exempt)
 - **Naming Convention**: Skill slug supports lowercase letters, numbers, hyphens, and Unicode characters
 - **Version Immutability**: Published versions cannot be modified, only new versions can be published

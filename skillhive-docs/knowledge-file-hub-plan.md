@@ -60,7 +60,7 @@ API Token 需持有 `knowledge:read` 才能调用 `/api/v1/knowledge` 下的只�
 | DELETE | `/documents/{documentId}/purge` | 永久删除一个已归档文件（`confirm=true`），释放存储与配额，见 [API 设计 7.12](06-api-design.md#712-知识库-api) |
 
 安全要点：
-- 上传校验扩展名白名单与大小上限（默认 100MB，与 multipart 限制一致），拒绝空文件和非法文件名。
+- 上传校验扩展名白名单与大小上限（默认 100MB；multipart 请求上限为 110MB，为编码开销留出余量），拒绝空文件和非法文件名。
 - `inline` 预览只对 PDF、位图、纯文本和 DOCX/PPTX 生效；Markdown/TXT 以 `text/plain; charset=UTF-8` 返回；统一加 `X-Content-Type-Options: nosniff`。HTML、SVG 等可执行内容一律按附件下载。
 - `Content-Disposition` 使用 RFC 5987 编码，支持中文文件名。
 

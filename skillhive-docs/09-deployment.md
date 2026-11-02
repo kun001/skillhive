@@ -410,7 +410,9 @@ services:
 
 ### 7.2 上传大小与用户存储配额
 
-技能包：单文件默认不超过 15MB（`skillhub.publish.max-single-file-size`），整包不超过 100MB（`skillhub.publish.max-package-size`）；一次请求还受 Spring multipart 与 nginx 的 100MB 限制。知识库：单文件不超过 100MB（`KnowledgeFilePolicy`）。
+技能包：单文件默认不超过 100MB（`skillhub.publish.max-single-file-size`），整包合计不超过 100MB（`skillhub.publish.max-package-size`）；单文件上限等于整包上限，所以带上 `SKILL.md` 后单个文件实际要略小于 100MB。知识库：单文件不超过 100MB（`KnowledgeFilePolicy`）。
+
+这些大小限制都在应用层校验。为了让接近 100MB 的上传不被 multipart 编码和表单字段的额外字节挡在门外，Spring multipart（`spring.servlet.multipart.max-file-size` / `max-request-size`）和镜像内 nginx（`client_max_body_size`）、K8s Ingress（`proxy-body-size`）的请求上限设为 110MB，略高于应用层上限。若站点前面还有一层反向代理（如宝塔 Nginx、云负载均衡），其请求体上限也需不低于 110MB，否则接近 100MB 的上传会在代理层被拒（413）。
 
 在这些单次上传限制之外，每个用户还有总存储配额，默认 100MB：
 
@@ -424,7 +426,7 @@ SKILLHUB_USER_STORAGE_QUOTA_EXEMPT_ROLES=SUPER_ADMIN,SKILL_ADMIN,USER_ADMIN
 - **已用空间**：用户上传的所有技能版本文件（任意状态，含草稿、驳回、撤回、归档的技能）加上其上传的知识库文件版本与 Markdown 配图（含已删除/归档但尚未永久删除的文件，因为对象仍在存储中）。恢复版本、继承配图复用同一对象，不重复计入。技能下载用的 `bundle.zip` 是派生的压缩包，不计入。
 - **校验时机**：发布技能、上传知识库文件或新版本前，若「已用 + 本次」超过配额，直接返回 413 `error.storage.quota.exceeded`，提示中给出配额、已用和本次大小（MB），不会写入任何文件或记录。替换自己未发布的同版本技能时，旧版本占用会先扣除。
 - **豁免**：拥有豁免角色的用户（默认 `SUPER_ADMIN`、`SKILL_ADMIN`、`USER_ADMIN`，初始化的 `admin` 账号即 `SUPER_ADMIN`）和系统账号（如内置技能发布账号）不受限制。
-- **与单文件限制的关系**：各项单文件/整包上限仍然生效；配额是额外的总量限制，两者都满足才能上传。例如配额剩余 20MB 时，即使知识库单文件允许 100MB，也只能上传不超过 20MB 的文件。
+- **与单文件限制的关系**：各项单文件/整包上限仍然生效；配额是额外的总量限制，两者都满足才能上传。例如配额剩余 20MB 时，即使技能包和知识库单文件都允许 100MB，也只能上传不超过 20MB 的内容。默认配额 100MB 与单文件/整包上限相同，普通用户上传一个接近 100MB 的技能包后，配额基本用完。
 - **查询**：登录用户可调用 `GET /api/v1/me/storage-quota` 查看自己的已用空间与配额。
 - **释放空间**：删除知识库文件只是归档，仍占配额。文件上传者、团队所有者/管理员或超级管理员可永久删除已归档的文件（`DELETE /api/web/knowledge/documents/{id}/purge?confirm=true`，或按知识库批量 `DELETE /api/web/knowledge/bases/{namespace}/{base}/archived-documents?confirm=true`，详见 [API 设计 7.12](06-api-design.md#712-知识库-api)），提交后配额立即释放。存储对象在提交后删除；删除失败的键记录在 `skill_storage_delete_compensation`，由定时任务（每 5 分钟）重试，无需人工处理。
 - 配额实时按现有数据统计，无需数据库迁移；升级后已超出配额的用户保留现有数据，但在释放空间或调大配额前不能上传新内容。

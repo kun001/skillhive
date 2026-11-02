@@ -124,8 +124,11 @@ spring:
             user-name-attribute: unionId
   servlet:
     multipart:
-      max-file-size: 100MB
-      max-request-size: 100MB
+      # Slightly above the 100MB skill package / knowledge file limits so multipart framing
+      # and form fields do not push a 100MB upload over the request cap. The real size
+      # limits are enforced by the application (skillhub.publish.*, KnowledgeFilePolicy).
+      max-file-size: 110MB
+      max-request-size: 110MB
   mail:
     host: ${SPRING_MAIL_HOST:localhost}
     port: ${SPRING_MAIL_PORT:25}
@@ -273,7 +276,7 @@ skillhub:
     exempt-roles: ${SKILLHUB_USER_STORAGE_QUOTA_EXEMPT_ROLES:SUPER_ADMIN,SKILL_ADMIN,USER_ADMIN}
   publish:
     max-file-count: 500
-    max-single-file-size: 15728640 # 15MB
+    max-single-file-size: 104857600 # 100MB (the package total is still capped by max-package-size)
     max-package-size: 104857600 # 100MB
     # allowed-file-extensions: uses SkillPackagePolicy.ALLOWED_EXTENSIONS by default
     # Override via SKILLHUB_PUBLISH_ALLOWED_FILE_EXTENSIONS env var if needed
