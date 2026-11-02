@@ -26,17 +26,17 @@ A: Local accounts (username and password, with an optional first administrator c
 
 ## Q: What are the requirements and limits for skill packages?
 
-A: The package root must contain `SKILL.md` with `name` and `description` in its frontmatter. By default a package may contain up to 100 files, each up to 10MB, and up to 100MB in total; file extensions must be on the allowlist.
+A: The package root must contain `SKILL.md` with `name` and `description` in its frontmatter. By default a package may contain up to 500 files, each up to 10MB, and up to 100MB in total; file extensions must be on the allowlist.
 
 ## Q: How many files can a skill package contain? What if I hit the file-count limit?
 
-A: The default limit is **100 files** (this is separate from the 100MB size limit). To raise it, change the `skillhub.publish.max-file-count` setting, or override it via an environment variable at deploy time:
+A: The default limit is **500 files** (this is separate from the 100MB size limit). To raise it, change the `skillhub.publish.max-file-count` setting, or override it via an environment variable at deploy time:
 
 ```bash
-SKILLHUB_PUBLISH_MAX_FILE_COUNT=500
+SKILLHUB_PUBLISH_MAX_FILE_COUNT=1000
 ```
 
-Recreate the containers for the change to take effect; `restart` alone does not re-inject environment variables.
+Recreate the containers for the change to take effect; `restart` alone does not re-inject environment variables. The variable must also be listed under the `server` service's `environment` in your compose file, otherwise it never reaches the container.
 
 ## Q: Publishing fails with "package validation failed / malformed input" — what do I do?
 

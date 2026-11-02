@@ -102,7 +102,7 @@ my-skill/
 - 文件类型白名单：以 `SkillPackagePolicy.ALLOWED_EXTENSIONS` 为准，覆盖文档（`.md`、`.txt`、`.json`、`.yaml`、`.pdf` 等）、配置（`.toml`、`.xml`、`.ini` 等）、脚本与源码（`.js`、`.ts`、`.py`、`.sh`、`.go`、`.java` 等）、图片（`.png`、`.jpg`、`.svg`、`.webp` 等）和 Office 文档；可用 `SKILLHUB_PUBLISH_ALLOWED_FILE_EXTENSIONS` 覆盖
 - 单文件大小限制：10MB（`skillhub.publish.max-single-file-size`）
 - 总包大小限制：100MB（`skillhub.publish.max-package-size`）
-- 文件数量限制：100 个（`skillhub.publish.max-file-count`）
+- 文件数量限制：500 个（`skillhub.publish.max-file-count`，可用 `SKILLHUB_PUBLISH_MAX_FILE_COUNT` 覆盖）
 
 ## 8.4 版本解析规则
 
