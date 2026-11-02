@@ -19,6 +19,9 @@ import org.springframework.transaction.annotation.Transactional;
  * Platform admins (roles in {@code skillhub.storage-quota.exempt-roles}) and system accounts such as
  * the built-in skill publisher are never limited. A non-positive {@code per-user-bytes} disables
  * the quota entirely.
+ *
+ * <p>Archived knowledge files count toward the quota and are released once permanently purged:
+ * the purge deletes their rows, so the next usage read no longer includes them.
  */
 @Service
 public class UserStorageQuotaService implements StorageQuotaGuard {

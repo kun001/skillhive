@@ -40,12 +40,14 @@ SKILLHUB_PUBLISH_MAX_FILE_COUNT=1000
 
 ## Q: 每个用户能用多少存储空间？
 
-A: 默认每个用户 **100MB**，统计其上传的技能包文件和知识库文件（含历史版本、配图和已删除但仍保留的文件）。管理员（`SUPER_ADMIN`、`SKILL_ADMIN`、`USER_ADMIN`）不受限制。超出时上传会被拒绝（413），提示配额、已用和本次大小。可在 `GET /api/v1/me/storage-quota` 查看用量。该配额与单文件上限同时生效：技能包单文件 15MB、知识库单文件 100MB，但都不能超过剩余配额。本地部署可调整：
+A: 默认每个用户 **100MB**，统计其上传的技能包文件和知识库文件（含历史版本、配图和已删除但尚未永久删除的文件）。管理员（`SUPER_ADMIN`、`SKILL_ADMIN`、`USER_ADMIN`）不受限制。超出时上传会被拒绝（413），提示配额、已用和本次大小。可在 `GET /api/v1/me/storage-quota` 查看用量。该配额与单文件上限同时生效：技能包单文件 15MB、知识库单文件 100MB，但都不能超过剩余配额。本地部署可调整：
 
 ```bash
 SKILLHUB_USER_STORAGE_QUOTA_BYTES=524288000   # 500MB；0 或负数表示不限制
 SKILLHUB_USER_STORAGE_QUOTA_EXEMPT_ROLES=SUPER_ADMIN,SKILL_ADMIN,USER_ADMIN
 ```
+
+删除知识库文件只是归档，仍计入配额。要释放空间，文件上传者或团队管理员可永久删除已归档的文件：`DELETE /api/web/knowledge/documents/{id}/purge?confirm=true`（需网页登录，不可恢复，配额立即释放）。目前网页上还没有入口，MCP 和 API Token 也不能永久删除。
 
 详见 [部署架构与运维](https://github.com/kun001/skillhive/blob/main/skillhive-docs/09-deployment.md) 的“上传大小与用户存储配额”。
 

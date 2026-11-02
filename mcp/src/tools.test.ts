@@ -81,6 +81,19 @@ describe('tool registration', () => {
     expect(result.isError).toBeFalsy()
     expect(requested).toEqual(['/api/v1/mcp/knowledge/team/docs/uploads'])
   })
+  it('never offers a permanent purge of knowledge files, even with every grant', async () => {
+    // Purging archived files is a web-session action only (DELETE /api/web/knowledge/documents/{id}/purge).
+    const { client } = fakeSkillHive({})
+    const mcp = await connect(client, {
+      skills: true, knowledge: true, skillUpload: true, skillDelete: true,
+      knowledgeUpload: true, knowledgeDelete: true, knowledgeUpdate: true, knowledgeManage: true,
+    })
+    const { tools } = await mcp.listTools()
+    for (const tool of tools) {
+      expect(tool.name).not.toMatch(/purge|permanent|hard_delete/i)
+    }
+    await mcp.close()
+  })
   it('only offers tools for the domains the token can read', async () => {
     const { client } = fakeSkillHive({})
     const skillsOnly = await (await connect(client, { skills: true, knowledge: false })).listTools()

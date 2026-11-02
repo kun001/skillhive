@@ -16,7 +16,9 @@ import org.springframework.stereotype.Repository;
  *   <li>Knowledge: every {@code knowledge_document_version} the user uploaded plus its Markdown
  *   images ({@code knowledge_attachment}). Restoring a version and carrying images forward reuse the
  *   same object key, so only the first row per object key is counted, and it is attributed to the
- *   user who created that first row. Deleted (archived) files keep their objects and stay counted.</li>
+ *   user who created that first row. Deleted (archived) files keep their objects and stay counted
+ *   until they are permanently purged ({@code KnowledgePurgeService}); the purge deletes the rows, so
+ *   the bytes leave this live sum as soon as it commits, before the objects themselves are removed.</li>
  * </ul>
  */
 @Repository

@@ -30,7 +30,7 @@ V70 增加成员编辑和下载权限，原有成员默认保留已有能力。V
 | --- | --- | --- |
 | 用户、认证、namespace、成员角色、审核任务、审计、通知、对象存储 | `SKILL.md` 解析、包校验、版本、扫描、发布、下载 | `knowledge_base`、`knowledge_folder`、`knowledge_document`、`knowledge_document_version`（`knowledge_attachment` 暂未使用） |
 
-知识版本的发布指针 `knowledge_document.published_version_id` 只允许指向同文档的 `PUBLISHED` 版本。草稿与待审版本不得进入普通搜索或下载；权限过滤必须先于结果返回。上传校验由 `KnowledgeFilePolicy` 负责（扩展名白名单、单文件 100 MB 上限、服务端判定内容类型）；此外上传前还要通过用户存储配额校验（默认 100 MB，管理员豁免，见 [部署文档](09-deployment.md) 7.2），两者同时生效，以剩余配额为准，不复用技能包校验器；HTML、SVG 等可执行内容不允许上传，内联预览只对 PDF、位图和纯文本生效。
+知识版本的发布指针 `knowledge_document.published_version_id` 只允许指向同文档的 `PUBLISHED` 版本。草稿与待审版本不得进入普通搜索或下载；权限过滤必须先于结果返回。上传校验由 `KnowledgeFilePolicy` 负责（扩展名白名单、单文件 100 MB 上限、服务端判定内容类型）；此外上传前还要通过用户存储配额校验（默认 100 MB，管理员豁免，见 [部署文档](09-deployment.md) 7.2），两者同时生效，以剩余配额为准，不复用技能包校验器；删除文件只归档并继续计入配额，已归档文件可由 `KnowledgePurgeService` 永久删除（先在同一事务内删行并登记待删对象，提交后删除不再被引用的存储对象，失败由补偿任务重试），配额随即释放；HTML、SVG 等可执行内容不允许上传，内联预览只对 PDF、位图和纯文本生效。
 
 `review_task` 已有 `subject_type`、`subject_id`、`subject_version_id`。下一阶段将补充知识审核主体和专用状态变更服务，复用队列及审计，不让既有 `ReviewService` 直接处理知识文档。审核权限要显式决定是否允许团队管理员自审；建议默认禁止，管理员例外单独审计。
 

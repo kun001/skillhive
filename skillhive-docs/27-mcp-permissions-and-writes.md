@@ -32,7 +32,7 @@ v0.4.1（2026-10-15）扩展：知识库、目录管理和知识文件更新，�
 | 知识 | `knowledge:read` | `knowledge:upload` | `knowledge:update` | `knowledge:delete` | `knowledge:manage` |
 
 权限独立授予，默认仅技能读取。读取沿用当前元数据、文件内容与下载权限规则，不重新定义已有 `read` 作用域。
-知识文件新增 `knowledge:update`：修改标题、描述、目录及上传新版本。新增 `knowledge:manage`：知识库和目录的新建、修改、删除。旧 Token 不自动获得这两项权限。技能仍无修改工具；不提供文件永久清除或恢复版本工具。
+知识文件新增 `knowledge:update`：修改标题、描述、目录及上传新版本。新增 `knowledge:manage`：知识库和目录的新建、修改、删除。旧 Token 不自动获得这两项权限。技能仍无修改工具；不提供文件永久清除或恢复版本工具。已归档知识文件的永久删除只在网页会话中提供（见 [API 设计 7.12](06-api-design.md#712-知识库-api)），MCP 不新增对应工具，`mcp/src/tools.test.ts` 断言全部授权下也没有此类工具。
 
 知识库新建要求团队 OWNER/ADMIN，且 Token 未限定知识库 ID 集合；限定到已有知识库的凭证不能创建新库。知识库修改与归档也要求团队 OWNER/ADMIN；目录修改/删除和文件修改/新版本要求创建者或团队管理者，始终受当前成员编辑权限约束。
 

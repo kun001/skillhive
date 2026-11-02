@@ -72,6 +72,9 @@ class ApiTokenReadOnlyAccessTest {
     private KnowledgeAppService knowledgeAppService;
 
     @MockBean
+    private com.iflytek.skillhub.service.knowledge.KnowledgePurgeService knowledgePurgeService;
+
+    @MockBean
     private MemberResourceAccessService memberResourceAccessService;
 
     @MockBean
@@ -199,13 +202,17 @@ class ApiTokenReadOnlyAccessTest {
                 put("/api/v1/knowledge/documents/100").contentType(MediaType.APPLICATION_JSON).content("{}"),
                 delete("/api/v1/knowledge/documents/100"),
                 multipart("/api/v1/knowledge/documents/100/versions").file("file", "x".getBytes(StandardCharsets.UTF_8)),
-                post("/api/v1/knowledge/documents/100/versions/1/restore"))) {
+                post("/api/v1/knowledge/documents/100/versions/1/restore"),
+                // Permanent purge is web-session only, even with every scope.
+                delete("/api/v1/knowledge/documents/100/purge").param("confirm", "true"),
+                delete("/api/v1/knowledge/bases/team-a/handbook/archived-documents").param("confirm", "true"),
+                get("/api/v1/knowledge/bases/team-a/handbook/archived-documents"))) {
             mockMvc.perform(request.with(token("alice", "knowledge:read", "skill:read", "skill:publish",
                             "skill:delete")).with(csrf()))
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.msg").value(containsString("/api/v1/knowledge/")));
         }
-        verifyNoInteractions(knowledgeAppService);
+        verifyNoInteractions(knowledgeAppService, knowledgePurgeService);
     }
 
     @Test

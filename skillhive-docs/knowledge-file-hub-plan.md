@@ -56,6 +56,8 @@ API Token 需持有 `knowledge:read` 才能调用 `/api/v1/knowledge` 下的只�
 | GET / POST | `/documents/{documentId}/versions` | 版本历史 / 上传新版本（multipart：`file`、`changeNote`） |
 | POST | `/documents/{documentId}/versions/{version}/restore` | 以历史版本内容生成一个新版本并设为当前版本 |
 | GET | `/documents/{documentId}/content` | 下载当前或指定版本（`version`）；`disposition=inline` 仅对安全预览类型生效 |
+| GET / DELETE | `/bases/{namespace}/{base}/archived-documents` | 已归档文件列表 / 批量永久删除（`confirm=true`，每次 ≤100） |
+| DELETE | `/documents/{documentId}/purge` | 永久删除一个已归档文件（`confirm=true`），释放存储与配额，见 [API 设计 7.12](06-api-design.md#712-知识库-api) |
 
 安全要点：
 - 上传校验扩展名白名单与大小上限（默认 100MB，与 multipart 限制一致），拒绝空文件和非法文件名。
