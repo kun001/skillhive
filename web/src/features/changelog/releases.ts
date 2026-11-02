@@ -14,6 +14,16 @@ export interface ReleaseNote {
 // Confirm the date and image tag when deploying; Git submission is not deployment.
 export const releases: ReleaseNote[] = [
   {
+    id: '20261102-skill-package-file-limit',
+    version: 'v0.4.2',
+    date: '2026-11-02',
+    title: { zh: '技能包文件数上限提高到 500', en: 'Skill packages can contain up to 500 files' },
+    summary: { zh: '技能包发布的文件数上限由 100 提高到 500，网页上传与 API 发布一致。', en: 'The skill package file limit rises from 100 to 500 for both web uploads and API publishing.' },
+    changes: [
+      { zh: '技能包最多可包含 500 个文件（原为 100），超出时提示文件过多；单文件 10MB、整包 100MB 的限制不变。', en: 'Skill packages can contain up to 500 files (previously 100); larger packages are rejected as having too many files. The 10MB per-file and 100MB per-package limits are unchanged.' },
+    ],
+  },
+  {
     id: '20261015-mcp-knowledge-crud',
     version: 'v0.4.1',
     date: '2026-10-15',
