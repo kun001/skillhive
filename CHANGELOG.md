@@ -4,6 +4,10 @@
 
 ## 待发布 / Unreleased
 
+暂无。
+
+## v0.4.2 — 2026-11-02
+
 - 技能包发布的文件数上限由 100 提高到 500（网页上传与 API 发布一致）；单文件 10MB、整包 100MB 的限制不变，仍可用 `SKILLHUB_PUBLISH_MAX_FILE_COUNT` 调整。
 - Skill packages can now contain up to 500 files instead of 100 (web upload and API publishing alike). The 10MB per-file and 100MB per-package limits are unchanged; `SKILLHUB_PUBLISH_MAX_FILE_COUNT` still overrides the limit.
 
