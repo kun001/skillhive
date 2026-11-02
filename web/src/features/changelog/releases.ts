@@ -14,6 +14,18 @@ export interface ReleaseNote {
 // Confirm the date and image tag when deploying; Git submission is not deployment.
 export const releases: ReleaseNote[] = [
   {
+    id: '20261102-user-storage-quota',
+    version: 'v0.4.3',
+    date: '2026-11-02',
+    title: { zh: '用户存储配额与永久删除已归档文件', en: 'Per-user storage quota and permanent deletion of archived files' },
+    summary: { zh: '技能包单文件上限提高到 15MB；新增每个用户默认 100MB 的存储配额；已归档的知识库文件可在网页上永久删除并释放空间。', en: 'The skill package per-file limit rises to 15MB, each user gets a 100MB storage quota by default, and archived knowledge files can be permanently deleted from the web to free space.' },
+    changes: [
+      { zh: '技能包单个文件上限由 10MB 提高到 15MB（网页上传与 API 发布一致），整包 100MB 不变。', en: 'Files in a skill package can now be up to 15MB (previously 10MB) for both web uploads and API publishing; the 100MB package limit is unchanged.' },
+      { zh: '每个用户上传的技能包和知识库文件（含历史版本、配图和已归档文件）合计默认不超过 100MB，超出时上传前即被拒绝并提示配额与已用空间；管理员不受限制，部署方可通过配置调整或取消配额。', en: 'Skill package and knowledge files a user uploads (including older versions, images and archived files) are limited to 100MB in total by default. Uploads over the quota are rejected up front with the quota and space used. Admins are exempt, and deployments can change or remove the quota in configuration.' },
+      { zh: '知识库页面新增「已归档文件」入口：查看个人存储用量，列出已归档文件的版本数和占用空间，可单个或批量永久删除（二次确认），删除后立即释放配额。', en: 'Knowledge base pages add an Archived files panel that shows your storage usage, lists archived files with their versions and stored size, and permanently deletes them one at a time or in batches (with confirmation), releasing the quota immediately.' },
+    ],
+  },
+  {
     id: '20261102-skill-package-file-limit',
     version: 'v0.4.2',
     date: '2026-11-02',
