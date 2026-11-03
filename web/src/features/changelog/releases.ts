@@ -14,6 +14,18 @@ export interface ReleaseNote {
 // Confirm the date and image tag when deploying; Git submission is not deployment.
 export const releases: ReleaseNote[] = [
   {
+    id: '20261103-skill-publish-streaming-unpack',
+    version: 'v0.4.5',
+    date: '2026-11-03',
+    title: { zh: '发布大文件技能包更省内存', en: 'Lower memory use when publishing large skill packages' },
+    summary: { zh: '发布技能包时，超过 1MB 的文件先写入临时文件再校验，不再整段放进服务器内存，接近 100MB 的文件也能稳定发布。', en: 'When a skill package is published, files over 1MB are written to a temporary file before checks instead of being held in server memory, so near-100MB files publish reliably.' },
+    changes: [
+      { zh: '超过 1MB 的技能包文件在解包时写入临时文件，上传存储和生成扫描包都从临时文件读取；发布成功、校验失败或出错时都会清理临时文件。', en: 'Skill package files over 1MB are unpacked to a temporary file, and storage upload and the scan bundle read from it. Temporary files are removed on success, validation failure and errors.' },
+      { zh: 'UTF-8 校验和凭证扫描改为流式处理，内存占用不再随文件大小增长。', en: 'UTF-8 checks and the credential scan now stream, so memory use no longer grows with file size.' },
+      { zh: '凭证扫描每行最多检查 64KB：同一行内超过 64KB 才闭合的带引号密钥可能检测不到。', en: 'The credential scan checks up to 64KB per line: a quoted secret that only closes after more than 64KB on one line may not be detected.' },
+    ],
+  },
+  {
     id: '20261103-skill-package-tier-limits',
     version: 'v0.4.4',
     date: '2026-11-03',

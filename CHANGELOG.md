@@ -4,8 +4,12 @@
 
 ## 待发布 / Unreleased
 
-- 发布技能包时，超过 1MB 的条目写入临时文件，不再把整个文件放进 JVM 堆。UTF-8 校验、文件头魔数和凭证扫描改为固定缓冲区或按行流式处理；上传对象存储和 `bundle.zip` 从该临时文件读取。临时文件在成功、校验失败和异常时都会删除。可用 `SKILLHUB_PUBLISH_MEMORY_ENTRY_THRESHOLD_BYTES` 调整阈值（0 表示非空文件都落盘，负数表示全部留在内存）。`SKILL.md` 仍会在解析元数据时读入内存。同时解包的声明大小合计限制不变。
-- Skill publish keeps entries larger than 1MB in a temporary file instead of on the JVM heap. UTF-8 checks, magic-byte checks and the credential scan stream with a fixed buffer or one bounded line at a time, and object storage plus `bundle.zip` are read from that file. Temporary files are deleted on success, validation failure and unexpected errors. `SKILLHUB_PUBLISH_MEMORY_ENTRY_THRESHOLD_BYTES` changes the threshold (0 spills every non-empty entry, a negative value keeps every entry in memory). `SKILL.md` is still loaded while its metadata is parsed. The concurrent unpack budget is unchanged.
+暂无。
+
+## v0.4.5 — 2026-11-03
+
+- 发布技能包时，超过 1MB 的条目写入临时文件，不再把整个文件放进 JVM 堆。UTF-8 校验、文件头魔数和凭证扫描改为固定缓冲区或按行流式处理；上传对象存储和 `bundle.zip` 从该临时文件读取。临时文件在成功、校验失败和异常时都会删除。可用 `SKILLHUB_PUBLISH_MEMORY_ENTRY_THRESHOLD_BYTES` 调整阈值（0 表示非空文件都落盘，负数表示全部留在内存）。`SKILL.md` 仍会在解析元数据时读入内存。同时解包的声明大小合计限制不变。凭证扫描每行最多保留 64KB 窗口：跨越超过 64KB 才闭合的带引号密钥可能漏报，这是为固定内存上限做的取舍。
+- Skill publish keeps entries larger than 1MB in a temporary file instead of on the JVM heap. UTF-8 checks, magic-byte checks and the credential scan stream with a fixed buffer or one bounded line at a time, and object storage plus `bundle.zip` are read from that file. Temporary files are deleted on success, validation failure and unexpected errors. `SKILLHUB_PUBLISH_MEMORY_ENTRY_THRESHOLD_BYTES` changes the threshold (0 spills every non-empty entry, a negative value keeps every entry in memory). `SKILL.md` is still loaded while its metadata is parsed. The concurrent unpack budget is unchanged. The credential scan keeps a 64KB window per line, so a quoted secret that only closes after more than 64KB on one line may be missed; this trade-off keeps memory bounded.
 
 ## v0.4.4 — 2026-11-03
 
