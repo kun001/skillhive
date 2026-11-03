@@ -14,6 +14,19 @@ export interface ReleaseNote {
 // Confirm the date and image tag when deploying; Git submission is not deployment.
 export const releases: ReleaseNote[] = [
   {
+    id: '20261103-skill-package-tier-limits',
+    version: 'v0.4.4',
+    date: '2026-11-03',
+    title: { zh: '技能包按文件类型限制大小，发布更省内存', en: 'Skill package size limits by file type, with lower publish memory use' },
+    summary: { zh: '脚本和源码单文件最多 2MB，图片、PDF、数据等其他文件最多 100MB，整包仍为 100MB；上传前提前检查配额，并限制同时解包的总量。', en: 'Scripts and source files can be up to 2MB each, while images, PDFs, data and other files can be up to 100MB; the whole package stays at 100MB. Quota is checked before unpacking, and concurrent unpacking is capped.' },
+    changes: [
+      { zh: '技能包单文件按类型限制：脚本和源码（如 .py、.sh、.js、.ts、.java）不超过 2MB；图片、PDF、Office、JSON、Markdown（含 SKILL.md）及其他非脚本文件不超过 100MB；整包仍为 100MB。', en: 'Skill package files are limited by type: scripts and source files (such as .py, .sh, .js, .ts and .java) up to 2MB; images, PDF, Office, JSON, Markdown (including SKILL.md) and other non-script files up to 100MB. The whole package stays at 100MB.' },
+      { zh: '上传请求体上限调整为 110MB，接近 100MB 的数据文件可以正常到达服务端。', en: 'The upload request body limit is now 110MB so near-100MB data files can reach the server.' },
+      { zh: '上传大小已超过剩余存储配额时，在解包前直接拒绝（413）；同时解包的总大小超过 200MB 时返回 429，请稍后重试。', en: 'Uploads larger than your remaining storage quota are rejected (413) before unpacking. When concurrent unpacking would exceed 200MB in total, uploads return 429 and can be retried shortly.' },
+      { zh: '版本对比先检查文件大小，超过 1MB 的文本不再整文件载入内存。', en: 'Version compare checks file size first and no longer loads text files over 1MB fully into memory.' },
+    ],
+  },
+  {
     id: '20261102-user-storage-quota',
     version: 'v0.4.3',
     date: '2026-11-02',
