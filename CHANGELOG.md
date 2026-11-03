@@ -4,6 +4,10 @@
 
 ## 待发布 / Unreleased
 
+暂无。
+
+## v0.4.4 — 2026-11-03
+
 - 技能包单文件改为按类型限制：脚本和源码（`.py`、`.sh`、`.js`、`.ts`、`.java` 等）默认不超过 2MB，避免安全扫描把较大脚本解析进数 GB 内存；图片、PDF、Office、JSON、Markdown（含 `SKILL.md`）及其他非脚本文件默认不超过 100MB。整包仍为 100MB。Spring multipart 与 nginx / Ingress 请求体上限调整为 110MB，使接近 100MB 的数据文件能够到达应用。上传声明大小已超过剩余存储配额时，在整包解入内存前返回 413；同时解包的声明大小合计默认不超过 200MB，超出返回 429。版本对比在读取前检查文件大小，超过 1MB 的文本不再整文件载入内存。可用 `SKILLHUB_PUBLISH_MAX_SCRIPT_FILE_SIZE`、`SKILLHUB_PUBLISH_MAX_DATA_FILE_SIZE`、`SKILLHUB_PUBLISH_EXTRACTION_BUDGET_BYTES` 调整。旧的 `SKILLHUB_PUBLISH_MAX_SINGLE_FILE_SIZE` 若仍设置，只覆盖数据文件上限。
 - Skill package entries are now limited by type. Scripts and source files (`.py`, `.sh`, `.js`, `.ts`, `.java` and similar) default to 2MB so the security scanner does not parse a large script into gigabytes of RAM. Images, PDF, Office, JSON, Markdown (including `SKILL.md`) and other non-script files default to 100MB. The whole package stays at 100MB. Spring multipart and the nginx / Ingress body limit are 110MB so a near-100MB data file can reach the app. An upload whose declared size already exceeds the remaining storage quota is rejected with 413 before the archive is unpacked into memory. Concurrent unpacking is capped at 200MB of declared bytes and returns 429 above that. Version compare checks file size before reading and no longer loads text files over 1MB into memory. Tune with `SKILLHUB_PUBLISH_MAX_SCRIPT_FILE_SIZE`, `SKILLHUB_PUBLISH_MAX_DATA_FILE_SIZE` and `SKILLHUB_PUBLISH_EXTRACTION_BUDGET_BYTES`. If `SKILLHUB_PUBLISH_MAX_SINGLE_FILE_SIZE` is still set, it overrides only the data-file ceiling.
 
