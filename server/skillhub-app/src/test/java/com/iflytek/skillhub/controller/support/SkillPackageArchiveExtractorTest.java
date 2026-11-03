@@ -10,12 +10,17 @@ import org.springframework.mock.web.MockMultipartFile;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.zip.CRC32;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -75,9 +80,13 @@ class SkillPackageArchiveExtractorTest {
         byte[] mediaZip = createZip(Map.of("SKILL.md", threeMegabytes));
         MockMultipartFile media = new MockMultipartFile("file", "test.zip", "application/zip", mediaZip);
         List<PackageEntry> entries = extractor.extract(media);
-
-        assertEquals(1, entries.size());
-        assertEquals(threeMegabytes.length, entries.get(0).size());
+        try {
+            assertEquals(1, entries.size());
+            assertEquals(threeMegabytes.length, entries.get(0).size());
+            assertTrue(entries.get(0).spilled());
+        } finally {
+            PackageEntry.closeAll(entries);
+        }
     }
 
     @Test
@@ -106,7 +115,12 @@ class SkillPackageArchiveExtractorTest {
         MockMultipartFile file = new MockMultipartFile("file", "test.zip", "application/zip", zip);
 
         List<PackageEntry> entries = customExtractor.extract(file);
-        assertEquals(1, entries.size());
+        try {
+            assertEquals(1, entries.size());
+            assertTrue(entries.get(0).spilled());
+        } finally {
+            PackageEntry.closeAll(entries);
+        }
     }
 
     @Test
@@ -352,6 +366,88 @@ class SkillPackageArchiveExtractorTest {
         // No SKILL.md found — entries returned as-is, validator will catch the error
         assertEquals(2, result.entries().size());
         assertTrue(result.warnings().isEmpty());
+    }
+
+    @Test
+    void spillsEntriesAboveTheThresholdAndDeletesThemWhenClosed() throws Exception {
+        Path directory = Files.createTempDirectory("skillhive-spill-");
+        SkillPublishProperties props = new SkillPublishProperties();
+        props.setMemoryEntryThresholdBytes(32);
+        SkillPackageArchiveExtractor spilling = new SkillPackageArchiveExtractor(props);
+        spilling.setSpillDirectory(directory);
+
+        byte[] body = new byte[128];
+        Arrays.fill(body, (byte) 'a');
+        byte[] skillMd = "---\nname: test\n---\n".getBytes(StandardCharsets.UTF_8);
+        byte[] zip = createZip(Map.of("notes.txt", body, "SKILL.md", skillMd));
+        MockMultipartFile file = new MockMultipartFile("file", "test.zip", "application/zip", zip);
+
+        try (SkillPackageArchiveExtractor.ExtractionResult result = spilling.extractWithWarnings(file)) {
+            PackageEntry notes = result.entries().stream()
+                    .filter(entry -> entry.path().equals("notes.txt"))
+                    .findFirst()
+                    .orElseThrow();
+            PackageEntry skill = result.entries().stream()
+                    .filter(entry -> entry.path().equals("SKILL.md"))
+                    .findFirst()
+                    .orElseThrow();
+
+            assertTrue(notes.spilled());
+            assertFalse(notes.retainsBytes());
+            assertTrue(Files.exists(notes.spillPath()));
+            assertTrue(notes.spillPath().startsWith(directory));
+            assertFalse(skill.spilled());
+            assertTrue(skill.retainsBytes());
+            assertArrayEquals(body, notes.content());
+            assertArrayEquals(skillMd, skill.content());
+        }
+
+        try (var leftover = Files.list(directory)) {
+            assertEquals(0L, leftover.count());
+        }
+        Files.deleteIfExists(directory);
+    }
+
+    @Test
+    void deletesSpilledEntriesWhenALaterEntryIsRejected() throws Exception {
+        Path directory = Files.createTempDirectory("skillhive-spill-fail-");
+        SkillPublishProperties props = new SkillPublishProperties();
+        props.setMemoryEntryThresholdBytes(16);
+        props.setMaxDataFileSize(64);
+        SkillPackageArchiveExtractor spilling = new SkillPackageArchiveExtractor(props);
+        spilling.setSpillDirectory(directory);
+
+        byte[] zip = createZip(Map.of("a.txt", new byte[40], "b.txt", new byte[80]));
+        MockMultipartFile file = new MockMultipartFile("file", "test.zip", "application/zip", zip);
+
+        DomainBadRequestException error = assertThrows(DomainBadRequestException.class, () -> spilling.extract(file));
+
+        assertEquals(SkillPackagePolicy.DATA_TOO_LARGE, error.messageCode());
+        try (var leftover = Files.list(directory)) {
+            assertEquals(0L, leftover.count());
+        }
+        Files.deleteIfExists(directory);
+    }
+
+    @Test
+    void spilledEntryStillReportsTheUncompressedBudget() throws Exception {
+        SkillPublishProperties props = new SkillPublishProperties();
+        props.setMemoryEntryThresholdBytes(8);
+        SkillPackageArchiveExtractor spilling = new SkillPackageArchiveExtractor(props);
+        byte[] body = new byte[32];
+        byte[] zip = createZip("notes.txt", body);
+        MockMultipartFile file = new MockMultipartFile("file", "test.zip", "application/zip", zip);
+        List<Long> seen = new ArrayList<>();
+
+        List<PackageEntry> entries = spilling.extract(file, seen::add);
+        try {
+            assertEquals(1, entries.size());
+            assertTrue(entries.get(0).spilled());
+            assertEquals(32L, entries.get(0).size());
+            assertTrue(seen.contains(32L));
+        } finally {
+            PackageEntry.closeAll(entries);
+        }
     }
 
     private byte[] createZipWithDeclaredSize(String entryName, byte[] content) throws Exception {

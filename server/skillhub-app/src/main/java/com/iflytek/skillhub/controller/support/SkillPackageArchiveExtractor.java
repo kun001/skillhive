@@ -6,8 +6,8 @@ import com.iflytek.skillhub.domain.skill.validation.SkillPackagePolicy;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -18,10 +18,15 @@ import java.util.zip.ZipInputStream;
 @Component
 public class SkillPackageArchiveExtractor {
 
-    public record ExtractionResult(List<PackageEntry> entries, List<String> warnings) {}
+    public record ExtractionResult(List<PackageEntry> entries, List<String> warnings) implements AutoCloseable {
+        @Override
+        public void close() {
+            PackageEntry.closeAll(entries);
+        }
+    }
 
     /**
-     * Called with the uncompressed total before a large entry is buffered, and again after it is
+     * Called with the uncompressed total before a large entry is read, and again after it is
      * read. Implementations throw when that total cannot be stored.
      */
     @FunctionalInterface
@@ -32,11 +37,17 @@ public class SkillPackageArchiveExtractor {
     private final SkillPublishProperties properties;
     private final long maxTotalPackageSize;
     private final int maxFileCount;
+    private Path spillDirectory;
 
     public SkillPackageArchiveExtractor(SkillPublishProperties properties) {
         this.properties = properties;
         this.maxTotalPackageSize = properties.getMaxPackageSize();
         this.maxFileCount = properties.getMaxFileCount();
+    }
+
+    /** Test hook. Production leaves this unset and uses the JVM temporary directory. */
+    void setSpillDirectory(Path spillDirectory) {
+        this.spillDirectory = spillDirectory;
     }
 
     public List<PackageEntry> extract(MultipartFile file) throws IOException {
@@ -84,23 +95,29 @@ public class SkillPackageArchiveExtractor {
                         throw packageTooLarge(totalSize + declared);
                     }
                 }
-                byte[] content = readEntry(zis, normalizedPath);
-                totalSize += content.length;
+                PackageEntry entry = readEntry(zis, normalizedPath);
+                entries.add(entry);
+                totalSize += entry.size();
                 if (uncompressedBudget != null) {
                     uncompressedBudget.ensureWithinQuota(totalSize);
                 }
                 if (totalSize > maxTotalPackageSize) {
                     throw packageTooLarge(totalSize);
                 }
-
-                entries.add(new PackageEntry(
-                        normalizedPath,
-                        content,
-                        content.length,
-                        determineContentType(normalizedPath)
-                ));
                 zis.closeEntry();
             }
+        } catch (Throwable exception) {
+            PackageEntry.closeAll(entries);
+            if (exception instanceof IOException ioException) {
+                throw ioException;
+            }
+            if (exception instanceof RuntimeException runtimeException) {
+                throw runtimeException;
+            }
+            if (exception instanceof Error error) {
+                throw error;
+            }
+            throw new IllegalStateException(exception);
         }
 
         return stripSingleRootDirectory(entries);
@@ -113,7 +130,12 @@ public class SkillPackageArchiveExtractor {
     public ExtractionResult extractWithWarnings(MultipartFile file, UncompressedBudget uncompressedBudget)
             throws IOException {
         List<PackageEntry> entries = extract(file, uncompressedBudget);
-        return promoteSingleSkillMdDirectory(entries);
+        try {
+            return promoteSingleSkillMdDirectory(entries);
+        } catch (RuntimeException exception) {
+            PackageEntry.closeAll(entries);
+            throw exception;
+        }
     }
 
     /**
@@ -138,13 +160,11 @@ public class SkillPackageArchiveExtractor {
         }
 
         String prefix = rootSegments.iterator().next() + "/";
-        return entries.stream()
-                .map(e -> new PackageEntry(
-                        e.path().substring(prefix.length()),
-                        e.content(),
-                        e.size(),
-                        e.contentType()))
-                .toList();
+        List<PackageEntry> stripped = new ArrayList<>(entries.size());
+        for (PackageEntry entry : entries) {
+            stripped.add(entry.withPath(entry.path().substring(prefix.length())));
+        }
+        return stripped;
     }
 
     public static ExtractionResult promoteSingleSkillMdDirectory(List<PackageEntry> entries) {
@@ -179,13 +199,10 @@ public class SkillPackageArchiveExtractor {
 
         for (PackageEntry entry : entries) {
             if (entry.path().startsWith(prefix)) {
-                promoted.add(new PackageEntry(
-                        entry.path().substring(prefix.length()),
-                        entry.content(),
-                        entry.size(),
-                        entry.contentType()));
+                promoted.add(entry.withPath(entry.path().substring(prefix.length())));
             } else {
                 warnings.add("Ignored file outside skill directory: " + entry.path());
+                entry.close();
             }
         }
 
@@ -207,20 +224,15 @@ public class SkillPackageArchiveExtractor {
         return fileName.equals(".DS_Store") || fileName.startsWith("._");
     }
 
-    private byte[] readEntry(ZipInputStream zis, String path) throws IOException {
-        long limit = properties.limitFor(path);
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        byte[] buffer = new byte[8192];
-        long totalRead = 0;
-        int read;
-        while ((read = zis.read(buffer)) != -1) {
-            totalRead += read;
-            if (totalRead > limit) {
-                throw SkillPackagePolicy.fileTooLarge(path, totalRead, limit);
-            }
-            outputStream.write(buffer, 0, read);
-        }
-        return outputStream.toByteArray();
+    private PackageEntry readEntry(ZipInputStream zis, String path) throws IOException {
+        return PackageEntryReader.read(
+                zis,
+                path,
+                determineContentType(path),
+                properties.limitFor(path),
+                properties.getMemoryEntryThresholdBytes(),
+                spillDirectory
+        );
     }
 
     private void ensureEntryLimit(String path, long size) {

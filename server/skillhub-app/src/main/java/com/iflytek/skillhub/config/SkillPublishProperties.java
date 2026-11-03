@@ -22,6 +22,11 @@ public class SkillPublishProperties {
      * {@code 0} or a negative value disables the guard.
      */
     private long extractionBudgetBytes = 200L * 1024 * 1024;
+    /**
+     * Entries larger than this are extracted to a temporary file. {@code 0} spills every
+     * non-empty entry. A negative value keeps every entry in memory.
+     */
+    private long memoryEntryThresholdBytes = SkillPackagePolicy.MEMORY_ENTRY_THRESHOLD_BYTES;
     private Set<String> allowedFileExtensions = new LinkedHashSet<>(SkillPackagePolicy.ALLOWED_EXTENSIONS);
 
     public int getMaxFileCount() {
@@ -75,6 +80,14 @@ public class SkillPublishProperties {
 
     public void setExtractionBudgetBytes(long extractionBudgetBytes) {
         this.extractionBudgetBytes = extractionBudgetBytes;
+    }
+
+    public long getMemoryEntryThresholdBytes() {
+        return memoryEntryThresholdBytes;
+    }
+
+    public void setMemoryEntryThresholdBytes(long memoryEntryThresholdBytes) {
+        this.memoryEntryThresholdBytes = memoryEntryThresholdBytes;
     }
 
     public long limitFor(String path) {

@@ -6,6 +6,8 @@ import com.iflytek.skillhub.domain.shared.exception.DomainBadRequestException;
 import com.iflytek.skillhub.domain.skill.validation.PackageEntry;
 import com.iflytek.skillhub.domain.skill.validation.SkillPackagePolicy;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.security.MessageDigest;
 import java.util.ArrayList;
@@ -194,7 +196,7 @@ public class ComplianceMetadataService {
                 EVIDENCE_TYPE_PACKAGED_FILE,
                 normalizedPath,
                 null,
-                sha256(entry.content()));
+                sha256(entry));
     }
 
     private ComplianceEvidence parseExternalUrlEvidence(Map<String, Object> item,
@@ -381,6 +383,22 @@ public class ComplianceMetadataService {
             return HexFormat.of().formatHex(digest.digest(content));
         } catch (Exception exception) {
             throw new IllegalStateException("Failed to calculate SHA-256", exception);
+        }
+    }
+
+    private String sha256(PackageEntry entry) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            try (InputStream input = entry.openStream()) {
+                byte[] buffer = new byte[8192];
+                int read;
+                while ((read = input.read(buffer)) >= 0) {
+                    digest.update(buffer, 0, read);
+                }
+            }
+            return HexFormat.of().formatHex(digest.digest());
+        } catch (IOException | java.security.GeneralSecurityException exception) {
+            throw new IllegalStateException("Failed to calculate SHA-256 for " + entry.path(), exception);
         }
     }
 

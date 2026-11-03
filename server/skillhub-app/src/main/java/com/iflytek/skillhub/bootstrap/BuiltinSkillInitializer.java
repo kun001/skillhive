@@ -223,7 +223,7 @@ public class BuiltinSkillInitializer {
             return SyncOutcome.FAILED;
         }
 
-        SkillPackageArchiveExtractor.ExtractionResult extractionResult = extractor.extract(downloadedBytes);
+        try (SkillPackageArchiveExtractor.ExtractionResult extractionResult = extractor.extract(downloadedBytes)) {
         List<PackageEntry> entries = extractionResult.entries();
         SkillMetadata metadata = parseSkillMetadata(entries);
         String packageSlug = SlugValidator.slugify(metadata.name());
@@ -272,6 +272,7 @@ public class BuiltinSkillInitializer {
             log.error("Failed to publish built-in skill slug={} version={}: {}",
                     item.slug(), item.version(), exception.getMessage(), exception);
             return SyncOutcome.FAILED;
+        }
         }
     }
 
@@ -415,7 +416,7 @@ public class BuiltinSkillInitializer {
 
     private String computeFingerprint(List<PackageEntry> entries) {
         return computeFingerprintFromFileDigests(entries.stream()
-                .map(entry -> new FileDigest(entry.path(), sha256(entry.content())))
+                .map(entry -> new FileDigest(entry.path(), sha256(entry)))
                 .toList());
     }
 
@@ -429,6 +430,20 @@ public class BuiltinSkillInitializer {
             return "sha256:" + HexFormat.of().formatHex(digest.digest());
         } catch (Exception exception) {
             throw new IllegalStateException("Failed to compute built-in skill fingerprint", exception);
+        }
+    }
+
+    private static String sha256(PackageEntry entry) {
+        try (java.io.InputStream input = entry.openStream()) {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] buffer = new byte[8192];
+            int read;
+            while ((read = input.read(buffer)) >= 0) {
+                digest.update(buffer, 0, read);
+            }
+            return HexFormat.of().formatHex(digest.digest());
+        } catch (Exception exception) {
+            throw new IllegalStateException("Failed to hash built-in skill entry " + entry.path(), exception);
         }
     }
 

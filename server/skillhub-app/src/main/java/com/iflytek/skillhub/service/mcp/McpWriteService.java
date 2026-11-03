@@ -70,9 +70,10 @@ public class McpWriteService {
         Namespace target = writableNamespace(namespace, actor, request);
         byte[] bytes = decode(upload);
         return once("skill_upload", upload.idempotencyKey(), Map.of("namespace", namespace, "upload", upload), request, () -> {
+            SkillPackageArchiveExtractor.ExtractionResult archive = null;
             try {
                 // Reuse archive/path/bomb checks. Warnings are rejected, never auto-confirmed.
-                var archive = admission.extract(namespace, actor.userId(),
+                archive = admission.extract(namespace, actor.userId(),
                         new McpUploadedFile(upload.fileName(), bytes), extractor::extractWithWarnings);
                 if (!archive.warnings().isEmpty()) throw bad("Skill archive has warnings; resolve them before uploading");
                 SkillVisibility visibility = upload.visibility() == null ? SkillVisibility.NAMESPACE_ONLY
@@ -84,6 +85,10 @@ public class McpWriteService {
                         result.version().getStatus().name(), result.version().getFileCount(), result.version().getTotalSize());
             } catch (IOException | IllegalArgumentException invalid) {
                 throw bad("Invalid skill archive or visibility");
+            } finally {
+                if (archive != null) {
+                    archive.close();
+                }
             }
         });
     }

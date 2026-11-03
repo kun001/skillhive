@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -24,10 +25,15 @@ public class MultipartPackageExtractor {
 
     private final SkillPublishProperties properties;
     private final ObjectMapper objectMapper;
+    private Path spillDirectory;
 
     public MultipartPackageExtractor(SkillPublishProperties properties, ObjectMapper objectMapper) {
         this.properties = properties;
         this.objectMapper = objectMapper;
+    }
+
+    void setSpillDirectory(Path spillDirectory) {
+        this.spillDirectory = spillDirectory;
     }
 
     public record PublishPayload(
@@ -43,7 +49,12 @@ public class MultipartPackageExtractor {
         public record ForkOf(String slug, String version) {}
     }
 
-    public record ExtractedPackage(PublishPayload payload, List<PackageEntry> entries) {}
+    public record ExtractedPackage(PublishPayload payload, List<PackageEntry> entries) implements AutoCloseable {
+        @Override
+        public void close() {
+            PackageEntry.closeAll(entries);
+        }
+    }
 
     public ExtractedPackage extract(MultipartFile[] files, String payloadJson) throws IOException {
         PublishPayload payload = objectMapper.readValue(payloadJson, PublishPayload.class);
@@ -53,7 +64,8 @@ public class MultipartPackageExtractor {
         long totalSize = 0L;
 
         if (files != null) {
-            for (MultipartFile file : files) {
+            try {
+                for (MultipartFile file : files) {
                 String originalFilename = file.getOriginalFilename();
                 if (originalFilename == null || originalFilename.isBlank()) {
                     continue;
@@ -76,23 +88,36 @@ public class MultipartPackageExtractor {
                     throw SkillPackagePolicy.fileTooLarge(normalizedPath, declaredSize, limit);
                 }
 
-                byte[] content = file.getBytes();
-                totalSize += content.length;
-                if (totalSize > properties.getMaxPackageSize()) {
-                    throw new DomainBadRequestException("error.skill.publish.package.invalid",
-                            "Package too large: max " + properties.getMaxPackageSize() + " bytes");
+                PackageEntry entry;
+                try (var input = file.getInputStream()) {
+                    entry = PackageEntryReader.read(
+                            input,
+                            normalizedPath,
+                            determineContentType(normalizedPath),
+                            limit,
+                            properties.getMemoryEntryThresholdBytes(),
+                            spillDirectory
+                    );
                 }
-
-                if (content.length > limit) {
-                    throw SkillPackagePolicy.fileTooLarge(normalizedPath, content.length, limit);
+                    entries.add(entry);
+                    totalSize += entry.size();
+                    if (totalSize > properties.getMaxPackageSize()) {
+                        throw new DomainBadRequestException("error.skill.publish.package.invalid",
+                                "Package too large: max " + properties.getMaxPackageSize() + " bytes");
+                    }
                 }
-
-                entries.add(new PackageEntry(
-                        normalizedPath,
-                        content,
-                        content.length,
-                        determineContentType(normalizedPath)
-                ));
+            } catch (Throwable exception) {
+                PackageEntry.closeAll(entries);
+                if (exception instanceof IOException ioException) {
+                    throw ioException;
+                }
+                if (exception instanceof RuntimeException runtimeException) {
+                    throw runtimeException;
+                }
+                if (exception instanceof Error error) {
+                    throw error;
+                }
+                throw new IllegalStateException(exception);
             }
         }
 

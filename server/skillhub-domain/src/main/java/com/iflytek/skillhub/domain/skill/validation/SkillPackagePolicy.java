@@ -2,13 +2,21 @@ package com.iflytek.skillhub.domain.skill.validation;
 
 import com.iflytek.skillhub.domain.shared.exception.DomainBadRequestException;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
-import java.nio.charset.CharacterCodingException;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Locale;
 import java.util.Set;
 
@@ -29,6 +37,11 @@ public final class SkillPackagePolicy {
      */
     public static final long MAX_SINGLE_FILE_SIZE = MAX_DATA_FILE_SIZE;
     public static final long MAX_TOTAL_PACKAGE_SIZE = 100L * 1024 * 1024; // 100MB
+    /**
+     * Entries larger than this are kept off the heap during publish. The upload setting may
+     * override it; re-release uses this default.
+     */
+    public static final long MEMORY_ENTRY_THRESHOLD_BYTES = 1024L * 1024L; // 1MB
     public static final String SCRIPT_TOO_LARGE = "error.skill.publish.file.scriptTooLarge";
     public static final String DATA_TOO_LARGE = "error.skill.publish.file.dataTooLarge";
     public static final String SKILL_MD_PATH = "SKILL.md";
@@ -165,55 +178,73 @@ public final class SkillPackagePolicy {
     }
 
     public static String validateContentMatchesExtension(String path, byte[] content) {
+        return validateContentMatchesExtension(path, () -> new ByteArrayInputStream(content));
+    }
+
+    public static String validateContentMatchesExtension(String path, PackageEntry entry) {
+        return validateContentMatchesExtension(path, entry::openStream);
+    }
+
+    private static String validateContentMatchesExtension(String path, PackageEntry.ContentSource source) {
         String lowerPath = path.toLowerCase();
-        if (lowerPath.endsWith(".png")) {
-            return hasPrefix(content, (byte) 0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a)
-                    ? null
-                    : "File content does not match extension: " + path;
-        }
-        if (lowerPath.endsWith(".jpg")) {
-            return hasPrefix(content, (byte) 0xff, (byte) 0xd8, (byte) 0xff)
-                    ? null
-                    : "File content does not match extension: " + path;
-        }
-        if (lowerPath.endsWith(".svg")) {
-            if (!isUtf8Text(content)) {
-                return "File content does not match extension: " + path;
+        try {
+            if (lowerPath.endsWith(".png")) {
+                return matchesPrefix(source, 8, (byte) 0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a)
+                        ? null
+                        : mismatch(path);
             }
-            String text = new String(content, StandardCharsets.UTF_8).trim().toLowerCase();
-            return text.contains("<svg") ? null : "File content does not match extension: " + path;
+            if (lowerPath.endsWith(".jpg") || lowerPath.endsWith(".jpeg")) {
+                return matchesPrefix(source, 3, (byte) 0xff, (byte) 0xd8, (byte) 0xff) ? null : mismatch(path);
+            }
+            if (lowerPath.endsWith(".svg")) {
+                try (InputStream input = source.open()) {
+                    if (!isUtf8Text(input)) {
+                        return mismatch(path);
+                    }
+                }
+                try (InputStream input = source.open()) {
+                    return containsSvgTag(input) ? null : mismatch(path);
+                }
+            }
+            if (lowerPath.endsWith(".gif")) {
+                return matchesPrefix(source, 4, 'G', 'I', 'F', '8') ? null : mismatch(path);
+            }
+            if (lowerPath.endsWith(".webp")) {
+                try (InputStream input = source.open()) {
+                    byte[] header = readAtMost(input, 12);
+                    return header.length >= 12
+                            && hasPrefix(header, 'R', 'I', 'F', 'F')
+                            && header[8] == 'W' && header[9] == 'E' && header[10] == 'B' && header[11] == 'P'
+                            ? null
+                            : mismatch(path);
+                }
+            }
+            if (lowerPath.endsWith(".ico")) {
+                return matchesPrefix(source, 4, 0x00, 0x00, 0x01, 0x00) ? null : mismatch(path);
+            }
+            if (lowerPath.endsWith(".pdf")) {
+                return matchesPrefix(source, 4, '%', 'P', 'D', 'F') ? null : mismatch(path);
+            }
+            if (isTextExtension(lowerPath)) {
+                try (InputStream input = source.open()) {
+                    return isUtf8Text(input) ? null : mismatch(path);
+                }
+            }
+            return null;
+        } catch (IOException exception) {
+            throw new UncheckedIOException("Failed to read package entry: " + path, exception);
         }
-        if (lowerPath.endsWith(".jpeg")) {
-            return hasPrefix(content, (byte) 0xff, (byte) 0xd8, (byte) 0xff)
-                    ? null
-                    : "File content does not match extension: " + path;
+    }
+
+    private static String mismatch(String path) {
+        return "File content does not match extension: " + path;
+    }
+
+    private static boolean matchesPrefix(PackageEntry.ContentSource source, int headerLength, int... prefix)
+            throws IOException {
+        try (InputStream input = source.open()) {
+            return hasPrefix(readAtMost(input, headerLength), prefix);
         }
-        if (lowerPath.endsWith(".gif")) {
-            return hasPrefix(content, 'G', 'I', 'F', '8')
-                    ? null
-                    : "File content does not match extension: " + path;
-        }
-        if (lowerPath.endsWith(".webp")) {
-            return (content.length >= 12
-                    && hasPrefix(content, 'R', 'I', 'F', 'F')
-                    && content[8] == 'W' && content[9] == 'E' && content[10] == 'B' && content[11] == 'P')
-                    ? null
-                    : "File content does not match extension: " + path;
-        }
-        if (lowerPath.endsWith(".ico")) {
-            return hasPrefix(content, 0x00, 0x00, 0x01, 0x00)
-                    ? null
-                    : "File content does not match extension: " + path;
-        }
-        if (lowerPath.endsWith(".pdf")) {
-            return hasPrefix(content, '%', 'P', 'D', 'F')
-                    ? null
-                    : "File content does not match extension: " + path;
-        }
-        if (isTextExtension(lowerPath)) {
-            return isUtf8Text(content) ? null : "File content does not match extension: " + path;
-        }
-        return null;
     }
 
     private static boolean isTextExtension(String path) {
@@ -232,21 +263,129 @@ public final class SkillPackagePolicy {
                 || path.endsWith(".zsh") || path.endsWith(".bash");
     }
 
-    private static boolean isUtf8Text(byte[] content) {
-        for (byte value : content) {
-            if (value == 0) {
-                return false;
-            }
-        }
+    static boolean isUtf8Text(byte[] content) {
         try {
-            CharBuffer ignored = StandardCharsets.UTF_8.newDecoder()
-                    .onMalformedInput(CodingErrorAction.REPORT)
-                    .onUnmappableCharacter(CodingErrorAction.REPORT)
-                    .decode(ByteBuffer.wrap(content));
-            return true;
-        } catch (CharacterCodingException ex) {
+            return isUtf8Text(new ByteArrayInputStream(content));
+        } catch (IOException exception) {
             return false;
         }
+    }
+
+    /**
+     * UTF-8 with the same rejection rules as decoding the whole file: any NUL byte fails, and a
+     * malformed sequence fails. The decoder keeps only a fixed buffer.
+     */
+    private static boolean isUtf8Text(InputStream input) throws IOException {
+        CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder()
+                .onMalformedInput(CodingErrorAction.REPORT)
+                .onUnmappableCharacter(CodingErrorAction.REPORT);
+        ByteBuffer inputBuffer = ByteBuffer.allocate(8192);
+        CharBuffer outputBuffer = CharBuffer.allocate(8192);
+        byte[] readBuffer = new byte[4096];
+        while (true) {
+            int read = input.read(readBuffer);
+            if (read > 0) {
+                int offset = 0;
+                while (offset < read) {
+                    if (!inputBuffer.hasRemaining() && !drainUtf8(decoder, inputBuffer, outputBuffer, false)) {
+                        return false;
+                    }
+                    int count = Math.min(inputBuffer.remaining(), read - offset);
+                    for (int index = 0; index < count; index++) {
+                        if (readBuffer[offset + index] == 0) {
+                            return false;
+                        }
+                    }
+                    inputBuffer.put(readBuffer, offset, count);
+                    offset += count;
+                }
+            }
+            boolean end = read < 0;
+            if (!drainUtf8(decoder, inputBuffer, outputBuffer, end)) {
+                return false;
+            }
+            if (end) {
+                return true;
+            }
+        }
+    }
+
+    private static boolean drainUtf8(
+            CharsetDecoder decoder,
+            ByteBuffer inputBuffer,
+            CharBuffer outputBuffer,
+            boolean endOfInput
+    ) {
+        inputBuffer.flip();
+        while (true) {
+            CoderResult result = decoder.decode(inputBuffer, outputBuffer, endOfInput);
+            outputBuffer.clear();
+            if (result.isOverflow()) {
+                continue;
+            }
+            if (result.isError()) {
+                return false;
+            }
+            if (endOfInput) {
+                CoderResult flush = decoder.flush(outputBuffer);
+                outputBuffer.clear();
+                if (flush.isError()) {
+                    return false;
+                }
+                if (flush.isOverflow()) {
+                    continue;
+                }
+            }
+            inputBuffer.compact();
+            return true;
+        }
+    }
+
+    /**
+     * Leading trim matches {@link String#trim()}: only characters {@code <= U+0020} are skipped.
+     * The caller has already rejected invalid UTF-8 and NUL bytes.
+     */
+    private static boolean containsSvgTag(InputStream input) throws IOException {
+        Reader reader = new InputStreamReader(input, StandardCharsets.UTF_8);
+        char[] buffer = new char[8192];
+        int matched = 0;
+        boolean skippingLeading = true;
+        String needle = "<svg";
+        int read;
+        while ((read = reader.read(buffer)) != -1) {
+            for (int index = 0; index < read; index++) {
+                char current = buffer[index];
+                if (skippingLeading) {
+                    if (current <= ' ') {
+                        continue;
+                    }
+                    skippingLeading = false;
+                }
+                char lower = Character.toLowerCase(current);
+                if (lower == needle.charAt(matched)) {
+                    matched++;
+                    if (matched == needle.length()) {
+                        return true;
+                    }
+                } else {
+                    matched = lower == '<' ? 1 : 0;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static byte[] readAtMost(InputStream input, int max) throws IOException {
+        byte[] buffer = new byte[max];
+        int offset = 0;
+        while (offset < max) {
+            int read = input.read(buffer, offset, max - offset);
+            if (read < 0) {
+                break;
+            }
+            offset += read;
+        }
+        return offset == buffer.length ? buffer : Arrays.copyOf(buffer, offset);
     }
 
     private static boolean hasPrefix(byte[] content, int... prefix) {

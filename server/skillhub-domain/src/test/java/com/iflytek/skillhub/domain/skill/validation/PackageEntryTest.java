@@ -4,6 +4,8 @@ import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,5 +40,22 @@ class PackageEntryTest {
         assertThatThrownBy(entry::content)
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("size changed");
+    }
+
+    @Test
+    void spilledEntryRoundTripsAndDeletesItsFileOnce() throws Exception {
+        Path file = Files.createTempFile("skillhive-entry-", ".bin");
+        Files.writeString(file, "spilled");
+        PackageEntry entry = PackageEntry.spilled("dir/notes.txt", 7, "text/plain", file);
+        PackageEntry moved = entry.withPath("notes.txt");
+        assertThat(entry.spilled()).isTrue();
+        assertThat(entry.retainsBytes()).isFalse();
+        assertThat(moved.content()).isEqualTo("spilled".getBytes(StandardCharsets.UTF_8));
+        entry.close();
+        assertThat(Files.exists(file)).isTrue();
+        moved.close();
+        assertThat(Files.exists(file)).isFalse();
+        moved.close();
+        assertThat(Files.exists(file)).isFalse();
     }
 }
