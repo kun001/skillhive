@@ -1,7 +1,9 @@
 package com.iflytek.skillhub.controller.support;
 
 import com.iflytek.skillhub.config.SkillPublishProperties;
+import com.iflytek.skillhub.domain.shared.exception.DomainBadRequestException;
 import com.iflytek.skillhub.domain.skill.validation.PackageEntry;
+import com.iflytek.skillhub.domain.skill.validation.SkillPackagePolicy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockMultipartFile;
@@ -10,6 +12,7 @@ import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.zip.CRC32;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -52,10 +55,44 @@ class SkillPackageArchiveExtractorTest {
         byte[] zip = createZip(Map.of("large.txt", content));
         MockMultipartFile file = new MockMultipartFile("file", "test.zip", "application/zip", zip);
 
-        IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+        DomainBadRequestException error = assertThrows(DomainBadRequestException.class,
                 () -> smallExtractor.extract(file));
 
-        assertTrue(error.getMessage().contains("File too large: large.txt"));
+        assertEquals(SkillPackagePolicy.DATA_TOO_LARGE, error.messageCode());
+        assertEquals("large.txt", error.messageArgs()[0]);
+    }
+
+    @Test
+    void rejectsScriptAboveItsTierWhileAcceptingLargerMedia() throws Exception {
+        byte[] threeMegabytes = new byte[3 * 1024 * 1024];
+        byte[] scriptZip = createZip(Map.of("scripts/run.py", threeMegabytes));
+        MockMultipartFile script = new MockMultipartFile("file", "test.zip", "application/zip", scriptZip);
+
+        DomainBadRequestException error = assertThrows(DomainBadRequestException.class, () -> extractor.extract(script));
+        assertEquals(SkillPackagePolicy.SCRIPT_TOO_LARGE, error.messageCode());
+        assertTrue(error.messageArgs()[0].toString().endsWith("run.py"));
+
+        byte[] mediaZip = createZip(Map.of("SKILL.md", threeMegabytes));
+        MockMultipartFile media = new MockMultipartFile("file", "test.zip", "application/zip", mediaZip);
+        List<PackageEntry> entries = extractor.extract(media);
+
+        assertEquals(1, entries.size());
+        assertEquals(threeMegabytes.length, entries.get(0).size());
+    }
+
+    @Test
+    void rejectsDeclaredZipEntryBeforeBufferingPastTheTier() throws Exception {
+        SkillPublishProperties props = new SkillPublishProperties();
+        props.setMaxScriptFileSize(32);
+        SkillPackageArchiveExtractor tight = new SkillPackageArchiveExtractor(props);
+        byte[] body = new byte[200_000];
+        byte[] zip = createZipWithDeclaredSize("scripts/run.py", body);
+        MockMultipartFile file = new MockMultipartFile("file", "test.zip", "application/zip", zip);
+
+        DomainBadRequestException error = assertThrows(DomainBadRequestException.class, () -> tight.extract(file));
+
+        assertEquals(SkillPackagePolicy.SCRIPT_TOO_LARGE, error.messageCode());
+        assertEquals(SkillPackagePolicy.formatMegabytes(body.length), error.messageArgs()[1]);
     }
 
     @Test
@@ -315,6 +352,23 @@ class SkillPackageArchiveExtractorTest {
         // No SKILL.md found — entries returned as-is, validator will catch the error
         assertEquals(2, result.entries().size());
         assertTrue(result.warnings().isEmpty());
+    }
+
+    private byte[] createZipWithDeclaredSize(String entryName, byte[] content) throws Exception {
+        CRC32 crc = new CRC32();
+        crc.update(content);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (ZipOutputStream zos = new ZipOutputStream(baos)) {
+            ZipEntry entry = new ZipEntry(entryName);
+            entry.setMethod(ZipEntry.STORED);
+            entry.setSize(content.length);
+            entry.setCompressedSize(content.length);
+            entry.setCrc(crc.getValue());
+            zos.putNextEntry(entry);
+            zos.write(content);
+            zos.closeEntry();
+        }
+        return baos.toByteArray();
     }
 
     private byte[] createZip(String entryName, String content) throws Exception {

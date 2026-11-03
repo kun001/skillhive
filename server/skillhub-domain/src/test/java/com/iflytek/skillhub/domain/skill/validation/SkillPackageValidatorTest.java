@@ -210,25 +210,36 @@ class SkillPackageValidatorTest {
     }
 
     @Test
-    void defaultSingleFileLimitIsFifteenMegabytes() {
-        long limit = 15L * 1024 * 1024;
-        assertEquals(limit, SkillPackagePolicy.MAX_SINGLE_FILE_SIZE);
+    void defaultLimitsKeepScriptsAtTwoMegabytesAndDataAtOneHundred() {
+        assertEquals(2L * 1024 * 1024, SkillPackagePolicy.MAX_SCRIPT_FILE_SIZE);
+        assertEquals(100L * 1024 * 1024, SkillPackagePolicy.MAX_DATA_FILE_SIZE);
+        assertEquals(SkillPackagePolicy.MAX_DATA_FILE_SIZE, SkillPackagePolicy.MAX_SINGLE_FILE_SIZE);
 
-        byte[] atLimit = new byte[(int) limit];
-        java.util.Arrays.fill(atLimit, (byte) 'a');
-        ValidationResult accepted = validator.validate(List.of(
+        long scriptLimit = SkillPackagePolicy.MAX_SCRIPT_FILE_SIZE;
+        ValidationResult scriptAccepted = validator.validate(List.of(
                 skillMdEntry(),
-                new PackageEntry("data.txt", atLimit, atLimit.length, "text/plain")));
-        assertTrue(accepted.errors().stream().noneMatch(e -> e.contains("File too large")), accepted.errors().toString());
-        assertTrue(accepted.passed());
+                new PackageEntry("scripts/run.py", "print(1)\n".getBytes(), scriptLimit, "text/x-python")));
+        assertTrue(scriptAccepted.errors().stream().noneMatch(e -> e.contains("File too large")),
+                scriptAccepted.errors().toString());
 
-        byte[] overLimit = new byte[(int) limit + 1];
-        java.util.Arrays.fill(overLimit, (byte) 'a');
-        ValidationResult rejected = validator.validate(List.of(
+        ValidationResult scriptRejected = validator.validate(List.of(
                 skillMdEntry(),
-                new PackageEntry("data.txt", overLimit, overLimit.length, "text/plain")));
-        assertFalse(rejected.passed());
-        assertTrue(rejected.errors().stream().anyMatch(e -> e.contains("File too large") && e.contains("data.txt")));
+                new PackageEntry("scripts/run.py", "print(1)\n".getBytes(), scriptLimit + 1, "text/x-python")));
+        assertFalse(scriptRejected.passed());
+        assertTrue(scriptRejected.errors().stream().anyMatch(e ->
+                e.contains("File too large") && e.contains("scripts/run.py") && e.contains("脚本")));
+
+        ValidationResult mediaAccepted = validator.validate(List.of(
+                skillMdEntry(),
+                new PackageEntry("assets/guide.pdf", new byte[]{'%'}, 15L * 1024 * 1024, "application/pdf")));
+        assertTrue(mediaAccepted.errors().stream().noneMatch(e -> e.contains("File too large")),
+                mediaAccepted.errors().toString());
+
+        ValidationResult mediaRejected = validator.validate(List.of(
+                skillMdEntry(),
+                new PackageEntry("notes.md", "x".getBytes(), SkillPackagePolicy.MAX_DATA_FILE_SIZE + 1, "text/markdown")));
+        assertFalse(mediaRejected.passed());
+        assertTrue(mediaRejected.errors().stream().anyMatch(e -> e.contains("File too large") && e.contains("notes.md")));
     }
 
     @Test

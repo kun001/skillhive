@@ -17,6 +17,7 @@ import com.iflytek.skillhub.dto.McpKnowledgeRequest;
 import com.iflytek.skillhub.dto.knowledge.*;
 import com.iflytek.skillhub.dto.PublishResponse;
 import com.iflytek.skillhub.service.AuditRequestContext;
+import com.iflytek.skillhub.service.SkillPublishAdmission;
 import com.iflytek.skillhub.service.knowledge.KnowledgeAppService;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.ByteArrayInputStream;
@@ -45,6 +46,7 @@ public class McpWriteService {
     private final SkillPublishService publish;
     private final SkillGovernanceService governance;
     private final SkillPackageArchiveExtractor extractor;
+    private final SkillPublishAdmission admission;
     private final KnowledgeAppService knowledge;
     private final JdbcTemplate jdbc;
     private final ObjectMapper mapper;
@@ -53,9 +55,11 @@ public class McpWriteService {
     public McpWriteService(NamespaceRepository namespaces, NamespaceMemberRepository members,
             SkillRepository skills, KnowledgeDocumentRepository documents, KnowledgeBaseRepository bases,
             SkillPublishService publish, SkillGovernanceService governance, SkillPackageArchiveExtractor extractor,
-            KnowledgeAppService knowledge, JdbcTemplate jdbc, ObjectMapper mapper, com.iflytek.skillhub.domain.audit.AuditLogService audits) {
+            SkillPublishAdmission admission, KnowledgeAppService knowledge, JdbcTemplate jdbc, ObjectMapper mapper,
+            com.iflytek.skillhub.domain.audit.AuditLogService audits) {
         this.namespaces = namespaces; this.members = members; this.skills = skills; this.documents = documents;
         this.bases = bases; this.publish = publish; this.governance = governance; this.extractor = extractor;
+        this.admission = admission;
         this.knowledge = knowledge; this.jdbc = jdbc; this.mapper = mapper;
         this.audits = audits;
     }
@@ -68,7 +72,8 @@ public class McpWriteService {
         return once("skill_upload", upload.idempotencyKey(), Map.of("namespace", namespace, "upload", upload), request, () -> {
             try {
                 // Reuse archive/path/bomb checks. Warnings are rejected, never auto-confirmed.
-                var archive = extractor.extractWithWarnings(new McpUploadedFile(upload.fileName(), bytes));
+                var archive = admission.extract(namespace, actor.userId(),
+                        new McpUploadedFile(upload.fileName(), bytes), extractor::extractWithWarnings);
                 if (!archive.warnings().isEmpty()) throw bad("Skill archive has warnings; resolve them before uploading");
                 SkillVisibility visibility = upload.visibility() == null ? SkillVisibility.NAMESPACE_ONLY
                         : SkillVisibility.valueOf(upload.visibility().toUpperCase(java.util.Locale.ROOT));

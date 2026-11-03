@@ -70,6 +70,12 @@ public class MultipartPackageExtractor {
                             "Duplicate package path: " + normalizedPath);
                 }
 
+                long limit = properties.limitFor(normalizedPath);
+                long declaredSize = file.getSize();
+                if (declaredSize > limit) {
+                    throw SkillPackagePolicy.fileTooLarge(normalizedPath, declaredSize, limit);
+                }
+
                 byte[] content = file.getBytes();
                 totalSize += content.length;
                 if (totalSize > properties.getMaxPackageSize()) {
@@ -77,9 +83,8 @@ public class MultipartPackageExtractor {
                             "Package too large: max " + properties.getMaxPackageSize() + " bytes");
                 }
 
-                if (content.length > properties.getMaxSingleFileSize()) {
-                    throw new DomainBadRequestException("error.skill.publish.package.invalid",
-                            "File too large: " + normalizedPath + " (max " + properties.getMaxSingleFileSize() + " bytes)");
+                if (content.length > limit) {
+                    throw SkillPackagePolicy.fileTooLarge(normalizedPath, content.length, limit);
                 }
 
                 entries.add(new PackageEntry(

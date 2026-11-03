@@ -31,7 +31,8 @@ public class DomainBeanConfig {
         return new SkillPackageValidator(
                 skillMetadataParser,
                 skillPublishProperties.getMaxFileCount(),
-                skillPublishProperties.getMaxSingleFileSize(),
+                skillPublishProperties.getMaxScriptFileSize(),
+                skillPublishProperties.getMaxDataFileSize(),
                 skillPublishProperties.getMaxPackageSize(),
                 skillPublishProperties.getAllowedFileExtensions()
         );

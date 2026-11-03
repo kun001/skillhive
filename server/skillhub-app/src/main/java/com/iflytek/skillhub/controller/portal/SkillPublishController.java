@@ -12,6 +12,7 @@ import com.iflytek.skillhub.dto.ApiResponseFactory;
 import com.iflytek.skillhub.dto.PublishResponse;
 import com.iflytek.skillhub.metrics.SkillHubMetrics;
 import com.iflytek.skillhub.ratelimit.RateLimit;
+import com.iflytek.skillhub.service.SkillPublishAdmission;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -31,15 +32,18 @@ public class SkillPublishController extends BaseApiController {
 
     private final SkillPublishService skillPublishService;
     private final SkillPackageArchiveExtractor skillPackageArchiveExtractor;
+    private final SkillPublishAdmission skillPublishAdmission;
     private final SkillHubMetrics skillHubMetrics;
 
     public SkillPublishController(SkillPublishService skillPublishService,
                                   SkillPackageArchiveExtractor skillPackageArchiveExtractor,
+                                  SkillPublishAdmission skillPublishAdmission,
                                   ApiResponseFactory responseFactory,
                                   SkillHubMetrics skillHubMetrics) {
         super(responseFactory);
         this.skillPublishService = skillPublishService;
         this.skillPackageArchiveExtractor = skillPackageArchiveExtractor;
+        this.skillPublishAdmission = skillPublishAdmission;
         this.skillHubMetrics = skillHubMetrics;
     }
 
@@ -62,7 +66,11 @@ public class SkillPublishController extends BaseApiController {
         List<String> extractionWarnings;
         try {
             SkillPackageArchiveExtractor.ExtractionResult extractionResult =
-                    skillPackageArchiveExtractor.extractWithWarnings(file);
+                    skillPublishAdmission.extract(
+                            namespace,
+                            principal.userId(),
+                            file,
+                            skillPackageArchiveExtractor::extractWithWarnings);
             entries = extractionResult.entries();
             extractionWarnings = extractionResult.warnings();
         } catch (IllegalArgumentException e) {

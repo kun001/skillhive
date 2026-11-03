@@ -1,5 +1,7 @@
 package com.iflytek.skillhub.domain.skill.validation;
 
+import com.iflytek.skillhub.domain.shared.exception.DomainBadRequestException;
+
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.ByteBuffer;
@@ -7,6 +9,7 @@ import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 import java.util.Set;
 
 /**
@@ -16,8 +19,18 @@ import java.util.Set;
 public final class SkillPackagePolicy {
 
     public static final int MAX_FILE_COUNT = 500;
-    public static final long MAX_SINGLE_FILE_SIZE = 15 * 1024 * 1024; // 15MB
-    public static final long MAX_TOTAL_PACKAGE_SIZE = 100 * 1024 * 1024; // 100MB
+    /** Scripts and source files. The security scanner fully parses these, so the cap stays small. */
+    public static final long MAX_SCRIPT_FILE_SIZE = 2L * 1024 * 1024; // 2MB
+    /** Images, documents, and other non-script package content, including SKILL.md. */
+    public static final long MAX_DATA_FILE_SIZE = 100L * 1024 * 1024; // 100MB
+    /**
+     * Data/media ceiling. Prefer {@link #MAX_DATA_FILE_SIZE} or {@link #MAX_SCRIPT_FILE_SIZE}.
+     * Kept so existing callers that treat this as the non-script single-file cap stay aligned.
+     */
+    public static final long MAX_SINGLE_FILE_SIZE = MAX_DATA_FILE_SIZE;
+    public static final long MAX_TOTAL_PACKAGE_SIZE = 100L * 1024 * 1024; // 100MB
+    public static final String SCRIPT_TOO_LARGE = "error.skill.publish.file.scriptTooLarge";
+    public static final String DATA_TOO_LARGE = "error.skill.publish.file.dataTooLarge";
     public static final String SKILL_MD_PATH = "SKILL.md";
     public static final Set<String> ALLOWED_EXTENSIONS = Set.of(
             // Documentation
@@ -33,7 +46,75 @@ public final class SkillPackagePolicy {
             ".doc", ".xls", ".ppt", ".docx", ".xlsx", ".pptx"
     );
 
+    /**
+     * Extensions whose contents are executed or fully parsed (scanner, interpreters, compilers).
+     * Classification is by the final extension only, so {@code SKILL.md} stays in the data tier.
+     * Includes script suffixes already treated as text in this policy, plus the extra script-like
+     * suffixes that must not inherit the larger data/media cap.
+     */
+    public static final Set<String> SCRIPT_EXTENSIONS = Set.of(
+            ".py", ".sh", ".bash", ".zsh", ".ps1", ".bat", ".cmd",
+            ".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs",
+            ".java", ".kt", ".go", ".rs", ".rb", ".php", ".lua", ".pl",
+            ".sql", ".r"
+    );
+
     private SkillPackagePolicy() {
+    }
+
+    /** True when the file's final extension is a script or source file. */
+    public static boolean isScriptPath(String path) {
+        return SCRIPT_EXTENSIONS.contains(extensionOf(path));
+    }
+
+    public static long limitFor(String path, long scriptLimit, long dataLimit) {
+        return isScriptPath(path) ? scriptLimit : dataLimit;
+    }
+
+    public static String tooLargeMessageCode(String path) {
+        return isScriptPath(path) ? SCRIPT_TOO_LARGE : DATA_TOO_LARGE;
+    }
+
+    public static DomainBadRequestException fileTooLarge(String path, long size, long limit) {
+        return new DomainBadRequestException(
+                tooLargeMessageCode(path),
+                path,
+                formatMegabytes(size),
+                formatMegabytes(limit));
+    }
+
+    /**
+     * Bilingual detail embedded in aggregated package-validation errors.
+     * The upload path prefers {@link #fileTooLarge} so the locale files can translate it.
+     */
+    public static String tooLargeDetail(String path, long size, long limit) {
+        String actual = formatMegabytes(size);
+        String max = formatMegabytes(limit);
+        if (isScriptPath(path)) {
+            return "File too large: " + path + " (" + size + " bytes, max: " + limit + "). "
+                    + "脚本或源码文件超过 " + max + " MB 上限（当前 " + actual + " MB）。"
+                    + " / Script or source file exceeds the " + max + " MB limit.";
+        }
+        return "File too large: " + path + " (" + size + " bytes, max: " + limit + "). "
+                + "文件超过该类文件 " + max + " MB 上限（当前 " + actual + " MB）。"
+                + " / File exceeds the " + max + " MB limit for this file type.";
+    }
+
+    public static String formatMegabytes(long bytes) {
+        return String.format(Locale.ROOT, "%.2f", Math.max(0L, bytes) / (1024.0 * 1024.0));
+    }
+
+    static String extensionOf(String path) {
+        if (path == null || path.isEmpty()) {
+            return "";
+        }
+        int slash = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
+        String name = slash >= 0 ? path.substring(slash + 1) : path;
+        int dot = name.lastIndexOf('.');
+        if (dot <= 0 || dot == name.length() - 1) {
+            return "";
+        }
+        return name.substring(dot).toLowerCase(Locale.ROOT);
     }
 
     public static String normalizeEntryPath(String rawPath) {
