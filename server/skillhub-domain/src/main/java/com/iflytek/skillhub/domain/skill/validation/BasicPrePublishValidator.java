@@ -2,7 +2,9 @@ package com.iflytek.skillhub.domain.skill.validation;
 
 import org.springframework.stereotype.Component;
 
-import java.nio.charset.StandardCharsets;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -41,34 +43,39 @@ public class BasicPrePublishValidator implements PrePublishValidator {
             if (!isTextLike(entry.path())) {
                 continue;
             }
-            String content = new String(entry.content(), StandardCharsets.UTF_8);
-            String[] lines = content.split("\\R", -1);
-            for (int i = 0; i < lines.length; i++) {
-                String line = lines[i];
-                for (SecretRule rule : SECRET_RULES) {
-                    Matcher matcher = rule.pattern().matcher(line);
-                    if (!matcher.find()) {
-                        continue;
-                    }
-                    String matchedValue = extractMatchedValue(
-                            line, matcher, rule, isBareSecretConfiguration(entry.path()));
-                    if (matchedValue == null) {
-                        continue;
-                    }
-                    if (isPlaceholderValue(matchedValue)) {
-                        continue;
-                    }
-                    warnings.add(entry.path()
-                            + " line " + (i + 1)
-                            + " contains a value that looks like a "
-                            + rule.label()
-                            + ". Replace real credentials with placeholders before publishing.");
-                    break;
-                }
+            try (InputStream input = entry.openStream()) {
+                TextLines.forEach(input, (lineNumber, line) ->
+                        inspectLine(entry.path(), lineNumber, line, warnings));
+            } catch (IOException exception) {
+                throw new UncheckedIOException("Failed to scan package entry: " + entry.path(), exception);
             }
         }
 
         return warnings.isEmpty() ? ValidationResult.pass() : ValidationResult.warn(warnings);
+    }
+
+    boolean inspectLine(String path, int lineNumber, String line, List<String> warnings) {
+        for (SecretRule rule : SECRET_RULES) {
+            Matcher matcher = rule.pattern().matcher(line);
+            if (!matcher.find()) {
+                continue;
+            }
+            String matchedValue = extractMatchedValue(
+                    line, matcher, rule, isBareSecretConfiguration(path));
+            if (matchedValue == null) {
+                continue;
+            }
+            if (isPlaceholderValue(matchedValue)) {
+                continue;
+            }
+            warnings.add(path
+                    + " line " + lineNumber
+                    + " contains a value that looks like a "
+                    + rule.label()
+                    + ". Replace real credentials with placeholders before publishing.");
+            return true;
+        }
+        return false;
     }
 
     private boolean isTextLike(String path) {

@@ -66,6 +66,8 @@ class SkillPublishPropertiesTest {
         assertThat(properties.getMaxSingleFileSize()).isEqualTo(100L * 1024 * 1024);
         assertThat(properties.getMaxPackageSize()).isEqualTo(100L * 1024 * 1024);
         assertThat(properties.getExtractionBudgetBytes()).isEqualTo(200L * 1024 * 1024);
+        assertThat(properties.getMemoryEntryThresholdBytes()).isEqualTo(1024L * 1024);
+        assertThat(new SkillPublishProperties().getMemoryEntryThresholdBytes()).isEqualTo(1024L * 1024);
         assertThat(properties.limitFor("scripts/run.py")).isEqualTo(2L * 1024 * 1024);
         assertThat(properties.limitFor("SKILL.md")).isEqualTo(100L * 1024 * 1024);
         assertThat(new SkillPublishProperties().getMaxScriptFileSize()).isEqualTo(2L * 1024 * 1024);
@@ -91,6 +93,15 @@ class SkillPublishPropertiesTest {
 
         assertThat(properties.getMaxScriptFileSize()).isEqualTo(4096L);
         assertThat(properties.getExtractionBudgetBytes()).isZero();
+    }
+
+    @Test
+    void environmentCanOverrideTheInMemoryEntryThreshold() throws IOException {
+        SkillPublishProperties properties = bindFromApplicationYml(Map.of(
+                "SKILLHUB_PUBLISH_MEMORY_ENTRY_THRESHOLD_BYTES", "0"
+        ));
+
+        assertThat(properties.getMemoryEntryThresholdBytes()).isZero();
     }
 
     private SkillPublishProperties bindFromApplicationYml(Map<String, Object> envVars) throws IOException {

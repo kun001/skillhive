@@ -4,10 +4,14 @@ import com.iflytek.skillhub.domain.skill.metadata.SkillMetadata;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -228,5 +232,60 @@ class BasicPrePublishValidatorTest {
 
         assertTrue(result.passed());
         assertTrue(result.warnings().stream().anyMatch(warning -> warning.contains("line 1")));
+    }
+
+    @Test
+    void streamingScanMatchesMaterializedLineSplit() throws Exception {
+        String nested = "intro\r\npassword = \"example-placeholder\"\n"
+                + "token=sk-abcdefghijklmnopqrstuvwxyz123456\r"
+                + "api_key: your-real-looking-value\u2028"
+                + "ghp_abcdefghijklmnopqrstuvwxyz\n";
+        assertSameWarnings("notes.txt", nested.getBytes(StandardCharsets.UTF_8));
+
+        StringBuilder longLine = new StringBuilder("preface\n");
+        longLine.append("a".repeat(70_000));
+        longLine.append("ghp_abcdefghijklmnopqrstuvwxyz");
+        longLine.append("b".repeat(2_000));
+        longLine.append('\n');
+        longLine.append("tail");
+        assertSameWarnings("notes.txt", longLine.toString().getBytes(StandardCharsets.UTF_8));
+
+        assertSameWarnings("notes.txt", ("a".repeat(80_000) + "\nsafe\n").getBytes(StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void spilledAndInMemoryEntriesProduceTheSameCredentialWarnings() throws Exception {
+        String text = "line 1\ntoken=sk-abcdefghijklmnopqrstuvwxyz123456\n";
+        byte[] bytes = text.getBytes(StandardCharsets.UTF_8);
+        PackageEntry memory = new PackageEntry("README.md", bytes, bytes.length, "text/markdown");
+        Path file = Files.createTempFile("skillhive-credential-", ".txt");
+        try {
+            Files.write(file, bytes);
+            try (PackageEntry spilled = PackageEntry.spilled("README.md", bytes.length, "text/markdown", file)) {
+                assertEquals(warningsOf(memory), warningsOf(spilled));
+                assertTrue(warningsOf(spilled).get(0).contains("line 2"));
+            }
+        } finally {
+            Files.deleteIfExists(file);
+        }
+    }
+
+    private void assertSameWarnings(String path, byte[] bytes) {
+        List<String> expected = new ArrayList<>();
+        String[] lines = new String(bytes, StandardCharsets.UTF_8).split("\\R", -1);
+        for (int index = 0; index < lines.length; index++) {
+            validator.inspectLine(path, index + 1, lines[index], expected);
+        }
+        PackageEntry entry = new PackageEntry(path, bytes, bytes.length, "text/plain");
+        assertEquals(expected, warningsOf(entry));
+    }
+
+    private List<String> warningsOf(PackageEntry entry) {
+        return validator.validate(new PrePublishValidator.SkillPackageContext(
+                List.of(entry),
+                new SkillMetadata("Skill", "desc", "1.0.0", "body", Map.of()),
+                "user-1",
+                1L
+        )).warnings();
     }
 }

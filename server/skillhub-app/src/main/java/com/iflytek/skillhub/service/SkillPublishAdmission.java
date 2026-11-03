@@ -27,7 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
- * Runs the cheap publish guards before a skill archive is buffered in memory.
+ * Runs the cheap publish guards before a skill archive is unpacked.
  *
  * <p>The declared upload size is checked against the caller's remaining storage quota first.
  * When that already does not fit, the archive is scanned only far enough to recover {@code SKILL.md}

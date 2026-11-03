@@ -282,6 +282,9 @@ skillhub:
     max-package-size: 104857600 # 100MB
     # Sum of uploads currently being unpacked. 0 or negative disables the guard.
     extraction-budget-bytes: 209715200 # 200MB
+    # Entries larger than this are written to a temporary file during publish instead of a byte[].
+    # 0 spills every non-empty entry. A negative value keeps every entry on the heap.
+    memory-entry-threshold-bytes: 1048576 # 1MB
     # allowed-file-extensions: uses SkillPackagePolicy.ALLOWED_EXTENSIONS by default
     # Override via SKILLHUB_PUBLISH_ALLOWED_FILE_EXTENSIONS env var if needed
   profile:

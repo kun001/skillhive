@@ -21,16 +21,21 @@ public class BuiltinSkillPackageExtractor {
     public SkillPackageArchiveExtractor.ExtractionResult extract(byte[] zipBytes) throws IOException {
         SkillPackageArchiveExtractor.ExtractionResult result =
                 archiveExtractor.extractWithWarnings(new ByteArrayMultipartFile(zipBytes));
-        if (!result.warnings().isEmpty()) {
-            throw new IllegalArgumentException("Built-in skill package has warnings: "
-                    + String.join("; ", result.warnings()));
+        try {
+            if (!result.warnings().isEmpty()) {
+                throw new IllegalArgumentException("Built-in skill package has warnings: "
+                        + String.join("; ", result.warnings()));
+            }
+            boolean hasSkillMd = result.entries().stream()
+                    .anyMatch(entry -> SkillPackagePolicy.SKILL_MD_PATH.equals(entry.path()));
+            if (!hasSkillMd) {
+                throw new IllegalArgumentException("Built-in skill package must contain " + SkillPackagePolicy.SKILL_MD_PATH);
+            }
+            return result;
+        } catch (RuntimeException exception) {
+            result.close();
+            throw exception;
         }
-        boolean hasSkillMd = result.entries().stream()
-                .anyMatch(entry -> SkillPackagePolicy.SKILL_MD_PATH.equals(entry.path()));
-        if (!hasSkillMd) {
-            throw new IllegalArgumentException("Built-in skill package must contain " + SkillPackagePolicy.SKILL_MD_PATH);
-        }
-        return result;
     }
 
     private record ByteArrayMultipartFile(byte[] bytes) implements MultipartFile {

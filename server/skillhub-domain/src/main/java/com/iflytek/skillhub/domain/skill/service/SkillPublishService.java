@@ -24,6 +24,7 @@ import com.iflytek.skillhub.domain.skill.metadata.SkillMetadata;
 import com.iflytek.skillhub.domain.skill.metadata.SkillMetadataParser;
 import com.iflytek.skillhub.domain.skill.validation.PackageEntry;
 import com.iflytek.skillhub.domain.skill.validation.PrePublishValidator;
+import com.iflytek.skillhub.domain.skill.validation.SkillPackagePolicy;
 import com.iflytek.skillhub.domain.skill.validation.SkillPackageValidator;
 import com.iflytek.skillhub.domain.skill.validation.ValidationResult;
 import com.iflytek.skillhub.domain.storage.StorageQuotaGuard;
@@ -334,20 +335,23 @@ public class SkillPublishService {
         }
 
         List<PackageEntry> entries = rebuildEntriesForRerelease(skillId, publishedVersion.getId(), targetVersion);
-
-        // Rerelease follows the same visibility-based workflow as normal publish:
-        // - PRIVATE skills go to UPLOADED status
-        // - PUBLIC/NAMESPACE_ONLY skills go to PENDING_REVIEW (or UPLOADED after scan)
-        return publishFromEntriesInternal(
-                resolveNamespaceSlug(skill.getNamespaceId()),
-                entries,
-                publisherId,
-                skill.getVisibility(),
-                Set.of(),
-                confirmWarnings,  // confirmWarnings: honour caller's choice for rerelease
-                false,  // forceAutoPublish=false: respect visibility rules
-                true
-        );
+        try {
+            // Rerelease follows the same visibility-based workflow as normal publish:
+            // - PRIVATE skills go to UPLOADED status
+            // - PUBLIC/NAMESPACE_ONLY skills go to PENDING_REVIEW (or UPLOADED after scan)
+            return publishFromEntriesInternal(
+                    resolveNamespaceSlug(skill.getNamespaceId()),
+                    entries,
+                    publisherId,
+                    skill.getVisibility(),
+                    Set.of(),
+                    confirmWarnings,  // confirmWarnings: honour caller's choice for rerelease
+                    false,  // forceAutoPublish=false: respect visibility rules
+                    true
+            );
+        } finally {
+            PackageEntry.closeAll(entries);
+        }
     }
 
     @Transactional
@@ -797,19 +801,64 @@ public class SkillPublishService {
                 .sorted(Comparator.comparing(SkillFile::getFilePath))
                 .toList();
         List<PackageEntry> entries = new ArrayList<>(files.size());
-        for (SkillFile file : files) {
+        try {
+            for (SkillFile file : files) {
+                entries.add(entryFromStoredFile(file, targetVersion));
+            }
+            return entries;
+        } catch (RuntimeException | IOException exception) {
+            PackageEntry.closeAll(entries);
+            if (exception instanceof IOException ioException) {
+                throw new IllegalStateException("Failed to read stored skill file", ioException);
+            }
+            throw (RuntimeException) exception;
+        }
+    }
+
+    private PackageEntry entryFromStoredFile(SkillFile file, String targetVersion) throws IOException {
+        String path = file.getFilePath();
+        String contentType = file.getContentType() != null ? file.getContentType() : "application/octet-stream";
+        Long declaredSize = file.getFileSize();
+        boolean skillMd = "SKILL.md".equals(path);
+        boolean fitsInMemory = declaredSize != null
+                && declaredSize >= 0
+                && declaredSize <= SkillPackagePolicy.MEMORY_ENTRY_THRESHOLD_BYTES;
+        if (skillMd || fitsInMemory) {
             byte[] content = readAllBytes(objectStorageService.getObject(file.getStorageKey()));
-            if ("SKILL.md".equals(file.getFilePath())) {
+            if (skillMd) {
                 content = rewriteSkillMdVersion(content, targetVersion);
             }
-            entries.add(new PackageEntry(
-                    file.getFilePath(),
-                    content,
-                    content.length,
-                    file.getContentType() != null ? file.getContentType() : "application/octet-stream"
-            ));
+            if (content.length > SkillPackagePolicy.MEMORY_ENTRY_THRESHOLD_BYTES) {
+                return spillBytes(path, content, contentType);
+            }
+            return new PackageEntry(path, content, content.length, contentType);
         }
-        return entries;
+        Path temp = Files.createTempFile("skillhub-entry-", ".bin");
+        try (InputStream input = objectStorageService.getObject(file.getStorageKey());
+             OutputStream output = Files.newOutputStream(temp)) {
+            long copied = 0L;
+            byte[] buffer = new byte[8192];
+            int read;
+            while ((read = input.read(buffer)) >= 0) {
+                output.write(buffer, 0, read);
+                copied += read;
+            }
+            return PackageEntry.spilled(path, copied, contentType, temp);
+        } catch (IOException | RuntimeException exception) {
+            Files.deleteIfExists(temp);
+            throw exception;
+        }
+    }
+
+    private PackageEntry spillBytes(String path, byte[] content, String contentType) throws IOException {
+        Path temp = Files.createTempFile("skillhub-entry-", ".bin");
+        try {
+            Files.write(temp, content);
+            return PackageEntry.spilled(path, content.length, contentType, temp);
+        } catch (IOException | RuntimeException exception) {
+            Files.deleteIfExists(temp);
+            throw exception;
+        }
     }
 
     private byte[] readAllBytes(InputStream inputStream) {

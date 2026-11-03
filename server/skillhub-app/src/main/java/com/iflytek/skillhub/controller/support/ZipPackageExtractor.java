@@ -7,7 +7,6 @@ import com.iflytek.skillhub.domain.skill.validation.SkillPackagePolicy;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -24,12 +23,15 @@ import java.util.zip.ZipInputStream;
 @Component
 public class ZipPackageExtractor {
 
-    private static final int BUFFER_SIZE = 8192;
-
     private final SkillPublishProperties properties;
+    private Path spillDirectory;
 
     public ZipPackageExtractor(SkillPublishProperties properties) {
         this.properties = properties;
+    }
+
+    void setSpillDirectory(Path spillDirectory) {
+        this.spillDirectory = spillDirectory;
     }
 
     public List<PackageEntry> extract(MultipartFile file) throws IOException {
@@ -61,40 +63,37 @@ public class ZipPackageExtractor {
                     throw SkillPackagePolicy.fileTooLarge(normalizedPath, declared, properties.limitFor(normalizedPath));
                 }
 
-                byte[] content = readEntry(zis, normalizedPath);
-                totalSize += content.length;
+                PackageEntry entry = PackageEntryReader.read(
+                        zis,
+                        normalizedPath,
+                        determineContentType(normalizedPath),
+                        properties.limitFor(normalizedPath),
+                        properties.getMemoryEntryThresholdBytes(),
+                        spillDirectory
+                );
+                entries.add(entry);
+                totalSize += entry.size();
                 if (totalSize > properties.getMaxPackageSize()) {
                     throw new DomainBadRequestException("error.skill.publish.package.invalid",
                             "Package too large: max " + properties.getMaxPackageSize() + " bytes");
                 }
-
-                entries.add(new PackageEntry(
-                        normalizedPath,
-                        content,
-                        content.length,
-                        determineContentType(normalizedPath)
-                ));
                 zis.closeEntry();
             }
+        } catch (Throwable exception) {
+            PackageEntry.closeAll(entries);
+            if (exception instanceof IOException ioException) {
+                throw ioException;
+            }
+            if (exception instanceof RuntimeException runtimeException) {
+                throw runtimeException;
+            }
+            if (exception instanceof Error error) {
+                throw error;
+            }
+            throw new IllegalStateException(exception);
         }
 
         return SkillPackageArchiveExtractor.stripSingleRootDirectory(entries);
-    }
-
-    private byte[] readEntry(ZipInputStream zis, String path) throws IOException {
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        byte[] buffer = new byte[BUFFER_SIZE];
-        int read;
-        long fileSize = 0L;
-        long limit = properties.limitFor(path);
-        while ((read = zis.read(buffer)) != -1) {
-            fileSize += read;
-            if (fileSize > limit) {
-                throw SkillPackagePolicy.fileTooLarge(path, fileSize, limit);
-            }
-            outputStream.write(buffer, 0, read);
-        }
-        return outputStream.toByteArray();
     }
 
     private String normalizeEntryPath(String path) {

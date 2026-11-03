@@ -135,7 +135,7 @@ public class SkillPackageValidator {
                 warnings.add("Disallowed file extension: " + normalizedPath);
             }
 
-            String contentMismatch = SkillPackagePolicy.validateContentMatchesExtension(normalizedPath, entry.content());
+            String contentMismatch = SkillPackagePolicy.validateContentMatchesExtension(normalizedPath, entry);
             if (contentMismatch != null) {
                 warnings.add(contentMismatch);
             }

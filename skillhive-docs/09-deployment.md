@@ -417,6 +417,7 @@ services:
 - 若仍设置旧项 `skillhub.publish.max-single-file-size`（`SKILLHUB_PUBLISH_MAX_SINGLE_FILE_SIZE`），它只覆盖数据文件上限，不会放宽脚本上限。
 - 一次请求还受 Spring multipart 与 nginx / Ingress 的 **110MB** 限制，以便接近 100MB 的数据文件连同 multipart 开销能到达应用。
 - 同时解包的技能包声明大小合计默认不超过 **200MB**（`skillhub.publish.extraction-budget-bytes`，`SKILLHUB_PUBLISH_EXTRACTION_BUDGET_BYTES`）。超出时返回 429，请稍后重试；设为 0 或负数可关闭该并发保护。
+- 解包时，大于 **1MB** 的单个条目写入临时文件，而不是 `byte[]`（`skillhub.publish.memory-entry-threshold-bytes`，`SKILLHUB_PUBLISH_MEMORY_ENTRY_THRESHOLD_BYTES`）。UTF-8、文件头和凭证检查按流读取；上传和 `bundle.zip` 也从该文件读取。请求结束或失败时删除临时文件。设为 0 时非空文件都落盘，设为负数时全部留在内存。`SKILL.md` 在解析元数据时仍会读入内存。
 
 知识库：单文件不超过 100MB（`KnowledgeFilePolicy`）。
 

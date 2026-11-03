@@ -6,7 +6,6 @@ import com.iflytek.skillhub.controller.support.SkillPackageArchiveExtractor;
 import com.iflytek.skillhub.domain.shared.exception.DomainBadRequestException;
 import com.iflytek.skillhub.domain.skill.SkillVisibility;
 import com.iflytek.skillhub.domain.skill.service.SkillPublishService;
-import com.iflytek.skillhub.domain.skill.validation.PackageEntry;
 import com.iflytek.skillhub.dto.ApiResponse;
 import com.iflytek.skillhub.dto.ApiResponseFactory;
 import com.iflytek.skillhub.dto.PublishResponse;
@@ -18,7 +17,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.List;
 
 /**
  * Upload endpoints for skill packages.
@@ -62,47 +60,49 @@ public class SkillPublishController extends BaseApiController {
 
         SkillVisibility skillVisibility = SkillVisibility.valueOf(visibility.toUpperCase());
 
-        List<PackageEntry> entries;
-        List<String> extractionWarnings;
+        SkillPackageArchiveExtractor.ExtractionResult extractionResult = null;
         try {
-            SkillPackageArchiveExtractor.ExtractionResult extractionResult =
-                    skillPublishAdmission.extract(
-                            namespace,
-                            principal.userId(),
-                            file,
-                            skillPackageArchiveExtractor::extractWithWarnings);
-            entries = extractionResult.entries();
-            extractionWarnings = extractionResult.warnings();
-        } catch (IllegalArgumentException e) {
-            throw new DomainBadRequestException("error.skill.publish.package.invalid", e.getMessage());
+            try {
+                extractionResult = skillPublishAdmission.extract(
+                        namespace,
+                        principal.userId(),
+                        file,
+                        skillPackageArchiveExtractor::extractWithWarnings);
+            } catch (IllegalArgumentException e) {
+                throw new DomainBadRequestException("error.skill.publish.package.invalid", e.getMessage());
+            }
+
+            if (!confirmWarnings && !extractionResult.warnings().isEmpty()) {
+                throw new DomainBadRequestException(
+                        "error.skill.publish.precheck.confirmRequired",
+                        String.join("\n", extractionResult.warnings()));
+            }
+
+            SkillPublishService.PublishResult publishResult = skillPublishService.publishFromEntries(
+                    namespace,
+                    extractionResult.entries(),
+                    principal.userId(),
+                    skillVisibility,
+                    principal.platformRoles(),
+                    confirmWarnings
+            );
+
+            PublishResponse response = new PublishResponse(
+                    publishResult.skillId(),
+                    namespace,
+                    publishResult.slug(),
+                    publishResult.version().getVersion(),
+                    publishResult.version().getStatus().name(),
+                    publishResult.version().getFileCount(),
+                    publishResult.version().getTotalSize()
+            );
+            skillHubMetrics.incrementSkillPublish(namespace, publishResult.version().getStatus().name());
+
+            return ok("response.success.published", response);
+        } finally {
+            if (extractionResult != null) {
+                extractionResult.close();
+            }
         }
-
-        if (!confirmWarnings && !extractionWarnings.isEmpty()) {
-            throw new DomainBadRequestException(
-                    "error.skill.publish.precheck.confirmRequired",
-                    String.join("\n", extractionWarnings));
-        }
-
-        SkillPublishService.PublishResult publishResult = skillPublishService.publishFromEntries(
-                namespace,
-                entries,
-                principal.userId(),
-                skillVisibility,
-                principal.platformRoles(),
-                confirmWarnings
-        );
-
-        PublishResponse response = new PublishResponse(
-                publishResult.skillId(),
-                namespace,
-                publishResult.slug(),
-                publishResult.version().getVersion(),
-                publishResult.version().getStatus().name(),
-                publishResult.version().getFileCount(),
-                publishResult.version().getTotalSize()
-        );
-        skillHubMetrics.incrementSkillPublish(namespace, publishResult.version().getStatus().name());
-
-        return ok("response.success.published", response);
     }
 }
