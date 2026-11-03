@@ -11,9 +11,17 @@ import java.util.Set;
 @ConfigurationProperties(prefix = "skillhub.publish")
 public class SkillPublishProperties {
 
-    private int maxFileCount = 500;
-    private long maxSingleFileSize = 15 * 1024 * 1024;  // 15MB
-    private long maxPackageSize = 100 * 1024 * 1024;
+    private int maxFileCount = SkillPackagePolicy.MAX_FILE_COUNT;
+    private long maxScriptFileSize = SkillPackagePolicy.MAX_SCRIPT_FILE_SIZE;
+    private long maxDataFileSize = SkillPackagePolicy.MAX_DATA_FILE_SIZE;
+    /** When set via {@code max-single-file-size}, overrides {@link #maxDataFileSize}. */
+    private Long legacySingleFileSize;
+    private long maxPackageSize = SkillPackagePolicy.MAX_TOTAL_PACKAGE_SIZE;
+    /**
+     * Sum of in-flight publish uploads that may be unpacked at once.
+     * {@code 0} or a negative value disables the guard.
+     */
+    private long extractionBudgetBytes = 200L * 1024 * 1024;
     private Set<String> allowedFileExtensions = new LinkedHashSet<>(SkillPackagePolicy.ALLOWED_EXTENSIONS);
 
     public int getMaxFileCount() {
@@ -24,12 +32,33 @@ public class SkillPublishProperties {
         this.maxFileCount = maxFileCount;
     }
 
+    public long getMaxScriptFileSize() {
+        return maxScriptFileSize;
+    }
+
+    public void setMaxScriptFileSize(long maxScriptFileSize) {
+        this.maxScriptFileSize = maxScriptFileSize;
+    }
+
+    public long getMaxDataFileSize() {
+        return legacySingleFileSize != null ? legacySingleFileSize : maxDataFileSize;
+    }
+
+    public void setMaxDataFileSize(long maxDataFileSize) {
+        this.maxDataFileSize = maxDataFileSize;
+    }
+
+    /**
+     * Legacy alias of the data/media ceiling. When
+     * {@code skillhub.publish.max-single-file-size} is set it wins over
+     * {@code max-data-file-size} and does not raise the script ceiling.
+     */
     public long getMaxSingleFileSize() {
-        return maxSingleFileSize;
+        return getMaxDataFileSize();
     }
 
     public void setMaxSingleFileSize(long maxSingleFileSize) {
-        this.maxSingleFileSize = maxSingleFileSize;
+        this.legacySingleFileSize = maxSingleFileSize;
     }
 
     public long getMaxPackageSize() {
@@ -38,6 +67,18 @@ public class SkillPublishProperties {
 
     public void setMaxPackageSize(long maxPackageSize) {
         this.maxPackageSize = maxPackageSize;
+    }
+
+    public long getExtractionBudgetBytes() {
+        return extractionBudgetBytes;
+    }
+
+    public void setExtractionBudgetBytes(long extractionBudgetBytes) {
+        this.extractionBudgetBytes = extractionBudgetBytes;
+    }
+
+    public long limitFor(String path) {
+        return SkillPackagePolicy.limitFor(path, maxScriptFileSize, getMaxDataFileSize());
     }
 
     public Set<String> getAllowedFileExtensions() {

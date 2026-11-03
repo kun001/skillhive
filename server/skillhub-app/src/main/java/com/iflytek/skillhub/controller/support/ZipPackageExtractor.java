@@ -56,6 +56,11 @@ public class ZipPackageExtractor {
                             "Duplicate package path: " + normalizedPath);
                 }
 
+                long declared = zipEntry.getSize();
+                if (declared >= 0 && declared > properties.limitFor(normalizedPath)) {
+                    throw SkillPackagePolicy.fileTooLarge(normalizedPath, declared, properties.limitFor(normalizedPath));
+                }
+
                 byte[] content = readEntry(zis, normalizedPath);
                 totalSize += content.length;
                 if (totalSize > properties.getMaxPackageSize()) {
@@ -81,11 +86,11 @@ public class ZipPackageExtractor {
         byte[] buffer = new byte[BUFFER_SIZE];
         int read;
         long fileSize = 0L;
+        long limit = properties.limitFor(path);
         while ((read = zis.read(buffer)) != -1) {
             fileSize += read;
-            if (fileSize > properties.getMaxSingleFileSize()) {
-                throw new DomainBadRequestException("error.skill.publish.package.invalid",
-                        "File too large: " + path + " (max " + properties.getMaxSingleFileSize() + " bytes)");
+            if (fileSize > limit) {
+                throw SkillPackagePolicy.fileTooLarge(path, fileSize, limit);
             }
             outputStream.write(buffer, 0, read);
         }

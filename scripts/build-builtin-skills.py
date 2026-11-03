@@ -22,8 +22,15 @@ DEFAULT_EVALS = REPO_ROOT / "builtin-skills" / "evals.json"
 DEFAULT_OUTPUT = REPO_ROOT / "builtin-skills" / "dist"
 FIXED_ZIP_TIME = (1980, 1, 1, 0, 0, 0)
 MAX_FILE_COUNT = 500
-MAX_SINGLE_FILE_SIZE = 15 * 1024 * 1024
+MAX_SCRIPT_FILE_SIZE = 2 * 1024 * 1024
+MAX_DATA_FILE_SIZE = 100 * 1024 * 1024
 MAX_TOTAL_PACKAGE_SIZE = 100 * 1024 * 1024
+SCRIPT_EXTENSIONS = {
+    ".py", ".sh", ".bash", ".zsh", ".ps1", ".bat", ".cmd",
+    ".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs",
+    ".java", ".kt", ".go", ".rs", ".rb", ".php", ".lua", ".pl",
+    ".sql", ".r",
+}
 ALLOWED_EXTENSIONS = {
     ".md", ".txt", ".json", ".yaml", ".yml", ".html", ".css", ".csv", ".pdf",
     ".toml", ".xml", ".xsd", ".xsl", ".dtd", ".ini", ".cfg", ".env",
@@ -233,8 +240,10 @@ def validate_skill(skill: dict[str, Any], source_root: Path) -> list[Path]:
         if path.suffix.lower() not in ALLOWED_EXTENSIONS:
             raise BuildError(f"{slug} contains a disallowed extension: {relative}")
         size = path.stat().st_size
-        if size > MAX_SINGLE_FILE_SIZE:
-            raise BuildError(f"{slug}/{relative} exceeds the single-file size limit")
+        limit = MAX_SCRIPT_FILE_SIZE if path.suffix.lower() in SCRIPT_EXTENSIONS else MAX_DATA_FILE_SIZE
+        if size > limit:
+            kind = "script" if limit == MAX_SCRIPT_FILE_SIZE else "data"
+            raise BuildError(f"{slug}/{relative} exceeds the {kind} file size limit ({limit} bytes)")
         total_size += size
     if total_size > MAX_TOTAL_PACKAGE_SIZE:
         raise BuildError(f"{slug} exceeds the total package size limit")

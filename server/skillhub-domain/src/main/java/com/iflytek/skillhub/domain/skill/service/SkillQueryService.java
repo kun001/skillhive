@@ -708,15 +708,18 @@ public class SkillQueryService {
         if (isBinary) {
             return new SkillVersionCompareFileDTO(path, changeType, oldSize, newSize, true, false, List.of());
         }
+        if (exceedsCompareBudget(oldSize) || exceedsCompareBudget(newSize)) {
+            return new SkillVersionCompareFileDTO(path, changeType, oldSize, newSize, false, true, List.of());
+        }
 
-        String oldContent = fromFile != null ? readTextContent(fromFile) : "";
-        String newContent = toFile != null ? readTextContent(toFile) : "";
-        List<String> oldLines = splitLines(oldContent);
-        List<String> newLines = splitLines(newContent);
-        boolean isTruncated = (oldSize != null && oldSize > COMPARE_MAX_FILE_BYTES)
-                || (newSize != null && newSize > COMPARE_MAX_FILE_BYTES)
-                || oldLines.size() > COMPARE_MAX_LINES
-                || newLines.size() > COMPARE_MAX_LINES;
+        CompareText oldText = fromFile != null ? readCompareText(fromFile) : CompareText.EMPTY;
+        CompareText newText = toFile != null ? readCompareText(toFile) : CompareText.EMPTY;
+        if (oldText.truncated() || newText.truncated()) {
+            return new SkillVersionCompareFileDTO(path, changeType, oldSize, newSize, false, true, List.of());
+        }
+        List<String> oldLines = splitLines(oldText.text());
+        List<String> newLines = splitLines(newText.text());
+        boolean isTruncated = oldLines.size() > COMPARE_MAX_LINES || newLines.size() > COMPARE_MAX_LINES;
         if (isTruncated) {
             return new SkillVersionCompareFileDTO(path, changeType, oldSize, newSize, false, true, List.of());
         }
@@ -803,6 +806,26 @@ public class SkillQueryService {
         } catch (UncheckedIOException e) {
             throw new DomainBadRequestException("error.skill.file.notFound", file.getFilePath());
         }
+    }
+
+    private boolean exceedsCompareBudget(Long size) {
+        return size != null && size > COMPARE_MAX_FILE_BYTES;
+    }
+
+    private CompareText readCompareText(SkillFile file) {
+        try (InputStream inputStream = readFileContent(file)) {
+            byte[] data = inputStream.readNBytes((int) COMPARE_MAX_FILE_BYTES + 1);
+            if (data.length > COMPARE_MAX_FILE_BYTES) {
+                return new CompareText("", true);
+            }
+            return new CompareText(new String(data, StandardCharsets.UTF_8), false);
+        } catch (java.io.IOException e) {
+            throw new IllegalStateException("Failed to read skill file content", e);
+        }
+    }
+
+    private record CompareText(String text, boolean truncated) {
+        private static final CompareText EMPTY = new CompareText("", false);
     }
 
     private String readTextContent(SkillFile file) {

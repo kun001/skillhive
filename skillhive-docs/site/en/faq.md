@@ -26,11 +26,11 @@ A: Local accounts (username and password, with an optional first administrator c
 
 ## Q: What are the requirements and limits for skill packages?
 
-A: The package root must contain `SKILL.md` with `name` and `description` in its frontmatter. By default a package may contain up to 500 files, each up to 15MB, and up to 100MB in total; file extensions must be on the allowlist.
+A: The package root must contain `SKILL.md` with `name` and `description` in its frontmatter. By default a package may contain up to 500 files and 100MB in total. Each script or source file is limited to 2MB; images, PDF, Office, JSON, Markdown (including `SKILL.md`) and other non-script files are limited to 100MB each. File extensions must be on the allowlist.
 
 ## Q: How many files can a skill package contain? What if I hit the file-count limit?
 
-A: The default limit is **500 files** (this is separate from the 15MB per-file and 100MB per-package size limits). To raise it, change the `skillhub.publish.max-file-count` setting, or override it via an environment variable at deploy time:
+A: The default limit is **500 files** (this is separate from the 2MB script, 100MB data-file and 100MB package size limits). To raise it, change the `skillhub.publish.max-file-count` setting, or override it via an environment variable at deploy time:
 
 ```bash
 SKILLHUB_PUBLISH_MAX_FILE_COUNT=1000
@@ -40,7 +40,7 @@ Recreate the containers for the change to take effect; `restart` alone does not 
 
 ## Q: How much storage can each user use?
 
-A: By default each user gets **100MB**, counting the skill package files and knowledge files they uploaded (including older versions, images and deleted files that have not been permanently deleted). Administrators (`SUPER_ADMIN`, `SKILL_ADMIN`, `USER_ADMIN`) are exempt. Uploads over the quota are rejected with 413 and a message showing the quota, the space used and the upload size. `GET /api/v1/me/storage-quota` returns your usage. The quota applies on top of the per-file limits: 15MB per skill package file and 100MB per knowledge file, but never more than the remaining quota. Self-hosted deployments can change it:
+A: By default each user gets **100MB**, counting the skill package files and knowledge files they uploaded (including older versions, images and deleted files that have not been permanently deleted). Administrators (`SUPER_ADMIN`, `SKILL_ADMIN`, `USER_ADMIN`) are exempt. Uploads over the quota are rejected with 413 and a message showing the quota, the space used and the upload size. A skill package whose declared size already exceeds the remaining quota is rejected before it is unpacked. `GET /api/v1/me/storage-quota` returns your usage. The quota applies on top of the per-file limits: 2MB per script, 100MB per other skill-package file and 100MB per knowledge file, but never more than the remaining quota. Self-hosted deployments can change it:
 
 ```bash
 SKILLHUB_USER_STORAGE_QUOTA_BYTES=524288000   # 500MB; 0 or a negative value means unlimited

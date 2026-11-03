@@ -410,7 +410,15 @@ services:
 
 ### 7.2 上传大小与用户存储配额
 
-技能包：单文件默认不超过 15MB（`skillhub.publish.max-single-file-size`），整包不超过 100MB（`skillhub.publish.max-package-size`）；一次请求还受 Spring multipart 与 nginx 的 100MB 限制。知识库：单文件不超过 100MB（`KnowledgeFilePolicy`）。
+技能包按文件类型限制单文件大小，整包仍不超过 100MB（`skillhub.publish.max-package-size`）：
+
+- 脚本和源码（`.py`、`.sh`、`.bash`、`.js`、`.ts`、`.java` 等）默认不超过 **2MB**（`skillhub.publish.max-script-file-size`，环境变量 `SKILLHUB_PUBLISH_MAX_SCRIPT_FILE_SIZE`）。安全扫描会完整解析这类文件，过大的脚本会占满扫描进程内存。
+- 图片、PDF、Office、CSV、JSON、Markdown（含 `SKILL.md`）及其他非脚本文件默认不超过 **100MB**（`skillhub.publish.max-data-file-size`，环境变量 `SKILLHUB_PUBLISH_MAX_DATA_FILE_SIZE`）。
+- 若仍设置旧项 `skillhub.publish.max-single-file-size`（`SKILLHUB_PUBLISH_MAX_SINGLE_FILE_SIZE`），它只覆盖数据文件上限，不会放宽脚本上限。
+- 一次请求还受 Spring multipart 与 nginx / Ingress 的 **110MB** 限制，以便接近 100MB 的数据文件连同 multipart 开销能到达应用。
+- 同时解包的技能包声明大小合计默认不超过 **200MB**（`skillhub.publish.extraction-budget-bytes`，`SKILLHUB_PUBLISH_EXTRACTION_BUDGET_BYTES`）。超出时返回 429，请稍后重试；设为 0 或负数可关闭该并发保护。
+
+知识库：单文件不超过 100MB（`KnowledgeFilePolicy`）。
 
 在这些单次上传限制之外，每个用户还有总存储配额，默认 100MB：
 
@@ -422,7 +430,7 @@ SKILLHUB_USER_STORAGE_QUOTA_EXEMPT_ROLES=SUPER_ADMIN,SKILL_ADMIN,USER_ADMIN
 ```
 
 - **已用空间**：用户上传的所有技能版本文件（任意状态，含草稿、驳回、撤回、归档的技能）加上其上传的知识库文件版本与 Markdown 配图（含已删除/归档但尚未永久删除的文件，因为对象仍在存储中）。恢复版本、继承配图复用同一对象，不重复计入。技能下载用的 `bundle.zip` 是派生的压缩包，不计入。
-- **校验时机**：发布技能、上传知识库文件或新版本前，若「已用 + 本次」超过配额，直接返回 413 `error.storage.quota.exceeded`，提示中给出配额、已用和本次大小（MB），不会写入任何文件或记录。替换自己未发布的同版本技能时，旧版本占用会先扣除。
+- **校验时机**：发布技能时，若上传包的声明大小已经超过剩余配额，会在整包解入内存之前直接返回 413 `error.storage.quota.exceeded`（替换自己未发布的同版本时，会先按旧版本占用抵扣）。解包后仍会按解压后的实际大小再校验一次。上传知识库文件或新版本前同样校验。提示中给出配额、已用和本次大小（MB），不会写入任何文件或记录。
 - **豁免**：拥有豁免角色的用户（默认 `SUPER_ADMIN`、`SKILL_ADMIN`、`USER_ADMIN`，初始化的 `admin` 账号即 `SUPER_ADMIN`）和系统账号（如内置技能发布账号）不受限制。
 - **与单文件限制的关系**：各项单文件/整包上限仍然生效；配额是额外的总量限制，两者都满足才能上传。例如配额剩余 20MB 时，即使知识库单文件允许 100MB，也只能上传不超过 20MB 的文件。
 - **查询**：登录用户可调用 `GET /api/v1/me/storage-quota` 查看自己的已用空间与配额。

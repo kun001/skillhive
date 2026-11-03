@@ -23,7 +23,8 @@ public class SkillPackageValidator {
     private final SkillMetadataParser metadataParser;
     private final ComplianceMetadataService complianceMetadataService;
     private final int maxFileCount;
-    private final long maxSingleFileSize;
+    private final long maxScriptFileSize;
+    private final long maxDataFileSize;
     private final long maxTotalPackageSize;
     private final Set<String> allowedExtensions;
 
@@ -32,12 +33,17 @@ public class SkillPackageValidator {
                 metadataParser,
                 new ComplianceMetadataService(),
                 SkillPackagePolicy.MAX_FILE_COUNT,
-                SkillPackagePolicy.MAX_SINGLE_FILE_SIZE,
+                SkillPackagePolicy.MAX_SCRIPT_FILE_SIZE,
+                SkillPackagePolicy.MAX_DATA_FILE_SIZE,
                 SkillPackagePolicy.MAX_TOTAL_PACKAGE_SIZE,
                 SkillPackagePolicy.ALLOWED_EXTENSIONS
         );
     }
 
+    /**
+     * Applies one size ceiling to every file. Tests and callers that have not moved to tiered
+     * limits keep their previous behavior.
+     */
     public SkillPackageValidator(SkillMetadataParser metadataParser,
                                  int maxFileCount,
                                  long maxSingleFileSize,
@@ -48,6 +54,24 @@ public class SkillPackageValidator {
                 new ComplianceMetadataService(),
                 maxFileCount,
                 maxSingleFileSize,
+                maxSingleFileSize,
+                maxTotalPackageSize,
+                allowedExtensions
+        );
+    }
+
+    public SkillPackageValidator(SkillMetadataParser metadataParser,
+                                 int maxFileCount,
+                                 long maxScriptFileSize,
+                                 long maxDataFileSize,
+                                 long maxTotalPackageSize,
+                                 Set<String> allowedExtensions) {
+        this(
+                metadataParser,
+                new ComplianceMetadataService(),
+                maxFileCount,
+                maxScriptFileSize,
+                maxDataFileSize,
                 maxTotalPackageSize,
                 allowedExtensions
         );
@@ -59,10 +83,29 @@ public class SkillPackageValidator {
                                  long maxSingleFileSize,
                                  long maxTotalPackageSize,
                                  Set<String> allowedExtensions) {
+        this(
+                metadataParser,
+                complianceMetadataService,
+                maxFileCount,
+                maxSingleFileSize,
+                maxSingleFileSize,
+                maxTotalPackageSize,
+                allowedExtensions
+        );
+    }
+
+    public SkillPackageValidator(SkillMetadataParser metadataParser,
+                                 ComplianceMetadataService complianceMetadataService,
+                                 int maxFileCount,
+                                 long maxScriptFileSize,
+                                 long maxDataFileSize,
+                                 long maxTotalPackageSize,
+                                 Set<String> allowedExtensions) {
         this.metadataParser = metadataParser;
         this.complianceMetadataService = complianceMetadataService;
         this.maxFileCount = maxFileCount;
-        this.maxSingleFileSize = maxSingleFileSize;
+        this.maxScriptFileSize = maxScriptFileSize;
+        this.maxDataFileSize = maxDataFileSize;
         this.maxTotalPackageSize = maxTotalPackageSize;
         this.allowedExtensions = allowedExtensions.stream()
                 .map(extension -> extension.toLowerCase(Locale.ROOT))
@@ -122,10 +165,11 @@ public class SkillPackageValidator {
             errors.add("Too many files: " + entries.size() + " (max: " + maxFileCount + ")");
         }
 
-        // 4. Check single file size
+        // 4. Check per-entry size. Scripts stay on the tight tier; SKILL.md and other data do not.
         for (PackageEntry entry : entries) {
-            if (entry.size() > maxSingleFileSize) {
-                errors.add("File too large: " + entry.path() + " (" + entry.size() + " bytes, max: " + maxSingleFileSize + ")");
+            long limit = SkillPackagePolicy.limitFor(entry.path(), maxScriptFileSize, maxDataFileSize);
+            if (entry.size() > limit) {
+                errors.add(SkillPackagePolicy.tooLargeDetail(entry.path(), entry.size(), limit));
             }
         }
 

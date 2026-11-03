@@ -58,12 +58,39 @@ class SkillPublishPropertiesTest {
     }
 
     @Test
-    void singleFileLimitDefaultsTo15MegabytesAndPackageLimitStays100() throws IOException {
+    void tieredFileLimitsDefaultToTwoMegabyteScriptsAndOneHundredMegabyteData() throws IOException {
         SkillPublishProperties properties = bindFromApplicationYml(Map.of());
 
-        assertThat(properties.getMaxSingleFileSize()).isEqualTo(15L * 1024 * 1024);
+        assertThat(properties.getMaxScriptFileSize()).isEqualTo(2L * 1024 * 1024);
+        assertThat(properties.getMaxDataFileSize()).isEqualTo(100L * 1024 * 1024);
+        assertThat(properties.getMaxSingleFileSize()).isEqualTo(100L * 1024 * 1024);
         assertThat(properties.getMaxPackageSize()).isEqualTo(100L * 1024 * 1024);
-        assertThat(new SkillPublishProperties().getMaxSingleFileSize()).isEqualTo(15L * 1024 * 1024);
+        assertThat(properties.getExtractionBudgetBytes()).isEqualTo(200L * 1024 * 1024);
+        assertThat(properties.limitFor("scripts/run.py")).isEqualTo(2L * 1024 * 1024);
+        assertThat(properties.limitFor("SKILL.md")).isEqualTo(100L * 1024 * 1024);
+        assertThat(new SkillPublishProperties().getMaxScriptFileSize()).isEqualTo(2L * 1024 * 1024);
+        assertThat(new SkillPublishProperties().getMaxDataFileSize()).isEqualTo(100L * 1024 * 1024);
+    }
+
+    @Test
+    void legacySingleFileSizeOverridesOnlyTheDataCeiling() throws IOException {
+        SkillPublishProperties properties = bindFromApplicationYml(
+                Map.of("SKILLHUB_PUBLISH_MAX_SINGLE_FILE_SIZE", "1048576")
+        );
+
+        assertThat(properties.getMaxDataFileSize()).isEqualTo(1024L * 1024);
+        assertThat(properties.getMaxScriptFileSize()).isEqualTo(2L * 1024 * 1024);
+    }
+
+    @Test
+    void environmentCanOverrideScriptLimitAndExtractionBudget() throws IOException {
+        SkillPublishProperties properties = bindFromApplicationYml(Map.of(
+                "SKILLHUB_PUBLISH_MAX_SCRIPT_FILE_SIZE", "4096",
+                "SKILLHUB_PUBLISH_EXTRACTION_BUDGET_BYTES", "0"
+        ));
+
+        assertThat(properties.getMaxScriptFileSize()).isEqualTo(4096L);
+        assertThat(properties.getExtractionBudgetBytes()).isZero();
     }
 
     private SkillPublishProperties bindFromApplicationYml(Map<String, Object> envVars) throws IOException {

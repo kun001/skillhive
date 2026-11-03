@@ -12,6 +12,7 @@ import com.iflytek.skillhub.domain.knowledge.*;
 import com.iflytek.skillhub.domain.skill.*;
 import com.iflytek.skillhub.domain.skill.service.*;
 import com.iflytek.skillhub.dto.McpUploadRequest;
+import com.iflytek.skillhub.service.SkillPublishAdmission;
 import com.iflytek.skillhub.service.knowledge.KnowledgeAppService;
 import java.util.Map;
 import java.util.Optional;
@@ -31,7 +32,8 @@ class McpWriteServiceTest {
     private final KnowledgeBaseRepository bases = mock(KnowledgeBaseRepository.class);
     private final McpWriteService service = new McpWriteService(namespaces, members, mock(SkillRepository.class),
             mock(KnowledgeDocumentRepository.class), bases, mock(SkillPublishService.class),
-            mock(SkillGovernanceService.class), mock(SkillPackageArchiveExtractor.class), knowledge, jdbc, mapper, mock(AuditLogService.class));
+            mock(SkillGovernanceService.class), mock(SkillPackageArchiveExtractor.class), mock(SkillPublishAdmission.class),
+            knowledge, jdbc, mapper, mock(AuditLogService.class));
     private final PlatformPrincipal actor = new PlatformPrincipal("alice", "Alice", null, null, "api_token", Set.of("SUPER_ADMIN"));
     private final McpUploadRequest file = new McpUploadRequest("retry", "guide.txt", "aGVsbG8=", null, null, null, null);
     private MockHttpServletRequest request(Set<Long> ids) {

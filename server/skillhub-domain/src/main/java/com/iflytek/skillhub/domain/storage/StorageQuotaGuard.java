@@ -22,4 +22,12 @@ public interface StorageQuotaGuard {
     default void assertCanStore(String userId, long incomingBytes) {
         assertCanStore(userId, incomingBytes, 0L);
     }
+
+    /**
+     * How many more bytes this user can store after {@code reclaimableBytes} are freed.
+     * {@link Long#MAX_VALUE} when the quota is disabled or the user is exempt.
+     */
+    default long acceptedIncomingBytes(String userId, long reclaimableBytes) {
+        return Long.MAX_VALUE;
+    }
 }

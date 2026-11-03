@@ -1521,6 +1521,103 @@ class SkillQueryServiceTest {
                 result.getContent().stream().map(SkillVersion::getVersion).toList());
     }
 
+    @Test
+    void compareDoesNotReadFilesWhoseRecordedSizeExceedsTheBudget() throws Exception {
+        String namespaceSlug = "test-ns";
+        String skillSlug = "test-skill";
+        Map<Long, NamespaceRole> roles = Map.of(1L, NamespaceRole.MEMBER);
+        Namespace namespace = new Namespace(namespaceSlug, "Test NS", "user-1");
+        setId(namespace, 1L);
+        Skill skill = new Skill(1L, skillSlug, "user-100", SkillVisibility.PUBLIC);
+        setId(skill, 1L);
+        skill.setStatus(SkillStatus.ACTIVE);
+        SkillVersion fromVersion = new SkillVersion(1L, "1.0.0", "user-100");
+        setId(fromVersion, 11L);
+        fromVersion.setStatus(SkillVersionStatus.PUBLISHED);
+        SkillVersion toVersion = new SkillVersion(1L, "1.1.0", "user-100");
+        setId(toVersion, 12L);
+        toVersion.setStatus(SkillVersionStatus.PUBLISHED);
+        SkillFile fromFile = new SkillFile(11L, "notes.txt", 500L * 1024 * 1024, "text/plain", "hash-from", "from-key");
+        SkillFile toFile = new SkillFile(12L, "notes.txt", 100L, "text/plain", "hash-to", "to-key");
+
+        when(namespaceRepository.findBySlug(namespaceSlug)).thenReturn(Optional.of(namespace));
+        when(skillRepository.findByNamespaceIdAndSlug(1L, skillSlug)).thenReturn(List.of(skill));
+        when(skillVersionRepository.findBySkillIdAndVersion(1L, "1.0.0")).thenReturn(Optional.of(fromVersion));
+        when(skillVersionRepository.findBySkillIdAndVersion(1L, "1.1.0")).thenReturn(Optional.of(toVersion));
+        when(skillFileRepository.findByVersionId(11L)).thenReturn(List.of(fromFile));
+        when(skillFileRepository.findByVersionId(12L)).thenReturn(List.of(toFile));
+        when(objectStorageService.exists("from-key")).thenReturn(true);
+        when(objectStorageService.exists("to-key")).thenReturn(true);
+
+        SkillQueryService.SkillVersionCompareDTO result = service.compareVersions(
+                namespaceSlug, skillSlug, "1.0.0", "1.1.0", "user-100", roles);
+
+        assertEquals(1, result.files().size());
+        assertTrue(result.files().get(0).truncated());
+        assertTrue(result.files().get(0).hunks().isEmpty());
+        verify(objectStorageService, never()).getObject(anyString());
+    }
+
+    @Test
+    void compareStopsReadingWhenTheStoredObjectIsLargerThanItsRecordedSize() throws Exception {
+        String namespaceSlug = "test-ns";
+        String skillSlug = "test-skill";
+        Map<Long, NamespaceRole> roles = Map.of(1L, NamespaceRole.MEMBER);
+        Namespace namespace = new Namespace(namespaceSlug, "Test NS", "user-1");
+        setId(namespace, 1L);
+        Skill skill = new Skill(1L, skillSlug, "user-100", SkillVisibility.PUBLIC);
+        setId(skill, 1L);
+        skill.setStatus(SkillStatus.ACTIVE);
+        SkillVersion fromVersion = new SkillVersion(1L, "1.0.0", "user-100");
+        setId(fromVersion, 11L);
+        fromVersion.setStatus(SkillVersionStatus.PUBLISHED);
+        SkillVersion toVersion = new SkillVersion(1L, "1.1.0", "user-100");
+        setId(toVersion, 12L);
+        toVersion.setStatus(SkillVersionStatus.PUBLISHED);
+        SkillFile fromFile = new SkillFile(11L, "notes.txt", 10L, "text/plain", "hash-from", "from-key");
+        SkillFile toFile = new SkillFile(12L, "notes.txt", 10L, "text/plain", "hash-to", "to-key");
+
+        when(namespaceRepository.findBySlug(namespaceSlug)).thenReturn(Optional.of(namespace));
+        when(skillRepository.findByNamespaceIdAndSlug(1L, skillSlug)).thenReturn(List.of(skill));
+        when(skillVersionRepository.findBySkillIdAndVersion(1L, "1.0.0")).thenReturn(Optional.of(fromVersion));
+        when(skillVersionRepository.findBySkillIdAndVersion(1L, "1.1.0")).thenReturn(Optional.of(toVersion));
+        when(skillFileRepository.findByVersionId(11L)).thenReturn(List.of(fromFile));
+        when(skillFileRepository.findByVersionId(12L)).thenReturn(List.of(toFile));
+        when(objectStorageService.exists(anyString())).thenReturn(true);
+        when(objectStorageService.getObject("from-key")).thenReturn(new InputStream() {
+            private int served;
+
+            @Override
+            public int read() {
+                byte[] one = new byte[1];
+                int count = read(one, 0, 1);
+                return count == -1 ? -1 : one[0] & 0xff;
+            }
+
+            @Override
+            public int read(byte[] buffer, int off, int len) {
+                if (len == 0) {
+                    return 0;
+                }
+                int cap = 1024 * 1024 + 1;
+                if (served >= cap) {
+                    throw new AssertionError("compare read past the 1MB cap");
+                }
+                int count = Math.min(len, cap - served);
+                served += count;
+                java.util.Arrays.fill(buffer, off, off + count, (byte) 'a');
+                return count;
+            }
+        });
+        when(objectStorageService.getObject("to-key")).thenReturn(new ByteArrayInputStream("b\n".getBytes()));
+
+        SkillQueryService.SkillVersionCompareDTO result = service.compareVersions(
+                namespaceSlug, skillSlug, "1.0.0", "1.1.0", "user-100", roles);
+
+        assertTrue(result.files().get(0).truncated());
+        assertTrue(result.files().get(0).hunks().isEmpty());
+    }
+
     private void setId(Object entity, Long id) throws Exception {
         Field idField = entity.getClass().getDeclaredField("id");
         idField.setAccessible(true);

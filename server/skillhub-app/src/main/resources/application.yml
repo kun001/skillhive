@@ -124,8 +124,9 @@ spring:
             user-name-attribute: unionId
   servlet:
     multipart:
-      max-file-size: 100MB
-      max-request-size: 100MB
+      # 110MB leaves room for multipart framing around a 100MB package entry.
+      max-file-size: 110MB
+      max-request-size: 110MB
   mail:
     host: ${SPRING_MAIL_HOST:localhost}
     port: ${SPRING_MAIL_PORT:25}
@@ -273,8 +274,14 @@ skillhub:
     exempt-roles: ${SKILLHUB_USER_STORAGE_QUOTA_EXEMPT_ROLES:SUPER_ADMIN,SKILL_ADMIN,USER_ADMIN}
   publish:
     max-file-count: 500
-    max-single-file-size: 15728640 # 15MB
+    # Scripts and source are fully parsed by the security scanner. Keep this far below the data cap.
+    max-script-file-size: 2097152 # 2MB
+    # Images, PDF, Office, JSON, Markdown (including SKILL.md) and other non-script entries.
+    # skillhub.publish.max-single-file-size still overrides this data ceiling when set.
+    max-data-file-size: 104857600 # 100MB
     max-package-size: 104857600 # 100MB
+    # Sum of uploads currently being unpacked. 0 or negative disables the guard.
+    extraction-budget-bytes: 209715200 # 200MB
     # allowed-file-extensions: uses SkillPackagePolicy.ALLOWED_EXTENSIONS by default
     # Override via SKILLHUB_PUBLISH_ALLOWED_FILE_EXTENSIONS env var if needed
   profile:

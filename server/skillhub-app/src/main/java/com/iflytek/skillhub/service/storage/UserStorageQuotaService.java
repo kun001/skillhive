@@ -49,11 +49,26 @@ public class UserStorageQuotaService implements StorageQuotaGuard {
         }
         long quota = properties.getPerUserBytes();
         long incoming = Math.max(0L, incomingBytes);
-        usageRepository.lockUserForQuotaCheck(userId);
-        long used = Math.max(0L, usageRepository.usageOf(userId).totalBytes() - Math.max(0L, reclaimableBytes));
+        long used = usedAfterReclaim(userId, reclaimableBytes);
         if (incoming > quota - used) {
             throw new StorageQuotaExceededException(quota, used, incoming);
         }
+    }
+
+    @Override
+    @Transactional
+    public long acceptedIncomingBytes(String userId, long reclaimableBytes) {
+        if (!properties.isEnabled() || userId == null || isExempt(userId)) {
+            return Long.MAX_VALUE;
+        }
+        long quota = properties.getPerUserBytes();
+        long used = usedAfterReclaim(userId, reclaimableBytes);
+        return Math.max(0L, quota - used);
+    }
+
+    private long usedAfterReclaim(String userId, long reclaimableBytes) {
+        usageRepository.lockUserForQuotaCheck(userId);
+        return Math.max(0L, usageRepository.usageOf(userId).totalBytes() - Math.max(0L, reclaimableBytes));
     }
 
     @Transactional(readOnly = true)

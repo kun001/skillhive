@@ -15,6 +15,7 @@ import com.iflytek.skillhub.domain.skill.SkillRepository;
 import com.iflytek.skillhub.domain.skill.service.*;
 import com.iflytek.skillhub.dto.McpKnowledgeRequest;
 import com.iflytek.skillhub.dto.knowledge.*;
+import com.iflytek.skillhub.service.SkillPublishAdmission;
 import com.iflytek.skillhub.service.knowledge.KnowledgeAppService;
 import java.security.MessageDigest;
 import java.util.*;
@@ -35,7 +36,7 @@ class McpKnowledgeCrudTest {
     private final ObjectMapper mapper = new ObjectMapper();
     private final McpWriteService service = new McpWriteService(namespaces, members, mock(SkillRepository.class), documents, bases,
             mock(SkillPublishService.class), mock(SkillGovernanceService.class), mock(SkillPackageArchiveExtractor.class),
-            knowledge, jdbc, mapper, mock(AuditLogService.class));
+            mock(SkillPublishAdmission.class), knowledge, jdbc, mapper, mock(AuditLogService.class));
     private final PlatformPrincipal actor = new PlatformPrincipal("alice", "Alice", null, null, "api_token", Set.of("SUPER_ADMIN"));
     private final Map<Long, NamespaceRole> owner = Map.of(1L, NamespaceRole.OWNER);
     private NamespaceMember member;

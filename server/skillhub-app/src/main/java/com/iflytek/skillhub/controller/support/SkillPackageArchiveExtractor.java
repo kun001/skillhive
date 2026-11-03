@@ -20,17 +20,30 @@ public class SkillPackageArchiveExtractor {
 
     public record ExtractionResult(List<PackageEntry> entries, List<String> warnings) {}
 
+    /**
+     * Called with the uncompressed total before a large entry is buffered, and again after it is
+     * read. Implementations throw when that total cannot be stored.
+     */
+    @FunctionalInterface
+    public interface UncompressedBudget {
+        void ensureWithinQuota(long uncompressedBytes);
+    }
+
+    private final SkillPublishProperties properties;
     private final long maxTotalPackageSize;
-    private final long maxSingleFileSize;
     private final int maxFileCount;
 
     public SkillPackageArchiveExtractor(SkillPublishProperties properties) {
+        this.properties = properties;
         this.maxTotalPackageSize = properties.getMaxPackageSize();
-        this.maxSingleFileSize = properties.getMaxSingleFileSize();
         this.maxFileCount = properties.getMaxFileCount();
     }
 
     public List<PackageEntry> extract(MultipartFile file) throws IOException {
+        return extract(file, null);
+    }
+
+    public List<PackageEntry> extract(MultipartFile file, UncompressedBudget uncompressedBudget) throws IOException {
         if (file.getSize() > maxTotalPackageSize) {
             throw new IllegalArgumentException(
                     "Package too large: " + file.getSize() + " bytes (max: "
@@ -61,13 +74,23 @@ public class SkillPackageArchiveExtractor {
                 }
 
                 String normalizedPath = SkillPackagePolicy.normalizeEntryPath(zipEntry.getName());
+                long declared = zipEntry.getSize();
+                if (declared >= 0) {
+                    ensureEntryLimit(normalizedPath, declared);
+                    if (uncompressedBudget != null) {
+                        uncompressedBudget.ensureWithinQuota(totalSize + declared);
+                    }
+                    if (totalSize + declared > maxTotalPackageSize) {
+                        throw packageTooLarge(totalSize + declared);
+                    }
+                }
                 byte[] content = readEntry(zis, normalizedPath);
                 totalSize += content.length;
+                if (uncompressedBudget != null) {
+                    uncompressedBudget.ensureWithinQuota(totalSize);
+                }
                 if (totalSize > maxTotalPackageSize) {
-                    throw new IllegalArgumentException(
-                            "Package too large: " + totalSize + " bytes (max: "
-                                    + maxTotalPackageSize + ")"
-                    );
+                    throw packageTooLarge(totalSize);
                 }
 
                 entries.add(new PackageEntry(
@@ -84,7 +107,12 @@ public class SkillPackageArchiveExtractor {
     }
 
     public ExtractionResult extractWithWarnings(MultipartFile file) throws IOException {
-        List<PackageEntry> entries = extract(file);
+        return extractWithWarnings(file, null);
+    }
+
+    public ExtractionResult extractWithWarnings(MultipartFile file, UncompressedBudget uncompressedBudget)
+            throws IOException {
+        List<PackageEntry> entries = extract(file, uncompressedBudget);
         return promoteSingleSkillMdDirectory(entries);
     }
 
@@ -92,7 +120,7 @@ public class SkillPackageArchiveExtractor {
      * If all file paths share a single root directory prefix (e.g., "my-skill/xxx"),
      * strip that prefix. Otherwise return entries unchanged.
      */
-    static List<PackageEntry> stripSingleRootDirectory(List<PackageEntry> entries) {
+    public static List<PackageEntry> stripSingleRootDirectory(List<PackageEntry> entries) {
         if (entries.isEmpty()) return entries;
 
         Set<String> rootSegments = new HashSet<>();
@@ -119,7 +147,7 @@ public class SkillPackageArchiveExtractor {
                 .toList();
     }
 
-    static ExtractionResult promoteSingleSkillMdDirectory(List<PackageEntry> entries) {
+    public static ExtractionResult promoteSingleSkillMdDirectory(List<PackageEntry> entries) {
         boolean hasRootSkillMd = entries.stream()
                 .anyMatch(e -> SkillPackagePolicy.SKILL_MD_PATH.equals(e.path()));
         if (hasRootSkillMd) {
@@ -180,21 +208,32 @@ public class SkillPackageArchiveExtractor {
     }
 
     private byte[] readEntry(ZipInputStream zis, String path) throws IOException {
+        long limit = properties.limitFor(path);
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         byte[] buffer = new byte[8192];
         long totalRead = 0;
         int read;
         while ((read = zis.read(buffer)) != -1) {
             totalRead += read;
-            if (totalRead > maxSingleFileSize) {
-                throw new IllegalArgumentException(
-                        "File too large: " + path + " (" + totalRead + " bytes, max: "
-                                + maxSingleFileSize + ")"
-                );
+            if (totalRead > limit) {
+                throw SkillPackagePolicy.fileTooLarge(path, totalRead, limit);
             }
             outputStream.write(buffer, 0, read);
         }
         return outputStream.toByteArray();
+    }
+
+    private void ensureEntryLimit(String path, long size) {
+        long limit = properties.limitFor(path);
+        if (size > limit) {
+            throw SkillPackagePolicy.fileTooLarge(path, size, limit);
+        }
+    }
+
+    private IllegalArgumentException packageTooLarge(long totalSize) {
+        return new IllegalArgumentException(
+                "Package too large: " + totalSize + " bytes (max: " + maxTotalPackageSize + ")"
+        );
     }
 
     private String determineContentType(String filename) {
