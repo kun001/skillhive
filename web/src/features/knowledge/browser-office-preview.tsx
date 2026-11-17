@@ -19,13 +19,12 @@ export function KnowledgeBrowserOfficePreview({ document }: { document: Knowledg
   })
   const Canvas = document.fileExtension?.toLowerCase() === 'pptx' ? PptxCanvas : DocxCanvas
   return <div className="space-y-4 p-4 sm:p-6">
-    <div className="flex flex-wrap items-center justify-between gap-3">
-      <p className="text-sm text-muted-foreground">{t('knowledge.preview.officeFull')}</p>
-      {document.canDownload ? <a href={knowledgeApi.contentUrl(document.id, { version: document.currentVersion })} download
+    {document.canDownload ? <div className="flex flex-wrap items-center justify-end gap-3">
+      <a href={knowledgeApi.contentUrl(document.id, { version: document.currentVersion })} download
         className={buttonVariants({ variant: 'outline', size: 'sm' })}>
         <Download className="h-4 w-4" aria-hidden />{t('knowledge.preview.downloadOriginal')}
-      </a> : null}
-    </div>
+      </a>
+    </div> : null}
     {content.isPending ? <div role="status" className="flex min-h-48 items-center justify-center gap-2 text-sm text-muted-foreground">
       <Loader2 className="h-4 w-4 animate-spin" aria-hidden />{t('knowledge.preview.loading')}
     </div> : null}

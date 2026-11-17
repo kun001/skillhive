@@ -4,7 +4,12 @@
 
 ## 待发布 / Unreleased
 
-暂无。
+- 知识库文件夹的操作菜单不再被右侧文件列表挡住。菜单挂到页面独立的浮层里，嵌套文件夹、侧栏滚动和靠近窗口边缘时都会完整显示，并避开顶部导航。
+- Knowledge-base folder menus are no longer covered by the file list. The menu is drawn in the page portal, so it stays visible for nested folders, a scrolling sidebar and viewport edges, and it stays clear of the top bar.
+- Word 预览补上原先显示不出来的字。部分嵌入字体的字符表指向没有轮廓的空字形，浏览器会把这些字画成零宽度，或留出空白却不画出字形；预览仍保留版式，只有嵌入字体画不出来的字改用系统中文字体。
+- Word preview shows characters that were invisible. Some embedded fonts map characters to empty glyphs, so the browser drew them with zero width or left a blank gap. The formatted preview remains; only glyphs the embedded font cannot draw use a system CJK font.
+- 去掉 Office 预览上方的「全文预览」标题，文档内容和下载原文件保持不变。
+- The “Full document preview” label above Office previews is removed. The document preview and original-file download stay.
 
 ## v0.4.5 — 2026-11-03
 
