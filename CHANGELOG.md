@@ -4,6 +4,13 @@
 
 ## 待发布 / Unreleased
 
+暂无。
+
+## v0.4.7 — 2026-11-17
+
+> 生产环境已于 2026-11-17 17:10（北京时间）切换到 `v0.4.7`。数据库备份、容器健康检查和线上冒烟检查均通过。[部署记录](https://github.com/kun001/skillhive/actions/runs/44052611723)
+> Production switched to `v0.4.7` on 2026-11-17 at 17:10 China Standard Time. Database backup, container health checks, and production smoke tests passed. [Deployment run](https://github.com/kun001/skillhive/actions/runs/44052611723)
+
 - 知识库支持上传 SQL 文件、预览源码和下载原件。较小文件显示 SQL 语法高亮。
 - Knowledge bases support SQL uploads, source previews, and original downloads. Smaller files use SQL syntax highlighting.
 - Word 预览检测到内嵌方正仿宋缺字时，优先使用本机完整的仿宋字体，减少同一段正文的字体混排。
