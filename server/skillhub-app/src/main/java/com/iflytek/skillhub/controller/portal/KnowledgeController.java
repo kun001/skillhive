@@ -394,6 +394,7 @@ public class KnowledgeController extends BaseApiController {
                 KnowledgePreviewKind.MARKDOWN, KnowledgePreviewKind.TEXT, KnowledgePreviewKind.OFFICE).contains(content.previewKind());
         MediaType mediaType = switch (content.previewKind()) {
             case MARKDOWN, TEXT -> new MediaType(MediaType.TEXT_PLAIN, StandardCharsets.UTF_8);
+            case HTML -> MediaType.APPLICATION_OCTET_STREAM;
             default -> MediaType.parseMediaType(content.contentType());
         };
         ContentDisposition contentDisposition = (inline ? ContentDisposition.inline() : ContentDisposition.attachment())

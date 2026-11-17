@@ -1,5 +1,6 @@
 package com.iflytek.skillhub.filter;
 
+import com.iflytek.skillhub.config.HtmlPreviewConfig;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -26,7 +27,7 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
 
     private static final Logger log = LoggerFactory.getLogger(RequestLoggingFilter.class);
     private static final Set<String> SKIP_PREFIXES = Set.of(
-            "/actuator", "/favicon.ico", "/assets/"
+            "/actuator", "/favicon.ico", "/assets/", HtmlPreviewConfig.PATH + "/"
     );
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)

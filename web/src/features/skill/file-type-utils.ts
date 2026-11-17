@@ -5,6 +5,7 @@
 
 // Maximum file size for text preview (1MB)
 const MAX_PREVIEW_SIZE = 1024 * 1024
+export const MAX_SYNTAX_HIGHLIGHT_BYTES = 500 * 1024
 
 // File extensions that support text preview
 const PREVIEWABLE_EXTENSIONS = new Set([

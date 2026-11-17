@@ -10,7 +10,14 @@ const basePath = validateBasePath(process.env.VITE_BASE_PATH ?? '/')
 const apiProxyTarget = process.env.SKILLHUB_API_PROXY ?? 'http://localhost:8080'
 export default defineConfig({
   base: basePath,
-  plugins: [react()],
+  plugins: [
+    react(),
+    {
+      name: 'local-html-preview-origin',
+      apply: 'serve',
+      transformIndexHtml: (html) => html.replace('__SKILLHUB_HTML_PREVIEW_ORIGIN__', 'http://preview.localhost:8080'),
+    },
+  ],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

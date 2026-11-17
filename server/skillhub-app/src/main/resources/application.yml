@@ -241,6 +241,9 @@ skillhub:
     response-format: ${SKILLHUB_INTRODUCTION_RESPONSE_FORMAT:json_schema}
     poll-interval-ms: ${SKILLHUB_INTRODUCTION_POLL_INTERVAL_MS:5000}
   knowledge:
+    html-preview:
+      origin: ${SKILLHUB_KNOWLEDGE_HTML_PREVIEW_ORIGIN:}
+      app-origin: ${SKILLHUB_KNOWLEDGE_HTML_PREVIEW_APP_ORIGIN:}
     text:
       # Markdown renditions of uploaded files, extracted on this server.
       enabled: ${SKILLHUB_KNOWLEDGE_TEXT_ENABLED:true}

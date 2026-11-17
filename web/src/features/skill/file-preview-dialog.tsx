@@ -15,6 +15,7 @@ import {
   getLanguageForHighlight,
   getFileExtension,
   isBrowserOfficePreviewable,
+  MAX_SYNTAX_HIGHLIGHT_BYTES,
 } from './file-type-utils'
 import type { FileTreeNode } from './file-tree-builder'
 
@@ -109,9 +110,7 @@ export function FilePreviewDialog({
   const fileSize = node.file?.fileSize || 0
   const language = getLanguageForHighlight(node.name)
 
-  // Syntax highlighting threshold: 500KB
-  const SYNTAX_HIGHLIGHT_THRESHOLD = 500 * 1024
-  const shouldHighlight = language && fileSize <= SYNTAX_HIGHLIGHT_THRESHOLD
+  const shouldHighlight = language && fileSize <= MAX_SYNTAX_HIGHLIGHT_BYTES
 
   /**
    * Copies file content to clipboard with animation feedback.

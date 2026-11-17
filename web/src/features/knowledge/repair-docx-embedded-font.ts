@@ -25,6 +25,14 @@ const DOCX_CJK_FALLBACKS = [
 
 const FALLBACK_SENTINEL = 'Droid Sans Fallback'
 const GENERIC_FAMILIES = new Set(['inherit', 'initial', 'unset', 'revert', 'serif', 'sans-serif', 'monospace', 'cursive', 'fantasy', 'system-ui'])
+const FOUNDER_FANGSONG_NAMES = new Set(['方正仿宋_gbk', 'fzfangsong-z02'])
+const LOCAL_FANGSONG = 'SkillHiveDocxLocalFangSong'
+const HAN = /\p{Script=Han}/u
+const LOCAL_FANGSONG_CSS = `@font-face {
+  font-family: ${LOCAL_FANGSONG};
+  src: local("FZFangSong-Z02"), local("FZFSK--GBK1-0"), local("方正仿宋_GBK"), local("FangSong"), local("仿宋");
+  unicode-range: U+2E80-33FF, U+3400-9FFF, U+F900-FAFF, U+FF00-FFEF, U+20000-323AF;
+}`
 
 interface TableRecord {
   tag: string
@@ -435,10 +443,16 @@ function decodeDataUrl(url: string): Uint8Array | null {
 }
 
 /** Append system CJK faces after the document fonts, renaming repaired embeds. */
-export function mapDocxFontFamily(list: string, renamed: ReadonlyMap<string, string>): string {
-  const parts = splitFontFamily(list).map((part) => {
-    const next = renamed.get(unquote(part))
-    return next ? quoteFamily(next) : part.trim()
+export function mapDocxFontFamily(
+  list: string,
+  renamed: ReadonlyMap<string, string>,
+  preferLocal?: ReadonlySet<string>,
+): string {
+  const parts = splitFontFamily(list).flatMap((part) => {
+    const family = unquote(part)
+    const next = renamed.get(family)
+    const replacement = next ? quoteFamily(next) : part
+    return preferLocal?.has(family.toLowerCase()) ? [LOCAL_FANGSONG, replacement] : [replacement]
   })
   const bare = parts.map(unquote)
   if (bare.length === 1 && GENERIC_FAMILIES.has(bare[0])) return parts[0]
@@ -477,7 +491,11 @@ function planStyle(css: string): { body: string; faces: PlannedFace[] } {
   return { body, faces }
 }
 
-function finishStyle(planned: { body: string; faces: PlannedFace[] }, renamed: ReadonlyMap<string, string>): string {
+function finishStyle(
+  planned: { body: string; faces: PlannedFace[] },
+  renamed: ReadonlyMap<string, string>,
+  preferLocal: ReadonlySet<string>,
+): string {
   const faces = planned.faces.map((face) => {
     const nextName = renamed.get(face.family)
     if (!nextName) return face.block
@@ -489,9 +507,40 @@ function finishStyle(planned: { body: string; faces: PlannedFace[] }, renamed: R
     return block
   })
   const withLists = planned.body.replace(/font-family\s*:\s*([^;}{]+)/gi, (_match, list: string) => (
-    `font-family: ${mapDocxFontFamily(list, renamed)}`
+    `font-family: ${mapDocxFontFamily(list, renamed, preferLocal)}`
   ))
   return withLists.replace(/\/\*SHFACE(\d+)\*\//g, (_match, index) => faces[Number(index)] ?? '')
+}
+
+function fangsongFacesWithMissingText(root: ParentNode, faces: PlannedFace[]): Set<string> {
+  const coverage = new Map<string, Set<number>>()
+  faces.forEach(({ family, repaired }) => {
+    const key = family.toLowerCase()
+    if (repaired && FOUNDER_FANGSONG_NAMES.has(key)) {
+      coverage.set(key, new Set(fontUnicodeCodepoints(repaired) ?? []))
+    }
+  })
+  const preferLocal = new Set<string>()
+  if (!coverage.size) return preferLocal
+
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
+  while (coverage.size && walker.nextNode()) {
+    const node = walker.currentNode
+    const element = node.parentElement
+    if (!element || element.closest('style')) continue
+    const text = node.textContent ?? ''
+    if (!HAN.test(text)) continue
+    const families = splitFontFamily(getComputedStyle(element).fontFamily)
+    families.forEach((family) => {
+      const name = unquote(family).toLowerCase()
+      const codes = coverage.get(name)
+      if (codes && [...text].some((char) => HAN.test(char) && !codes.has(char.codePointAt(0)!))) {
+        preferLocal.add(name)
+        coverage.delete(name)
+      }
+    })
+  }
+  return preferLocal
 }
 
 /** Repair embedded faces inside a rendered docx-preview tree and load the replacements. */
@@ -506,14 +555,20 @@ export async function repairDocxPreviewFonts(root: ParentNode): Promise<void> {
       }
     })
   })
+  const preferLocal = fangsongFacesWithMissingText(root, planned.flatMap((style) => style.faces))
+  if (preferLocal.size) {
+    const localFace = document.createElement('style')
+    localFace.textContent = LOCAL_FANGSONG_CSS
+    root.prepend(localFace)
+  }
   styles.forEach((style, index) => {
-    const next = finishStyle(planned[index], renamed)
+    const next = finishStyle(planned[index], renamed, preferLocal)
     if (next !== style.textContent) style.textContent = next
   })
   root.querySelectorAll<HTMLElement>('*').forEach((element) => {
     const family = element.style.fontFamily
     if (!family) return
-    const next = mapDocxFontFamily(family, renamed)
+    const next = mapDocxFontFamily(family, renamed, preferLocal)
     if (next !== family) element.style.fontFamily = next
   })
   if (renamed.size > 0 && document.fonts?.load) {

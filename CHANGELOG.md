@@ -4,7 +4,12 @@
 
 ## 待发布 / Unreleased
 
-暂无。
+- 知识库支持上传 SQL 文件、预览源码和下载原件。较小文件显示 SQL 语法高亮。
+- Knowledge bases support SQL uploads, source previews, and original downloads. Smaller files use SQL syntax highlighting.
+- Word 预览检测到内嵌方正仿宋缺字时，优先使用本机完整的仿宋字体，减少同一段正文的字体混排。
+- Word previews prefer an installed FangSong font for affected text when the embedded Founder FangSong file is missing glyphs.
+- 知识库支持上传 HTML 原型。部署方可配置独立 HTTPS 预览域，启用隔离的交互预览。
+- Knowledge bases accept HTML prototypes. Deployments can configure a dedicated HTTPS preview origin to enable isolated interactive previews.
 
 ## v0.4.6 — 2026-11-17
 
