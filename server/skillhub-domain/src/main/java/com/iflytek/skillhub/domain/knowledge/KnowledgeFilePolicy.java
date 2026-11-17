@@ -39,8 +39,11 @@ public class KnowledgeFilePolicy {
             Map.entry("mdx", new FileType("text/plain", KnowledgePreviewKind.TEXT)),
             Map.entry("markdown", new FileType("text/markdown", KnowledgePreviewKind.MARKDOWN)),
             Map.entry("txt", new FileType("text/plain", KnowledgePreviewKind.TEXT)),
+            Map.entry("sql", new FileType("text/plain", KnowledgePreviewKind.TEXT)),
             Map.entry("csv", new FileType("text/csv", KnowledgePreviewKind.NONE)),
             Map.entry("json", new FileType("application/json", KnowledgePreviewKind.NONE)),
+            Map.entry("html", new FileType("application/octet-stream", KnowledgePreviewKind.HTML)),
+            Map.entry("htm", new FileType("application/octet-stream", KnowledgePreviewKind.HTML)),
             Map.entry("doc", new FileType("application/msword", KnowledgePreviewKind.NONE)),
             Map.entry("docx", new FileType(
                     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",

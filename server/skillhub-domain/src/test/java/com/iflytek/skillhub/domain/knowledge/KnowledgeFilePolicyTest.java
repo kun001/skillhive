@@ -25,10 +25,25 @@ class KnowledgeFilePolicyTest {
 
     @Test
     void rejectsExecutableAndMarkupTypes() {
-        assertThatThrownBy(() -> policy.validateUpload("page.html", 10)).isInstanceOf(DomainBadRequestException.class);
         assertThatThrownBy(() -> policy.validateUpload("icon.svg", 10)).isInstanceOf(DomainBadRequestException.class);
         assertThatThrownBy(() -> policy.validateUpload("run.exe", 10)).isInstanceOf(DomainBadRequestException.class);
         assertThatThrownBy(() -> policy.validateUpload("noextension", 10)).isInstanceOf(DomainBadRequestException.class);
+    }
+
+    @Test
+    void acceptsHtmlButStoresItWithAnInertContentType() {
+        for (String extension : java.util.List.of("html", "htm")) {
+            assertThat(policy.validateUpload("prototype." + extension, 10)).isEqualTo(extension);
+            assertThat(policy.contentTypeFor(extension)).isEqualTo("application/octet-stream");
+            assertThat(policy.previewKindFor(extension)).isEqualTo(KnowledgePreviewKind.HTML);
+        }
+    }
+
+    @Test
+    void acceptsSqlForPlainTextPreview() {
+        assertThat(policy.validateUpload("数据库脚本.SQL", 10)).isEqualTo("sql");
+        assertThat(policy.contentTypeFor("sql")).isEqualTo("text/plain");
+        assertThat(policy.previewKindFor("sql")).isEqualTo(KnowledgePreviewKind.TEXT);
     }
 
     @Test

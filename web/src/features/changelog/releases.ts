@@ -14,6 +14,21 @@ export interface ReleaseNote {
 // Confirm the date and image tag when deploying; Git submission is not deployment.
 export const releases: ReleaseNote[] = [
   {
+    id: '20261117-knowledge-sql-and-word-preview',
+    version: 'v0.4.7',
+    date: '2026-11-17',
+    title: { zh: '知识库 SQL 和 Word 预览', en: 'Knowledge base SQL and Word previews' },
+    summary: {
+      zh: '知识库可以上传和预览 SQL 文件，改善 Word 仿宋正文的显示一致性，并支持上传 HTML 原型。',
+      en: 'Knowledge bases support SQL uploads and previews, more consistent FangSong text in Word previews, and HTML prototype uploads.',
+    },
+    changes: [
+      { zh: 'SQL 文件以源码展示，支持语法高亮和原文件下载。', en: 'SQL files display as source with syntax highlighting and original downloads.' },
+      { zh: '内嵌方正仿宋缺字时，Word 预览优先让受影响的正文使用本机完整仿宋。', en: 'When an embedded Founder FangSong font lacks glyphs, Word previews prefer an installed FangSong font for the affected text.' },
+      { zh: '知识库可上传 HTML 原型，配置独立 HTTPS 预览域后可启用交互预览。', en: 'Knowledge bases accept HTML prototypes. A dedicated HTTPS preview origin enables interactive previews.' },
+    ],
+  },
+  {
     id: '20261117-knowledge-menu-docx-preview',
     version: 'v0.4.6',
     date: '2026-11-17',

@@ -5,12 +5,15 @@ import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/features/auth/use-auth'
 import { knowledgeApi } from '@/api/client'
 import type { KnowledgeDocument } from '@/api/knowledge-types'
+import { CodeRenderer } from '@/features/skill/code-renderer'
+import { MAX_SYNTAX_HIGHLIGHT_BYTES } from '@/features/skill/file-type-utils'
 import { MarkdownRenderer } from '@/features/skill/markdown-renderer'
 import { buttonVariants } from '@/shared/ui/button'
 import { KnowledgeFileIcon } from './file-icon'
 import { knowledgeKeys } from './use-knowledge-queries'
 import { resolveImagePath } from './markdown-images'
 import { KnowledgeBrowserOfficePreview } from './browser-office-preview'
+import { KnowledgeHtmlPreview, MAX_HTML_PREVIEW_BYTES } from './html-preview'
 import { MdxPreview } from './mdx-preview'
 
 /** Text previews beyond this size are offered as downloads instead of rendering in the page. */
@@ -56,7 +59,8 @@ export function KnowledgeFilePreview({ document }: { document: KnowledgeDocument
   const { user } = useAuth()
   const url = knowledgeApi.contentUrl(document.id, { version: document.currentVersion, inline: true })
   const kind = document.previewKind
-  const isMdx = document.fileExtension?.toLowerCase() === 'mdx'
+  const extension = document.fileExtension?.toLowerCase()
+  const isMdx = extension === 'mdx'
   const hasImages = kind === 'MARKDOWN' || isMdx
   const isText = kind === 'MARKDOWN' || kind === 'TEXT'
   const textTooLarge = isText && document.sizeBytes > MAX_TEXT_PREVIEW_BYTES
@@ -95,7 +99,7 @@ export function KnowledgeFilePreview({ document }: { document: KnowledgeDocument
       />
     )
   }
-  if (kind === 'NONE' || (kind === 'OFFICE' && !['docx', 'pptx'].includes(document.fileExtension?.toLowerCase() ?? ''))) {
+  if (kind === 'NONE' || (kind === 'OFFICE' && !['docx', 'pptx'].includes(extension ?? ''))) {
     return (
       <PreviewMessage
         document={document}
@@ -106,6 +110,12 @@ export function KnowledgeFilePreview({ document }: { document: KnowledgeDocument
   }
   if (kind === 'OFFICE') {
     return <KnowledgeBrowserOfficePreview key={`${document.id}:${document.currentVersion}`} document={document} />
+  }
+  if (kind === 'HTML') {
+    if (document.sizeBytes > MAX_HTML_PREVIEW_BYTES) {
+      return <PreviewMessage document={document} title={t('knowledge.preview.tooLarge')} />
+    }
+    return <KnowledgeHtmlPreview key={`${document.id}:${document.currentVersion}:${user?.userId ?? 'guest'}`} document={document} />
   }
   if (textTooLarge) {
     return <PreviewMessage document={document} title={t('knowledge.preview.tooLarge')} />
@@ -144,6 +154,9 @@ export function KnowledgeFilePreview({ document }: { document: KnowledgeDocument
         }} />
       </div>
     )
+  }
+  if (kind === 'TEXT' && extension === 'sql' && document.sizeBytes <= MAX_SYNTAX_HIGHLIGHT_BYTES) {
+    return <CodeRenderer code={text} language="sql" className="min-w-0 px-4 [&_pre]:max-h-[78vh] [&_pre]:overflow-y-auto" />
   }
   return (
     <pre className="max-h-[78vh] overflow-auto whitespace-pre-wrap break-words px-6 py-5 font-mono text-[13px] leading-6 text-foreground/90">

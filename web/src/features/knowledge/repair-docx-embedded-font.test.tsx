@@ -79,6 +79,44 @@ describe('embedded Word font cmap repair', () => {
     const once = mapDocxFontFamily('"Times New Roman", BrokenFace', new Map([['BrokenFace', 'SkillHiveEmbedded0']]))
     expect(mapDocxFontFamily(once, new Map())).toBe(once)
   })
+
+  it.each([['甲乙', true], ['甲', false]])(
+    'prefers one local FangSong for the whole font only if its text uses missing Han glyphs (%s)',
+    async (body, useLocal) => {
+      const host = document.createElement('div')
+      const style = document.createElement('style')
+      const family = '"方正仿宋_GBK"'
+      style.textContent = [
+        `@font-face { font-family: ${family}; src: url(data:font/ttf;base64,${toBase64(brokenFont)}); }`,
+        `.word-body { font-family: "Times New Roman", ${family}; }`,
+      ].join('\n')
+      const paragraph = document.createElement('p')
+      paragraph.className = 'word-body'
+      paragraph.textContent = body
+      const otherBody = document.createElement('p')
+      otherBody.style.fontFamily = family
+      otherBody.textContent = '甲'
+      const heading = document.createElement('h1')
+      heading.style.fontFamily = 'OtherFace'
+      heading.textContent = '乙'
+      host.append(style, paragraph, otherBody, heading)
+      document.body.append(host)
+      try {
+        await repairDocxPreviewFonts(host)
+        const local = 'SkillHiveDocxLocalFangSong'
+        const computed = getComputedStyle(paragraph).fontFamily
+        expect(computed.includes(local)).toBe(useLocal)
+        expect(otherBody.style.fontFamily.includes(local)).toBe(useLocal)
+        expect(heading.style.fontFamily).not.toContain(local)
+        if (useLocal) {
+          expect(computed).toContain(`"Times New Roman", ${local}, "SkillHiveEmbedded0"`)
+          expect(host.querySelectorAll('style')[0].textContent).toContain('local("FangSong")')
+        }
+      } finally {
+        host.remove()
+      }
+    },
+  )
 })
 
 describe('synthetic docx with an empty embedded glyph', () => {

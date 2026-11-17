@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react'
-import { File, FileArchive, FileImage, FileSpreadsheet, FileText, Presentation } from 'lucide-react'
+import { File, FileArchive, FileCode, FileImage, FileSpreadsheet, FileText, Presentation } from 'lucide-react'
 
 /** Filter categories shown in the type dropdown; each maps to the extensions the backend accepts. */
 export const KNOWLEDGE_FILE_CATEGORIES = [
@@ -8,7 +8,8 @@ export const KNOWLEDGE_FILE_CATEGORIES = [
   { id: 'excel', extensions: ['xls', 'xlsx', 'csv'] },
   { id: 'ppt', extensions: ['ppt', 'pptx'] },
   { id: 'image', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp'] },
-  { id: 'text', extensions: ['md', 'mdx', 'markdown', 'txt', 'json'] },
+  { id: 'text', extensions: ['md', 'mdx', 'markdown', 'txt', 'json', 'sql'] },
+  { id: 'html', extensions: ['html', 'htm'] },
   { id: 'archive', extensions: ['zip', 'rar', '7z'] },
 ] as const
 
@@ -41,6 +42,7 @@ const CATEGORY_ICONS: Record<KnowledgeFileCategoryId, LucideIcon> = {
   ppt: Presentation,
   image: FileImage,
   text: FileText,
+  html: FileCode,
   archive: FileArchive,
 }
 
@@ -51,6 +53,7 @@ const CATEGORY_TONES: Record<KnowledgeFileCategoryId, string> = {
   ppt: 'text-orange-600 bg-orange-500/10 dark:text-orange-300',
   image: 'text-violet-600 bg-violet-500/10 dark:text-violet-300',
   text: 'text-stone-600 bg-stone-500/10 dark:text-stone-300',
+  html: 'text-indigo-600 bg-indigo-500/10 dark:text-indigo-300',
   archive: 'text-amber-700 bg-amber-500/10 dark:text-amber-300',
 }
 
