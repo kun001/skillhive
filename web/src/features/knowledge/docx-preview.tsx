@@ -1,6 +1,7 @@
 import { Loader2 } from 'lucide-react'
 import { useEffect, useId, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { repairDocxPreviewFonts, revealZeroWidthGlyphs } from './repair-docx-embedded-font'
 
 /** Keep the document's layout intact and scale the entire paper to fit the viewport. */
 export function DocxCanvas({ blob, title }: { blob: Blob; title: string }) {
@@ -38,6 +39,14 @@ export function DocxCanvas({ blob, title }: { blob: Blob; title: string }) {
         if (!href.startsWith('#') && !/^(https?:|mailto:|tel:)/i.test(href.trim())) link.removeAttribute('href')
       })
       host.replaceChildren(styles, rendered)
+      // Embedded subset fonts can advertise empty glyphs. Drop those cmap entries
+      // before measuring, then reveal any character that still has no advance.
+      try {
+        await repairDocxPreviewFonts(host)
+        revealZeroWidthGlyphs(rendered)
+      } catch {
+        // Keep the formatted preview if a font cannot be rewritten.
+      }
       // Only position the paper. Never constrain its tables, images or text to the UI width.
       const pages = Array.from(rendered.children).filter((node): node is HTMLElement => node instanceof HTMLElement)
       pages.forEach((page) => {

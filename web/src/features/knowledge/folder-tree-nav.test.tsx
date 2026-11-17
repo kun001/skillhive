@@ -1,0 +1,76 @@
+// @vitest-environment jsdom
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { KnowledgeFolder } from '@/api/knowledge-types'
+import { PORTAL_ROOT_ID } from '@/shared/lib/portal-container'
+import { buildFolderTree } from './folder-tree'
+import { KnowledgeFolderTreeNav } from './folder-tree-nav'
+
+vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key }) }))
+
+function folder(id: number, name: string, parentId?: number): KnowledgeFolder {
+  return { id, name, parentId, documentCount: 0, canManage: true }
+}
+
+const folders = [folder(1, 'Parent'), folder(2, 'Child', 1), folder(3, 'Nested', 2)]
+
+function mount() {
+  return render(
+    <div>
+      <aside data-testid="sidebar" style={{ position: 'sticky', overflow: 'auto', height: 80, width: 160 }}>
+        <KnowledgeFolderTreeNav
+          tree={buildFolderTree(folders)}
+          ancestry={[folder(1, 'Parent'), folder(2, 'Child', 1), folder(3, 'Nested', 2)]}
+          selectedFolderId={3}
+          totalCount={3}
+          canContribute
+          onSelect={() => undefined}
+          onCreate={() => undefined}
+          onEdit={() => undefined}
+          onDelete={() => undefined}
+        />
+      </aside>
+      <section data-testid="files">files</section>
+    </div>,
+  )
+}
+
+beforeEach(() => {
+  const portal = document.createElement('div')
+  portal.id = PORTAL_ROOT_ID
+  document.body.append(portal)
+})
+afterEach(() => {
+  cleanup()
+  document.getElementById(PORTAL_ROOT_ID)?.remove()
+})
+
+describe('knowledge folder actions menu', () => {
+  it('ports the nested folder menu out of the scrolling sidebar', async () => {
+    mount()
+    await waitFor(() => expect(screen.getAllByRole('button', { name: 'knowledge.tree.actions' })).toHaveLength(3))
+    const nested = screen.getAllByRole('button', { name: 'knowledge.tree.actions' })[2]
+    fireEvent.pointerDown(nested, { button: 0, ctrlKey: false })
+    const portal = document.getElementById(PORTAL_ROOT_ID)
+    await waitFor(() => expect(portal?.querySelector('[role="menu"]')).toBeTruthy())
+    const menu = portal?.querySelector('[role="menu"]') ?? null
+    const sidebar = screen.getByTestId('sidebar')
+    expect(menu).toBeTruthy()
+    expect(sidebar.contains(menu)).toBe(false)
+    expect(portal?.contains(menu)).toBe(true)
+    expect(screen.getByTestId('files').contains(menu)).toBe(false)
+    expect(menu?.className).toContain('z-[60]')
+    expect(portal?.textContent).toContain('knowledge.tree.newSubfolder')
+    expect(portal?.textContent).toContain('knowledge.tree.edit')
+    expect(portal?.textContent).toContain('knowledge.tree.delete')
+  })
+
+  it('still opens inside the tree when the shared portal root is absent', async () => {
+    document.getElementById(PORTAL_ROOT_ID)?.remove()
+    mount()
+    await waitFor(() => expect(screen.getAllByRole('button', { name: 'knowledge.tree.actions' })).toHaveLength(3))
+    fireEvent.pointerDown(screen.getAllByRole('button', { name: 'knowledge.tree.actions' })[0], { button: 0, ctrlKey: false })
+    await waitFor(() => expect(screen.getByTestId('sidebar').textContent).toContain('knowledge.tree.newSubfolder'))
+    expect(document.getElementById(PORTAL_ROOT_ID)?.textContent ?? '').not.toContain('knowledge.tree.newSubfolder')
+  })
+})

@@ -97,7 +97,12 @@ export function KnowledgeFolderTreeNav({
                   <MoreHorizontal className="h-4 w-4" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
+              <DropdownMenuContent
+                portaled
+                align="start"
+                hideWhenDetached
+                collisionPadding={{ top: 88, right: 12, bottom: 12, left: 12 }}
+              >
                 <DropdownMenuItem onSelect={() => onCreate(folder.id)}>{t('knowledge.tree.newSubfolder')}</DropdownMenuItem>
                 {folder.canManage ? (
                   <>

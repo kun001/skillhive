@@ -4,7 +4,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { KnowledgeDocument } from '@/api/knowledge-types'
 import { DocxCanvas } from './docx-preview'
+import { brokenEmptyCmapFont } from './fixtures/fonts'
 import { KnowledgeFilePreview } from './file-preview'
+import { fontUnicodeCodepoints } from './repair-docx-embedded-font'
 
 const mocks = vi.hoisted(() => ({ officeContent: vi.fn(), renderAsync: vi.fn(), contentUrl: vi.fn(() => '/original') }))
 vi.mock('@/api/client', () => ({ knowledgeApi: mocks }))
@@ -35,6 +37,7 @@ describe('Word full preview', () => {
   it('loads the selected version and offers full preview and original download without calling image conversion', async () => {
     mount()
     expect(await screen.findByText('Complete document')).toBeTruthy()
+    expect(screen.queryByText('knowledge.preview.officeFull')).toBeNull()
     expect(mocks.officeContent).toHaveBeenCalledWith(42, 2, expect.any(AbortSignal))
     expect(screen.getByRole('link').getAttribute('href')).toBe('/original')
   })
@@ -99,6 +102,31 @@ describe('Word full preview', () => {
     })
     mount()
     expect((await screen.findByText('Document link')).getAttribute('href')).toBeNull()
+  })
+  it('repairs an embedded face the renderer emits so empty glyphs are not advertised', async () => {
+    const binary = []
+    for (let offset = 0; offset < brokenEmptyCmapFont.length; offset += 8192) {
+      binary.push(String.fromCharCode(...brokenEmptyCmapFont.subarray(offset, offset + 8192)))
+    }
+    const font = btoa(binary.join(''))
+    mocks.renderAsync.mockImplementation(async (_blob: Blob, host: HTMLElement, styles?: HTMLElement) => {
+      const style = document.createElement('style')
+      style.textContent = `@font-face { font-family: BrokenFace; src: url(data:font/ttf;base64,${font}); }`
+      styles?.append(style)
+      const section = document.createElement('section')
+      const span = document.createElement('span')
+      span.style.fontFamily = 'BrokenFace'
+      span.textContent = '甲乙'
+      section.append(span)
+      host.append(section)
+    })
+    render(<DocxCanvas blob={new Blob(['synthetic'])} title="Synthetic" />)
+    const text = await screen.findByText('甲乙')
+    const css = document.querySelector('style')?.textContent ?? ''
+    expect(css).toContain('SkillHiveEmbedded0')
+    expect(text.style.fontFamily).toContain('Droid Sans Fallback')
+    const payload = css.match(/base64,([A-Za-z0-9+/=]+)/)?.[1] ?? ''
+    expect(fontUnicodeCodepoints(Uint8Array.from(atob(payload), (char) => char.charCodeAt(0)))).not.toContain(0x4e59)
   })
   it('discards a slow render when the file changes', async () => {
     let finishOld: () => void = () => undefined
