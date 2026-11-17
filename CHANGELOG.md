@@ -8,6 +8,9 @@
 
 ## v0.4.6 — 2026-11-17
 
+> 已于 2026-11-17 部署到生产环境 https://skillhive.team（镜像 `v0.4.6`，Deploy production 运行成功并通过冒烟检查）。
+> Deployed to production at https://skillhive.team on 2026-11-17 (image `v0.4.6`; the Deploy production run succeeded and passed smoke checks).
+
 - 知识库文件夹的操作菜单不再被右侧文件列表挡住。菜单挂到页面独立的浮层里，嵌套文件夹、侧栏滚动和靠近窗口边缘时都会完整显示，并避开顶部导航。
 - Knowledge-base folder menus are no longer covered by the file list. The menu is drawn in the page portal, so it stays visible for nested folders, a scrolling sidebar and viewport edges, and it stays clear of the top bar.
 - Word 预览补上原先显示不出来的字。部分嵌入字体的字符表指向没有轮廓的空字形，浏览器会把这些字画成零宽度，或留出空白却不画出字形；预览仍保留版式，只有嵌入字体画不出来的字改用系统中文字体，字宽可能与原嵌入字体不同。
