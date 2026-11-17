@@ -14,6 +14,21 @@ export interface ReleaseNote {
 // Confirm the date and image tag when deploying; Git submission is not deployment.
 export const releases: ReleaseNote[] = [
   {
+    id: '20261117-knowledge-menu-docx-preview',
+    version: 'v0.4.6',
+    date: '2026-11-17',
+    title: { zh: '知识库文件夹菜单和 Word 预览', en: 'Knowledge folder menus and Word preview' },
+    summary: {
+      zh: '文件夹操作菜单不再被文件列表挡住；Word 预览补上嵌入字体画不出来的字，缺字改用系统中文字体，字宽可能与原稿不同；预览页去掉「全文预览」标题。',
+      en: 'Folder action menus stay visible above the file list. Word preview draws characters the embedded font left blank, using a system CJK font whose advance may differ from the original face. The “Full document preview” heading is gone.',
+    },
+    changes: [
+      { zh: '知识库文件夹的省略号菜单改到页面浮层中显示，嵌套文件夹、侧栏滚动和靠近窗口边缘时都能完整看到新建子文件夹、重命名和删除。', en: 'Knowledge folder menus open in the page portal, so new subfolder, rename and delete stay fully visible for nested folders, a scrolling sidebar and viewport edges.' },
+      { zh: 'Word 预览去掉嵌入字体里没有轮廓的字符映射。有轮廓的字仍用原字体；画不出来的字改用系统中文字体，版式保留，字宽可能与原嵌入字体不同。', en: 'Word preview drops cmap entries for glyphs with no outline. Outlined glyphs keep the embedded face; missing glyphs use a system CJK font. Layout stays, but those advances may differ from the embedded face.' },
+      { zh: '去掉 Office 预览上方的「全文预览」标题。文档预览和下载原文件保持不变。', en: 'The “Full document preview” label above Office previews is removed. The document preview and original-file download stay.' },
+    ],
+  },
+  {
     id: '20261103-skill-publish-streaming-unpack',
     version: 'v0.4.5',
     date: '2026-11-03',
