@@ -24,10 +24,6 @@ spring:
             client-secret: ${OAUTH2_GITHUB_CLIENT_SECRET:local-placeholder}
 
 skillhub:
-  knowledge:
-    html-preview:
-      origin: ${SKILLHUB_KNOWLEDGE_HTML_PREVIEW_ORIGIN:http://preview.localhost:8080}
-      app-origin: ${SKILLHUB_KNOWLEDGE_HTML_PREVIEW_APP_ORIGIN:http://localhost:3000}
   auth:
     mock:
       enabled: true

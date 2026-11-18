@@ -144,6 +144,24 @@ class KnowledgeAppServiceTest {
     }
 
     @Test
+    void browserUploadRejectsExistingFilenameBeforeWritingAndAfterLockingBase() {
+        when(documentRepository.existsActiveFilename(11L, null, "guide.txt")).thenReturn(true);
+
+        assertThatThrownBy(() -> service.uploadDocument("team-a", "handbook", upload("guide.txt"),
+                null, null, null, member("alice"), null))
+                .isInstanceOf(com.iflytek.skillhub.domain.shared.exception.DomainConflictException.class)
+                .hasMessage("error.knowledge.document.nameExists");
+
+        var order = org.mockito.Mockito.inOrder(baseRepository, documentRepository);
+        order.verify(baseRepository).findByNamespaceIdAndSlugForUpdate(NAMESPACE_ID, "handbook");
+        order.verify(baseRepository).findByIdForUpdate(11L);
+        order.verify(documentRepository).existsActiveFilename(11L, null, "guide.txt");
+        verify(storageService, never()).putObject(anyString(), any(), anyLong(), anyString());
+        verify(documentRepository, never()).save(any(KnowledgeDocument.class));
+        verify(versionRepository, never()).save(any(KnowledgeDocumentVersion.class));
+    }
+
+    @Test
     void uploadChecksQuotaWithFileAndImageBytesBeforeWritingAnything() {
         var markdown = new KnowledgeAppService.MarkdownUpload("pack/guide.md",
                 List.of(new KnowledgeAppService.Upload("a.png", 30, () -> new ByteArrayInputStream(new byte[30]))),
@@ -363,8 +381,8 @@ class KnowledgeAppServiceTest {
     }
 
     @Test
-    void legacyOfficeAndExcelAreDownloadOnly() throws Exception {
-        for (String extension : List.of("doc", "ppt", "xls", "xlsx")) {
+    void legacyOfficeExcelAndHtmlAreDownloadOnly() throws Exception {
+        for (String extension : List.of("doc", "ppt", "xls", "xlsx", "html", "htm")) {
             KnowledgeDocument document = withId(new KnowledgeDocument(11L, null, "excel", "Excel", null, "alice"), 21L);
             KnowledgeDocumentVersion version = withId(new KnowledgeDocumentVersion(21L, 1, "original", "application/octet-stream",
                     "a." + extension, 1, "sha", null, "alice"), 31L);

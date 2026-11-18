@@ -365,7 +365,7 @@ export function KnowledgeBasePage() {
         initialFiles={upload.files}
         onUploaded={({ fileNames, folderId }) => {
           updateSearch({
-            type: typeFilterAfterUpload(fileNames),
+            type: typeFilterAfterUpload(fileNames, search.type),
             folder: folderId,
             page: undefined,
           })

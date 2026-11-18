@@ -28,7 +28,7 @@ describe('knowledge file types', () => {
     expect(validateKnowledgeFile({ name: 'component.MDX', size: 10 })).toBeUndefined()
     expect(categoryForExtension('mdx')).toBe('text')
     expect(validateKnowledgeFile({ name: 'a.html', size: 10 })).toBeUndefined()
-    expect(validateKnowledgeFile({ name: 'a.htm', size: 10 })).toBeUndefined()
+    expect(validateKnowledgeFile({ name: 'a.HTM', size: 10 })).toBeUndefined()
     expect(categoryForExtension('html')).toBe('html')
     expect(validateKnowledgeFile({ name: '数据库脚本.SQL', size: 10 })).toBeUndefined()
     expect(categoryForExtension('sql')).toBe('text')
@@ -43,10 +43,17 @@ describe('knowledge file types', () => {
     expect(formatFileSize(25 * 1024 * 1024)).toBe('25 MB')
   })
 
-  it('picks a type filter that keeps uploaded files visible', () => {
-    expect(typeFilterAfterUpload(['notes.md'])).toBe('text')
-    expect(typeFilterAfterUpload(['a.docx', 'b.doc'])).toBe('word')
-    expect(typeFilterAfterUpload(['a.md', 'b.docx'])).toBeUndefined()
-    expect(typeFilterAfterUpload([])).toBeUndefined()
+  it('keeps All after uploads so existing files remain visible', () => {
+    expect(typeFilterAfterUpload(['notes.md'])).toBeUndefined()
+    expect(typeFilterAfterUpload(['a.docx', 'b.doc'])).toBeUndefined()
+  })
+
+  it('preserves compatible filters and widens incompatible filters to All', () => {
+    expect(typeFilterAfterUpload(['notes.md', 'query.sql'], 'text')).toBe('text')
+    expect(typeFilterAfterUpload(['a.docx', 'b.doc'], 'word')).toBe('word')
+    expect(typeFilterAfterUpload(['query.sql'], 'html')).toBeUndefined()
+    expect(typeFilterAfterUpload(['a.md', 'b.docx'], 'text')).toBeUndefined()
+    expect(typeFilterAfterUpload(['unknown.bin'], 'word')).toBeUndefined()
+    expect(typeFilterAfterUpload([], 'html')).toBe('html')
   })
 })

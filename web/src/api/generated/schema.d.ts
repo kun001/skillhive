@@ -3136,6 +3136,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/web/me/storage-quota": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["storageQuota"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/storage-quota": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["storageQuota_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/web/me/stars": {
         parameters: {
             query?: never;
@@ -3461,6 +3493,42 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/knowledge/bases/{namespace}/{baseSlug}/archived-documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List archived files of a knowledge base that can be permanently purged */
+        get: operations["listArchivedKnowledgeDocuments"];
+        put?: never;
+        post?: never;
+        /** Permanently purge up to 100 archived files of a knowledge base (requires confirm=true) */
+        delete: operations["purgeArchivedKnowledgeDocuments"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/web/knowledge/bases/{namespace}/{baseSlug}/archived-documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List archived files of a knowledge base that can be permanently purged */
+        get: operations["listArchivedKnowledgeDocuments_1"];
+        put?: never;
+        post?: never;
+        /** Permanently purge up to 100 archived files of a knowledge base (requires confirm=true) */
+        delete: operations["purgeArchivedKnowledgeDocuments_1"];
         options?: never;
         head?: never;
         patch?: never;
@@ -3909,6 +3977,40 @@ export interface paths {
         put?: never;
         post?: never;
         delete: operations["removeMember_1"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/web/knowledge/documents/{documentId}/purge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Permanently purge one archived file (requires confirm=true) */
+        delete: operations["purgeKnowledgeDocument"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/knowledge/documents/{documentId}/purge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Permanently purge one archived file (requires confirm=true) */
+        delete: operations["purgeKnowledgeDocument_1"];
         options?: never;
         head?: never;
         patch?: never;
@@ -5426,6 +5528,27 @@ export interface components {
             /** Format: int32 */
             size?: number;
         };
+        ApiResponseUserStorageQuotaResponse: {
+            /** Format: int32 */
+            code?: number;
+            msg?: string;
+            data?: components["schemas"]["UserStorageQuotaResponse"];
+            /** Format: date-time */
+            timestamp?: string;
+            requestId?: string;
+        };
+        UserStorageQuotaResponse: {
+            /** Format: int64 */
+            usedBytes?: number;
+            /** Format: int64 */
+            skillBytes?: number;
+            /** Format: int64 */
+            knowledgeBytes?: number;
+            /** Format: int64 */
+            quotaBytes?: number;
+            unlimited?: boolean;
+            exempt?: boolean;
+        };
         ApiResponsePageResponseMyNamespaceResponse: {
             /** Format: int32 */
             code?: number;
@@ -5604,6 +5727,41 @@ export interface components {
         };
         PageResponseKnowledgeDocumentResponse: {
             items?: components["schemas"]["KnowledgeDocumentResponse"][];
+            /** Format: int64 */
+            total?: number;
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            size?: number;
+        };
+        ApiResponsePageResponseArchivedKnowledgeDocumentResponse: {
+            /** Format: int32 */
+            code?: number;
+            msg?: string;
+            data?: components["schemas"]["PageResponseArchivedKnowledgeDocumentResponse"];
+            /** Format: date-time */
+            timestamp?: string;
+            requestId?: string;
+        };
+        ArchivedKnowledgeDocumentResponse: {
+            /** Format: int64 */
+            id?: number;
+            /** Format: int64 */
+            knowledgeBaseId?: number;
+            /** Format: int64 */
+            folderId?: number;
+            title?: string;
+            owner?: components["schemas"]["KnowledgeUserResponse"];
+            /** Format: date-time */
+            updatedAt?: string;
+            /** Format: int32 */
+            versionCount?: number;
+            /** Format: int64 */
+            storedBytes?: number;
+            canPurge?: boolean;
+        };
+        PageResponseArchivedKnowledgeDocumentResponse: {
+            items?: components["schemas"]["ArchivedKnowledgeDocumentResponse"][];
             /** Format: int64 */
             total?: number;
             /** Format: int32 */
@@ -6139,6 +6297,23 @@ export interface components {
             namespace?: string;
             slug?: string;
             deleted?: boolean;
+        };
+        ApiResponseKnowledgePurgeResponse: {
+            /** Format: int32 */
+            code?: number;
+            msg?: string;
+            data?: components["schemas"]["KnowledgePurgeResponse"];
+            /** Format: date-time */
+            timestamp?: string;
+            requestId?: string;
+        };
+        KnowledgePurgeResponse: {
+            /** Format: int32 */
+            purgedDocuments?: number;
+            /** Format: int64 */
+            freedBytes?: number;
+            /** Format: int64 */
+            remainingArchived?: number;
         };
     };
     responses: never;
@@ -12288,6 +12463,46 @@ export interface operations {
             };
         };
     };
+    storageQuota: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseUserStorageQuotaResponse"];
+                };
+            };
+        };
+    };
+    storageQuota_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseUserStorageQuotaResponse"];
+                };
+            };
+        };
+    };
     listMyStars: {
         parameters: {
             query?: {
@@ -12752,6 +12967,108 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponsePageResponseKnowledgeDocumentSearchHitResponse"];
+                };
+            };
+        };
+    };
+    listArchivedKnowledgeDocuments: {
+        parameters: {
+            query?: {
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path: {
+                namespace: string;
+                baseSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePageResponseArchivedKnowledgeDocumentResponse"];
+                };
+            };
+        };
+    };
+    purgeArchivedKnowledgeDocuments: {
+        parameters: {
+            query?: {
+                confirm?: boolean;
+            };
+            header?: never;
+            path: {
+                namespace: string;
+                baseSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseKnowledgePurgeResponse"];
+                };
+            };
+        };
+    };
+    listArchivedKnowledgeDocuments_1: {
+        parameters: {
+            query?: {
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path: {
+                namespace: string;
+                baseSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePageResponseArchivedKnowledgeDocumentResponse"];
+                };
+            };
+        };
+    };
+    purgeArchivedKnowledgeDocuments_1: {
+        parameters: {
+            query?: {
+                confirm?: boolean;
+            };
+            header?: never;
+            path: {
+                namespace: string;
+                baseSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseKnowledgePurgeResponse"];
                 };
             };
         };
@@ -13401,6 +13718,54 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseMessageResponse"];
+                };
+            };
+        };
+    };
+    purgeKnowledgeDocument: {
+        parameters: {
+            query?: {
+                confirm?: boolean;
+            };
+            header?: never;
+            path: {
+                documentId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseKnowledgePurgeResponse"];
+                };
+            };
+        };
+    };
+    purgeKnowledgeDocument_1: {
+        parameters: {
+            query?: {
+                confirm?: boolean;
+            };
+            header?: never;
+            path: {
+                documentId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseKnowledgePurgeResponse"];
                 };
             };
         };

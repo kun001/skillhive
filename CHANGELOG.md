@@ -4,7 +4,18 @@
 
 ## 待发布 / Unreleased
 
-暂无。
+暂无。 / None.
+
+## v0.4.8 — 2026-11-18
+
+> 发布内容已准备，生产部署完成后补充实际部署记录。 / Release prepared; the production deployment record will be added after verification.
+
+- 修复网页上传绕过同名校验的问题。同一文件夹内拒绝重复文件名（不区分大小写），提示使用上传新版本或重命名，保留原文件及历史版本。
+- Prevent browser uploads from creating duplicate filenames within a folder, including concurrent uploads. Existing files and versions are preserved.
+- 上传后保留全部类型视图；当前类型筛选会隐藏新文件时，回到全部类型，避免旧文件看起来消失。
+- Keep the all-types view after uploads, widening an incompatible type filter instead of narrowing the list to newly uploaded file types.
+- 移除知识库 HTML 交互预览、预览域配置及临时凭证接口。HTML/HTM 支持上传、版本管理和下载。
+- Remove interactive knowledge HTML previews, preview-origin configuration, and temporary preview tickets. HTML/HTM supports uploads, version management, and downloads.
 
 ## v0.4.7 — 2026-11-17
 

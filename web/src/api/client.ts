@@ -1798,12 +1798,6 @@ export const knowledgeApi = {
     return data
   },
 
-  async createHtmlPreview(documentId: number, version: number, signal?: AbortSignal): Promise<{ url: string }> {
-    return fetchJson(`${KNOWLEDGE_PREFIX}/documents/${documentId}/versions/${version}/html-preview`, {
-      method: 'POST', headers: await ensureCsrfHeaders(), signal,
-    })
-  },
-
   contentUrl(documentId: number, options?: { version?: number; inline?: boolean }): string {
     const params = new URLSearchParams()
     if (options?.version !== undefined) params.set('version', String(options.version))

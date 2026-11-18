@@ -484,9 +484,8 @@ public class KnowledgeAppService {
         String extension = filePolicy.validateUpload(upload.filename(), upload.sizeBytes());
         String filename = filePolicy.validateFilename(upload.filename());
         baseRepository.findByIdForUpdate(context.base().getId());
-        if (com.iflytek.skillhub.auth.token.McpTokenGrants.current() != null
-                && documentRepository.existsActiveFilename(context.base().getId(), folderId, filename)) {
-            throw new DomainConflictException("error.knowledge.folder.nameExists", filename);
+        if (documentRepository.existsActiveFilename(context.base().getId(), folderId, filename)) {
+            throw new DomainConflictException("error.knowledge.document.nameExists", filename);
         }
         String sourcePath = validateMarkdownUpload(upload, markdown);
         requireFolderInBase(new KnowledgeFolderTree(folderRepository.findByKnowledgeBaseId(context.base().getId())), folderId);
