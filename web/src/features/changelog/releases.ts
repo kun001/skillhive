@@ -14,6 +14,21 @@ export interface ReleaseNote {
 // Confirm the date and image tag when deploying; Git submission is not deployment.
 export const releases: ReleaseNote[] = [
   {
+    id: '20261118-knowledge-upload-and-html-download',
+    version: 'v0.4.8',
+    date: '2026-11-18',
+    title: { zh: '知识库上传修复与 HTML 下载管理', en: 'Knowledge upload fixes and HTML download management' },
+    summary: {
+      zh: '同一文件夹内上传同名文件时提示使用新版本，上传后不再自动隐藏其他类型的旧文件；HTML/HTM 保留上传、版本管理和下载，取消在线预览。',
+      en: 'Same-name uploads within a folder prompt you to upload a new version. Uploads keep existing file types visible. HTML/HTM retains uploads, versions and downloads with online preview removed.',
+    },
+    changes: [
+      { zh: '修复网页上传绕过同名检查的问题，包括同时上传；更新文件请使用原文件的上传新版本入口，历史版本继续保留。', en: 'Browser uploads now reject duplicate filenames within a folder, including concurrent uploads. Update files through Upload new version; existing versions are retained.' },
+      { zh: '上传后保留全部类型视图；当前类型筛选会挡住新文件时回到全部类型，上传失败的提示完整换行展示。', en: 'Uploads preserve the all-types view, or widen an incompatible type filter to all types. Upload errors wrap to show their full message.' },
+      { zh: 'HTML/HTM 文件可以上传、管理版本和下载原件，移除交互预览及相关配置和接口；SQL 与 Word 预览继续保留。', en: 'HTML/HTM files support uploads, versions and original downloads. Interactive preview and its configuration and endpoints are removed. SQL and Word previews remain available.' },
+    ],
+  },
+  {
     id: '20261117-knowledge-sql-and-word-preview',
     version: 'v0.4.7',
     date: '2026-11-17',

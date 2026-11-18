@@ -31,11 +31,11 @@ class KnowledgeFilePolicyTest {
     }
 
     @Test
-    void acceptsHtmlButStoresItWithAnInertContentType() {
-        for (String extension : java.util.List.of("html", "htm")) {
-            assertThat(policy.validateUpload("prototype." + extension, 10)).isEqualTo(extension);
+    void acceptsHtmlUploadsAsDownloadOnly() {
+        for (String extension : java.util.List.of("html", "htm", "HTML", "HTM")) {
+            assertThat(policy.validateUpload("prototype." + extension, 10)).isEqualTo(extension.toLowerCase(java.util.Locale.ROOT));
             assertThat(policy.contentTypeFor(extension)).isEqualTo("application/octet-stream");
-            assertThat(policy.previewKindFor(extension)).isEqualTo(KnowledgePreviewKind.HTML);
+            assertThat(policy.previewKindFor(extension)).isEqualTo(KnowledgePreviewKind.NONE);
         }
     }
 

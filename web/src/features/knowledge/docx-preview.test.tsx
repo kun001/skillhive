@@ -34,6 +34,16 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.resetAllMocks() })
 
 describe('Word full preview', () => {
+  it.each(['html', 'HTM'])('keeps existing %s files download-only even with old preview metadata', (extension) => {
+    const fetchFile = vi.fn()
+    vi.stubGlobal('fetch', fetchFile)
+    mount({ ...file, fileExtension: extension, previewKind: 'TEXT' })
+    expect(screen.getByText('knowledge.preview.unsupportedTitle')).toBeTruthy()
+    expect(screen.getByRole('link').getAttribute('href')).toBe('/original')
+    expect(fetchFile).not.toHaveBeenCalled()
+    expect(mocks.renderAsync).not.toHaveBeenCalled()
+    expect(document.querySelector('iframe')).toBeNull()
+  })
   it('loads the selected version and offers full preview and original download without calling image conversion', async () => {
     mount()
     expect(await screen.findByText('Complete document')).toBeTruthy()

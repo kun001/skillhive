@@ -234,7 +234,7 @@ export function KnowledgeUploadDialog({ open, onOpenChange, namespace, base, tre
                 <KnowledgeFileIcon extension={fileExtension(item.file.name)} />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-foreground" title={uploadPath(item.file)}>{uploadPath(item.file)}</p>
-                  <p className={cn('truncate text-xs', item.status === 'failed' ? 'text-destructive' : 'text-muted-foreground')}>
+                  <p className={cn('text-xs', item.status === 'failed' ? 'whitespace-normal [overflow-wrap:anywhere] text-destructive' : 'truncate text-muted-foreground')}>
                     {formatFileSize(item.file.size)}
                     {' · '}
                     {item.status === 'waiting' && t('knowledge.upload.waiting')}

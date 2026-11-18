@@ -34,7 +34,7 @@ server {
     # Looseness: script-src allows unsafe-inline/unsafe-eval (Vite/runtime-config + meta);
     # img-src https: for remote markdown images; connect-src localhost for local API;
     # frame-src/worker-src blob: for PDF iframe and Office preview workers.
-    set $skillhub_csp "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' ws: wss: http://localhost:* https://localhost:*; worker-src 'self' blob:; object-src 'none'; frame-src 'self' blob: ${SKILLHUB_KNOWLEDGE_HTML_PREVIEW_ORIGIN}; base-uri 'self'; frame-ancestors 'none'; form-action 'self'";
+    set $skillhub_csp "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' ws: wss: http://localhost:* https://localhost:*; worker-src 'self' blob:; object-src 'none'; frame-src 'self' blob:; base-uri 'self'; frame-ancestors 'none'; form-action 'self'";
 
     location / {
         add_header Cache-Control "no-cache, must-revalidate" always;

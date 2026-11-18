@@ -6,13 +6,6 @@ set -eu
 : "${SKILLHUB_WEB_AUTH_DIRECT_ENABLED:=false}"
 : "${SKILLHUB_WEB_AUTH_DIRECT_PROVIDER:=}"
 
-preview_origin="${SKILLHUB_KNOWLEDGE_HTML_PREVIEW_ORIGIN:-}"
-if [ -n "$preview_origin" ] && ! printf '%s\n' "$preview_origin" | grep -Eq '^https://[a-zA-Z0-9.-]+(:[0-9]{1,5})?$'; then
-  echo 'SKILLHUB_KNOWLEDGE_HTML_PREVIEW_ORIGIN must be an HTTPS origin without a path' >&2
-  exit 1
-fi
-sed -i "s#__SKILLHUB_HTML_PREVIEW_ORIGIN__#$preview_origin#g" /usr/share/nginx/html/index.html
-
 # Session-bootstrap variables are defaulted here so envsubst writes
 # `authSessionBootstrapEnabled: "false"` into runtime-config.js instead of leaving
 # the literal `${...}` placeholder. They are intentionally NOT exposed in

@@ -61,7 +61,7 @@ API Token 需持有 `knowledge:read` 才能调用 `/api/v1/knowledge` 下的只�
 
 安全要点：
 - 上传校验扩展名白名单与大小上限（默认 100MB，与 multipart 限制一致），拒绝空文件和非法文件名。
-- 文件内容 API 的 `inline` 只对 PDF、位图、纯文本和 DOCX/PPTX 生效；Markdown/TXT 以 `text/plain; charset=UTF-8` 返回；统一加 `X-Content-Type-Options: nosniff`。HTML/HTM 在该 API 上只以二进制附件下载。交互预览由独立源提供。
+- 文件内容 API 的 `inline` 只对 PDF、位图、纯文本和 DOCX/PPTX 生效；Markdown/TXT/SQL 以 `text/plain; charset=UTF-8` 返回；统一加 `X-Content-Type-Options: nosniff`。HTML/HTM 支持上传、版本管理和下载，内容仅以 `application/octet-stream` 附件返回。
 - `Content-Disposition` 使用 RFC 5987 编码，支持中文文件名。
 
 分层：`KnowledgeController` 只做传输；`KnowledgeAppService` 编排存储、DTO 和审计；领域层 `domain/knowledge` 放实体、仓储接口、权限规则 `KnowledgeAccessPolicy` 和文件规则 `KnowledgeFilePolicy`。
@@ -96,15 +96,6 @@ API Token 需持有 `knowledge:read` 才能调用 `/api/v1/knowledge` 下的只�
 
 - PDF 预览通过 `blob:` URL 放在 iframe 中（后端对所有响应设置了 `X-Frame-Options: DENY`），因此 `web/index.html` 的 CSP 增加了 `frame-src 'self' blob:`。
 
-### HTML 原型预览
-
-支持 8 MB 以内的自包含 UTF-8 HTML/HTM。预览可运行内联脚本，图片和字体可使用文件内的 data URL。页面内的同文件查询参数链接在预览框中打开，主站工具栏提供全屏和刷新。预览不接入外部资源、独立素材目录或业务 API。
-
-发布环境默认不开启交互预览。启用时，在 Web 和后端设置 `SKILLHUB_KNOWLEDGE_HTML_PREVIEW_ORIGIN` 为同一个独立 HTTPS 站点，在后端设置 `SKILLHUB_KNOWLEDGE_HTML_PREVIEW_APP_ORIGIN` 为 SkillHive Web 的 HTTPS 源。两者只填写协议、域名和可选端口。预览站点应使用与主站不同的注册域名。
-
-预览站点的反向代理仅将 `/_html-preview/` 转发到后端，其他路径返回 404。转发时覆盖 `X-Forwarded-Host`、`X-Forwarded-Proto`、`X-Forwarded-Port`，清空客户端提供的 `Forwarded`、`X-Forwarded-Prefix`、`Cookie` 和 `Authorization`，关闭该路径的 URL 访问日志。保留后端返回的 CSP 和禁止缓存响应头，避免代理额外添加禁止嵌入该预览的响应头。
-
-主站只为通过知识库下载权限检查的 Web 会话签发预览凭证。凭证有效期为 5 分钟，绑定到文件版本和原 Web 会话。每次读取重新检查会话和权限，转发代理及监控避免记录带凭证的 URL。开发环境使用 `http://localhost:3000` 与 `http://preview.localhost:8080`。
 - 打开对话框的下拉菜单使用 `modal={false}`，且对话框保持挂载、只切换 `open`，避免 Radix 在 `<body>` 上残留 `pointer-events: none`。
 - 上传时先单独读一遍文件计算 SHA-256，再写入对象存储，摘要不依赖存储实现是否读完整个流。
 

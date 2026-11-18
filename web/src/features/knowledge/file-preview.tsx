@@ -13,7 +13,6 @@ import { KnowledgeFileIcon } from './file-icon'
 import { knowledgeKeys } from './use-knowledge-queries'
 import { resolveImagePath } from './markdown-images'
 import { KnowledgeBrowserOfficePreview } from './browser-office-preview'
-import { KnowledgeHtmlPreview, MAX_HTML_PREVIEW_BYTES } from './html-preview'
 import { MdxPreview } from './mdx-preview'
 
 /** Text previews beyond this size are offered as downloads instead of rendering in the page. */
@@ -58,8 +57,8 @@ export function KnowledgeFilePreview({ document }: { document: KnowledgeDocument
   const { t } = useTranslation()
   const { user } = useAuth()
   const url = knowledgeApi.contentUrl(document.id, { version: document.currentVersion, inline: true })
-  const kind = document.previewKind
   const extension = document.fileExtension?.toLowerCase()
+  const kind = ['html', 'htm'].includes(extension ?? '') ? 'NONE' : document.previewKind
   const isMdx = extension === 'mdx'
   const hasImages = kind === 'MARKDOWN' || isMdx
   const isText = kind === 'MARKDOWN' || kind === 'TEXT'
@@ -110,12 +109,6 @@ export function KnowledgeFilePreview({ document }: { document: KnowledgeDocument
   }
   if (kind === 'OFFICE') {
     return <KnowledgeBrowserOfficePreview key={`${document.id}:${document.currentVersion}`} document={document} />
-  }
-  if (kind === 'HTML') {
-    if (document.sizeBytes > MAX_HTML_PREVIEW_BYTES) {
-      return <PreviewMessage document={document} title={t('knowledge.preview.tooLarge')} />
-    }
-    return <KnowledgeHtmlPreview key={`${document.id}:${document.currentVersion}:${user?.userId ?? 'guest'}`} document={document} />
   }
   if (textTooLarge) {
     return <PreviewMessage document={document} title={t('knowledge.preview.tooLarge')} />
