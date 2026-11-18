@@ -8,7 +8,8 @@
 
 ## v0.4.8 — 2026-11-18
 
-> 发布内容已准备，生产部署完成后补充实际部署记录。 / Release prepared; the production deployment record will be added after verification.
+> 生产环境已于 2026-11-18 10:20（北京时间）切换到 `v0.4.8`。三个镜像提交一致，数据库备份、容器健康检查和部署冒烟检查均通过。[部署记录](https://github.com/kun001/skillhive/actions/runs/44221867861)
+> Production switched to `v0.4.8` on 2026-11-18 at 10:20 China Standard Time. Image revisions, database backup, container health and deployment smoke checks passed. [Deployment run](https://github.com/kun001/skillhive/actions/runs/44221867861)
 
 - 修复网页上传绕过同名校验的问题。同一文件夹内拒绝重复文件名（不区分大小写），提示使用上传新版本或重命名，保留原文件及历史版本。
 - Prevent browser uploads from creating duplicate filenames within a folder, including concurrent uploads. Existing files and versions are preserved.
