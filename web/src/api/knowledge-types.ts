@@ -67,6 +67,7 @@ export type KnowledgeDocumentSort = 'updated' | 'title' | 'created'
 
 export interface KnowledgeDocumentQuery {
   folderId?: number
+  recursive?: boolean
   q?: string
   extensions?: string[]
   ownerId?: string

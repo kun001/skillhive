@@ -212,6 +212,7 @@ public class KnowledgeAppService {
 
     /** Metadata-only filters for listing files. */
     public record DocumentFilter(Long folderId,
+                                 boolean recursive,
                                  String keyword,
                                  List<String> extensions,
                                  String ownerId,
@@ -394,7 +395,7 @@ public class KnowledgeAppService {
         if (filter.folderId() != null) {
             KnowledgeFolderTree tree = new KnowledgeFolderTree(folderRepository.findByKnowledgeBaseId(context.base().getId()));
             requireFolderInBase(tree, filter.folderId());
-            folderIds = tree.subtreeIds(filter.folderId());
+            folderIds = filter.recursive() ? tree.subtreeIds(filter.folderId()) : List.of(filter.folderId());
         }
         List<String> extensions = filter.extensions() == null ? List.of() : filter.extensions().stream()
                 .filter(Objects::nonNull)
@@ -403,7 +404,8 @@ public class KnowledgeAppService {
                 .distinct()
                 .toList();
         KnowledgeDocumentSearch search = new KnowledgeDocumentSearch(
-                List.of(context.base().getId()), folderIds, filter.keyword(), extensions, filter.ownerId(),
+                List.of(context.base().getId()), folderIds, !filter.recursive() && filter.folderId() == null,
+                filter.keyword(), extensions, filter.ownerId(),
                 filter.updatedFrom(), filter.updatedTo());
         int size = Math.min(Math.max(filter.size(), 1), MAX_PAGE_SIZE);
         PageRequest pageable = PageRequest.of(Math.max(filter.page(), 0), size, sortFor(filter.sort()));

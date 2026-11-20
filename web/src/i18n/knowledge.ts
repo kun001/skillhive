@@ -45,7 +45,7 @@ export const knowledgeZh = {
     saved: '知识库已更新',
   },
   tree: {
-    allFiles: '全部文件',
+    root: '根目录',
     folders: '文件夹',
     newFolder: '新建文件夹',
     newSubfolder: '新建子文件夹',
@@ -300,7 +300,7 @@ export const knowledgeEn: typeof knowledgeZh = {
     saved: 'Knowledge base updated',
   },
   tree: {
-    allFiles: 'All files',
+    root: 'Root folder',
     folders: 'Folders',
     newFolder: 'New folder',
     newSubfolder: 'New subfolder',

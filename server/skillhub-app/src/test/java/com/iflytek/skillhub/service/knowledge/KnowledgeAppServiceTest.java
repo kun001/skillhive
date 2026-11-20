@@ -27,6 +27,7 @@ import com.iflytek.skillhub.domain.knowledge.KnowledgeDocumentStatus;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeDocumentVersion;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeDocumentVersionRepository;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeFilePolicy;
+import com.iflytek.skillhub.domain.knowledge.KnowledgeFolder;
 import com.iflytek.skillhub.domain.knowledge.KnowledgePreviewKind;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeFolderRepository;
 import com.iflytek.skillhub.domain.namespace.Namespace;
@@ -114,6 +115,30 @@ class KnowledgeAppServiceTest {
         when(baseRepository.findById(11L)).thenReturn(Optional.of(base));
         when(folderRepository.findByKnowledgeBaseId(11L)).thenReturn(List.of());
         when(userAccountRepository.findByIdIn(any())).thenReturn(List.of());
+    }
+
+    @Test
+    void listingFilesCanLimitResultsToTheRootOrOneFolder() throws Exception {
+        var parent = withId(new KnowledgeFolder(11L, null, "Project", "alice"), 40L);
+        var child = withId(new KnowledgeFolder(11L, 40L, "Weekly reports", "alice"), 51L);
+        when(folderRepository.findByKnowledgeBaseId(11L)).thenReturn(List.of(parent, child));
+        when(documentRepository.search(any(), any())).thenReturn(org.springframework.data.domain.Page.empty());
+
+        service.listDocuments("team-a", "handbook", new KnowledgeAppService.DocumentFilter(
+                null, false, null, null, null, null, null, "updated", 0, 20), member("alice"));
+        service.listDocuments("team-a", "handbook", new KnowledgeAppService.DocumentFilter(
+                40L, false, null, null, null, null, null, "updated", 0, 20), member("alice"));
+        service.listDocuments("team-a", "handbook", new KnowledgeAppService.DocumentFilter(
+                40L, true, "report", null, null, null, null, "updated", 0, 20), member("alice"));
+
+        var filters = ArgumentCaptor.forClass(KnowledgeDocumentSearch.class);
+        verify(documentRepository, org.mockito.Mockito.times(3)).search(filters.capture(), any());
+        var searches = filters.getAllValues();
+        assertThat(searches.get(0).rootOnly()).isTrue();
+        assertThat(searches.get(1).rootOnly()).isFalse();
+        assertThat(searches.get(1).folderIds()).containsExactly(40L);
+        assertThat(searches.get(2).rootOnly()).isFalse();
+        assertThat(searches.get(2).folderIds()).containsExactlyInAnyOrder(40L, 51L);
     }
 
     @Test

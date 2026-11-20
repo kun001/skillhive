@@ -9679,6 +9679,7 @@ export interface operations {
         parameters: {
             query?: {
                 folderId?: number;
+                recursive?: boolean;
                 q?: string;
                 extensions?: string[];
                 ownerId?: string;
@@ -9749,6 +9750,7 @@ export interface operations {
         parameters: {
             query?: {
                 folderId?: number;
+                recursive?: boolean;
                 q?: string;
                 extensions?: string[];
                 ownerId?: string;

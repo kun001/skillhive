@@ -102,7 +102,9 @@ public class JpaKnowledgeDocumentRepositoryAdapter implements KnowledgeDocumentR
             }
             predicates.add(cb.equal(root.get("status"), KnowledgeDocumentStatus.ACTIVE));
             predicates.add(cb.isFalse(root.get("hidden")));
-            if (search.folderIds() != null) {
+            if (search.rootOnly()) {
+                predicates.add(cb.isNull(root.get("folderId")));
+            } else if (search.folderIds() != null) {
                 if (search.folderIds().isEmpty()) {
                     predicates.add(cb.disjunction());
                 } else {

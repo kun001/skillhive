@@ -134,7 +134,7 @@ export function KnowledgeFolderTreeNav({
         )}
       >
         <Library className="h-4 w-4" aria-hidden />
-        <span className="flex-1 text-left">{t('knowledge.tree.allFiles')}</span>
+        <span className="flex-1 text-left">{t('knowledge.tree.root')}</span>
         <span className="text-xs tabular-nums text-muted-foreground">{totalCount}</span>
       </button>
 
