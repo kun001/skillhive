@@ -11,7 +11,8 @@ import { KnowledgeDocumentGrid, KnowledgeDocumentTable } from '@/features/knowle
 import { knowledgeErrorMessage } from '@/features/knowledge/errors'
 import { extensionsForCategory, KNOWLEDGE_FILE_CATEGORIES, typeFilterAfterUpload } from '@/features/knowledge/file-types'
 import { KnowledgeFolderDialog } from '@/features/knowledge/folder-dialog'
-import { buildFolderTree, folderAncestry } from '@/features/knowledge/folder-tree'
+import { KnowledgeFolderSidebar } from '@/features/knowledge/folder-sidebar'
+import { buildFolderTree, flattenFolderTree, folderAncestry } from '@/features/knowledge/folder-tree'
 import { KnowledgeFolderTreeNav } from '@/features/knowledge/folder-tree-nav'
 import { KnowledgeBreadcrumb } from '@/features/knowledge/knowledge-breadcrumb'
 import { updatedFromForRange, type KnowledgeBaseSearch } from '@/features/knowledge/search-params'
@@ -56,12 +57,12 @@ export function KnowledgeBasePage() {
   const [keyword, setKeyword] = useState(search.q ?? '')
   const debouncedKeyword = useDebounce(keyword, 300)
 
-  const updateSearch = (patch: Partial<KnowledgeBaseSearch>) =>
+  const updateSearch = (patch: Partial<KnowledgeBaseSearch>, replace = true) =>
     navigate({
       to: '/knowledge/$namespace/$base',
       params: { namespace, base },
       search: { ...search, page: undefined, ...patch },
-      replace: true,
+      replace,
     })
 
   useEffect(() => {
@@ -75,6 +76,7 @@ export function KnowledgeBasePage() {
   const page = Math.max((search.page ?? 1) - 1, 0)
   const documentsQuery = useKnowledgeDocuments(namespace, base, {
     folderId: search.folder,
+    recursive: Boolean(search.q),
     q: search.q,
     extensions: extensionsForCategory(search.type),
     ownerId: search.owner === 'me' ? user?.userId : undefined,
@@ -86,6 +88,14 @@ export function KnowledgeBasePage() {
   const documents = documentsQuery.data?.items ?? []
   const totalPages = documentsQuery.data ? Math.max(Math.ceil(documentsQuery.data.total / PAGE_SIZE), 1) : 1
   const hasFilters = Boolean(search.q || search.type || search.owner || search.time)
+  const childFolders = useMemo(() => {
+    if (search.q || page > 0) return []
+    const children = search.folder === undefined
+      ? tree
+      : flattenFolderTree(tree).find((node) => node.folder.id === search.folder)?.children
+    return children?.map((node) => node.folder) ?? []
+  }, [page, search.folder, search.q, tree])
+  const DocumentView = search.view === 'grid' ? KnowledgeDocumentGrid : KnowledgeDocumentTable
 
   const [upload, setUpload] = useState<{ open: boolean; files?: File[] }>({ open: false })
   const [folderDialog, setFolderDialog] = useState<FolderDialogState>(null)
@@ -130,6 +140,7 @@ export function KnowledgeBasePage() {
       to: '/knowledge/$namespace/$base/$documentId',
       params: { namespace, base, documentId: String(document.id) },
     })
+  const openFolder = (folderId?: number) => updateSearch({ folder: folderId }, false)
 
   if (baseQuery.isError) {
     return <EmptyState title={knowledgeErrorMessage(baseQuery.error)} />
@@ -177,20 +188,20 @@ export function KnowledgeBasePage() {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[15rem_minmax(0,1fr)]">
-        <aside className="lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:self-start lg:overflow-y-auto">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[auto_minmax(0,1fr)]">
+        <KnowledgeFolderSidebar>
           <KnowledgeFolderTreeNav
             tree={tree}
             ancestry={ancestry}
             selectedFolderId={search.folder}
             totalCount={knowledgeBase?.documentCount ?? 0}
             canContribute={canContribute}
-            onSelect={(folderId) => updateSearch({ folder: folderId })}
+            onSelect={openFolder}
             onCreate={(parentId) => setFolderDialog({ parentId })}
             onEdit={(folder) => setFolderDialog({ folder })}
             onDelete={setDeletingFolder}
           />
-        </aside>
+        </KnowledgeFolderSidebar>
 
         <section
           className="relative min-w-0 space-y-4"
@@ -280,7 +291,7 @@ export function KnowledgeBasePage() {
           {currentFolder ? (
             <KnowledgeBreadcrumb
               items={[
-                { label: t('knowledge.tree.allFiles'), to: '/knowledge/$namespace/$base', params: { namespace, base }, search: { ...search, folder: undefined, page: undefined } },
+                { label: t('knowledge.tree.root'), to: '/knowledge/$namespace/$base', params: { namespace, base }, search: { ...search, folder: undefined, page: undefined } },
                 ...ancestry.map((folder, index) => ({
                   label: folder.name,
                   to: index < ancestry.length - 1 ? '/knowledge/$namespace/$base' : undefined,
@@ -291,13 +302,15 @@ export function KnowledgeBasePage() {
             />
           ) : null}
 
-          {documentsQuery.isLoading ? (
+          {documentsQuery.isLoading || foldersQuery.isLoading ? (
             <div className="space-y-2">
               {Array.from({ length: 5 }).map((_, index) => (
                 <div key={index} className="h-14 animate-shimmer rounded-xl" />
               ))}
             </div>
-          ) : documents.length === 0 ? (
+          ) : documentsQuery.isError || foldersQuery.isError ? (
+            <EmptyState title={knowledgeErrorMessage(documentsQuery.error ?? foldersQuery.error)} />
+          ) : documents.length === 0 && childFolders.length === 0 ? (
             <div className="rounded-xl border border-dashed border-border/70">
               <EmptyState
                 title={t(hasFilters ? 'knowledge.empty.filtered' : 'knowledge.empty.title')}
@@ -319,19 +332,12 @@ export function KnowledgeBasePage() {
                 }
               />
             </div>
-          ) : search.view === 'grid' ? (
-            <KnowledgeDocumentGrid
-              documents={documents}
-              canContribute={canContribute}
-              onOpen={openDocument}
-              onNewVersion={(document) => setVersioning({ document, open: true })}
-              onEdit={(document) => setEditing({ document, open: true })}
-              onDelete={setDeletingDocument}
-            />
           ) : (
-            <KnowledgeDocumentTable
+            <DocumentView
+              folders={childFolders}
               documents={documents}
               canContribute={canContribute}
+              onOpenFolder={openFolder}
               onOpen={openDocument}
               onNewVersion={(document) => setVersioning({ document, open: true })}
               onEdit={(document) => setEditing({ document, open: true })}
@@ -347,7 +353,7 @@ export function KnowledgeBasePage() {
             <div className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary bg-background/85 backdrop-blur-sm">
               <UploadCloud className="h-8 w-8 text-primary" aria-hidden />
               <p className="text-sm font-medium text-foreground">
-                {t('knowledge.dropHint', { folder: currentFolder?.name ?? t('knowledge.tree.allFiles') })}
+                {t('knowledge.dropHint', { folder: currentFolder?.name ?? t('knowledge.tree.root') })}
               </p>
             </div>
           ) : null}

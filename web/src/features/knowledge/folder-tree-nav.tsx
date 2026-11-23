@@ -80,6 +80,7 @@ export function KnowledgeFolderTreeNav({
             type="button"
             className="flex min-w-0 flex-1 items-center gap-2 py-1.5 text-left"
             aria-current={selected ? 'page' : undefined}
+            title={folder.name}
             onClick={() => onSelect(folder.id)}
           >
             <FolderIcon className="h-4 w-4 shrink-0" aria-hidden />
@@ -134,7 +135,7 @@ export function KnowledgeFolderTreeNav({
         )}
       >
         <Library className="h-4 w-4" aria-hidden />
-        <span className="flex-1 text-left">{t('knowledge.tree.allFiles')}</span>
+        <span className="flex-1 text-left">{t('knowledge.tree.root')}</span>
         <span className="text-xs tabular-nums text-muted-foreground">{totalCount}</span>
       </button>
 

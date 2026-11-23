@@ -188,6 +188,7 @@ public class KnowledgeController extends BaseApiController {
             @PathVariable String namespace,
             @PathVariable String base,
             @RequestParam(required = false) Long folderId,
+            @RequestParam(defaultValue = "true") boolean recursive,
             @RequestParam(required = false) String q,
             @RequestParam(required = false) List<String> extensions,
             @RequestParam(required = false) String ownerId,
@@ -200,7 +201,7 @@ public class KnowledgeController extends BaseApiController {
             @RequestAttribute(value = "userNsRoles", required = false) Map<Long, NamespaceRole> userNsRoles,
             @AuthenticationPrincipal PlatformPrincipal principal) {
         KnowledgeAppService.DocumentFilter filter = new KnowledgeAppService.DocumentFilter(
-                folderId, q, extensions, ownerId, updatedFrom, updatedTo, sort, page, size);
+                folderId, recursive, q, extensions, ownerId, updatedFrom, updatedTo, sort, page, size);
         return ok("response.success.read",
                 knowledgeAppService.listDocuments(namespace, base, filter, caller(userId, userNsRoles, principal)));
     }

@@ -1,21 +1,44 @@
+import { Folder } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import type { KnowledgeDocument } from '@/api/knowledge-types'
+import type { KnowledgeDocument, KnowledgeFolder } from '@/api/knowledge-types'
 import { formatLocalDateTime } from '@/shared/lib/date-time'
+import { cn } from '@/shared/lib/utils'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
 import { KnowledgeDocumentActions, type KnowledgeDocumentActionHandlers } from './document-actions'
 import { KnowledgeFileIcon } from './file-icon'
 import { formatFileSize } from './file-types'
 
 interface DocumentListProps extends KnowledgeDocumentActionHandlers {
+  folders: KnowledgeFolder[]
   documents: KnowledgeDocument[]
   canContribute: boolean
+  onOpenFolder: (folderId: number) => void
+}
+
+function FolderEntry({ folder, onOpen, className }: {
+  folder: KnowledgeFolder
+  onOpen: (folderId: number) => void
+  className?: string
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen(folder.id)}
+      className={cn('flex w-full min-w-0 items-center gap-3 text-left font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring', className)}
+    >
+      <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary" aria-hidden>
+        <Folder className="h-4 w-4" />
+      </span>
+      <span className="truncate" title={folder.name}>{folder.name}</span>
+    </button>
+  )
 }
 
 /**
  * File table. The fixed layout lets the name column take the remaining width and truncate long
  * names instead of widening the table; secondary columns collapse into the name cell on narrow screens.
  */
-export function KnowledgeDocumentTable({ documents, canContribute, ...handlers }: DocumentListProps) {
+export function KnowledgeDocumentTable({ folders, documents, canContribute, onOpenFolder, ...handlers }: DocumentListProps) {
   const { t, i18n } = useTranslation()
   return (
     <div className="overflow-hidden rounded-xl border border-border/60 bg-card">
@@ -31,6 +54,18 @@ export function KnowledgeDocumentTable({ documents, canContribute, ...handlers }
           </TableRow>
         </TableHeader>
         <TableBody>
+          {folders.map((folder) => (
+            <TableRow key={`folder-${folder.id}`}>
+              <TableCell className="p-0">
+                <FolderEntry folder={folder} onOpen={onOpenFolder} className="cursor-pointer p-4" />
+              </TableCell>
+              <TableCell className="hidden lg:table-cell" />
+              <TableCell className="hidden xl:table-cell" />
+              <TableCell className="hidden md:table-cell" />
+              <TableCell className="hidden xl:table-cell" />
+              <TableCell />
+            </TableRow>
+          ))}
           {documents.map((document) => {
             const updated = formatLocalDateTime(document.updatedAt, i18n.language, { dateStyle: 'short', timeStyle: 'short' })
             return (
@@ -63,10 +98,18 @@ export function KnowledgeDocumentTable({ documents, canContribute, ...handlers }
   )
 }
 
-export function KnowledgeDocumentGrid({ documents, canContribute, ...handlers }: DocumentListProps) {
+export function KnowledgeDocumentGrid({ folders, documents, canContribute, onOpenFolder, ...handlers }: DocumentListProps) {
   const { i18n } = useTranslation()
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      {folders.map((folder) => (
+        <FolderEntry
+          key={`folder-${folder.id}`}
+          folder={folder}
+          onOpen={onOpenFolder}
+          className="cursor-pointer self-start rounded-xl border border-border/60 bg-card p-4 transition-colors hover:border-primary/30 hover:bg-accent/50"
+        />
+      ))}
       {documents.map((document) => (
         <div
           key={document.id}

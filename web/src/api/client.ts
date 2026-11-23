@@ -1670,6 +1670,7 @@ export const knowledgeApi = {
   listDocuments(namespace: string, base: string, query: KnowledgeDocumentQuery): Promise<KnowledgeDocumentPage> {
     const params = new URLSearchParams()
     if (query.folderId !== undefined) params.set('folderId', String(query.folderId))
+    if (query.recursive !== undefined) params.set('recursive', String(query.recursive))
     if (query.q?.trim()) params.set('q', query.q.trim())
     query.extensions?.forEach((extension) => params.append('extensions', extension))
     if (query.ownerId) params.set('ownerId', query.ownerId)

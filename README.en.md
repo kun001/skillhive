@@ -209,7 +209,7 @@ Skill versions are published after validation, scanning and review. Search and d
 <details>
 <summary><strong>Supported knowledge files</strong></summary>
 
-Files are organized as **team space → knowledge base → folder → file**, up to **100 MiB** per file.
+Files are organized as **team space → knowledge base → folder → file**. Each ZIP, RAR or 7z archive can be up to **500 MiB**. Other files can be up to **100 MiB** each.
 
 | File type | Formats | How members use them |
 | --- | --- | --- |

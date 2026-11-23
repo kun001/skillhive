@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { KnowledgeFolder } from '@/api/knowledge-types'
 import { PORTAL_ROOT_ID } from '@/shared/lib/portal-container'
+import { KnowledgeFolderSidebar } from './folder-sidebar'
 import { buildFolderTree } from './folder-tree'
 import { KnowledgeFolderTreeNav } from './folder-tree-nav'
 
@@ -12,7 +13,8 @@ function folder(id: number, name: string, parentId?: number): KnowledgeFolder {
   return { id, name, parentId, documentCount: 0, canManage: true }
 }
 
-const folders = [folder(1, 'Parent'), folder(2, 'Child', 1), folder(3, 'Nested', 2)]
+const nestedName = 'A nested folder with a long name that may be truncated in the sidebar'
+const folders = [folder(1, 'Parent'), folder(2, 'Child', 1), folder(3, nestedName, 2)]
 
 function mount() {
   return render(
@@ -20,7 +22,7 @@ function mount() {
       <aside data-testid="sidebar" style={{ position: 'sticky', overflow: 'auto', height: 80, width: 160 }}>
         <KnowledgeFolderTreeNav
           tree={buildFolderTree(folders)}
-          ancestry={[folder(1, 'Parent'), folder(2, 'Child', 1), folder(3, 'Nested', 2)]}
+          ancestry={folders}
           selectedFolderId={3}
           totalCount={3}
           canContribute
@@ -43,6 +45,28 @@ beforeEach(() => {
 afterEach(() => {
   cleanup()
   document.getElementById(PORTAL_ROOT_ID)?.remove()
+})
+
+it('exposes the full name of a nested folder on hover', () => {
+  mount()
+  expect(screen.getByRole('button', { name: nestedName }).getAttribute('title')).toBe(nestedName)
+})
+
+it('resizes the sidebar with the keyboard within the announced limits', () => {
+  render(<KnowledgeFolderSidebar>Folders</KnowledgeFolderSidebar>)
+  const handle = screen.getByRole('separator', { name: 'knowledge.tree.resizeSidebar' })
+  const width = () => Number(handle.getAttribute('aria-valuenow'))
+  const original = width()
+  fireEvent.keyDown(handle, { key: 'ArrowRight' })
+  expect(width()).toBeGreaterThan(original)
+  fireEvent.keyDown(handle, { key: 'ArrowLeft' })
+  expect(width()).toBe(original)
+  fireEvent.keyDown(handle, { key: 'Home' })
+  fireEvent.keyDown(handle, { key: 'ArrowLeft' })
+  expect(width()).toBe(Number(handle.getAttribute('aria-valuemin')))
+  fireEvent.keyDown(handle, { key: 'End' })
+  fireEvent.keyDown(handle, { key: 'ArrowRight' })
+  expect(width()).toBe(Number(handle.getAttribute('aria-valuemax')))
 })
 
 describe('knowledge folder actions menu', () => {

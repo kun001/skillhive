@@ -16,10 +16,7 @@ export const knowledgeKeys = {
   bases: () => [...knowledgeKeys.all, 'bases'] as const,
   base: (namespace: string, base: string) => [...knowledgeKeys.all, 'base', namespace, base] as const,
   folders: (namespace: string, base: string) => [...knowledgeKeys.all, 'folders', namespace, base] as const,
-  documents: (namespace: string, base: string, query?: KnowledgeDocumentQuery) =>
-    query
-      ? ([...knowledgeKeys.all, 'documents', namespace, base, query] as const)
-      : ([...knowledgeKeys.all, 'documents', namespace, base] as const),
+  documents: (namespace: string, base: string) => [...knowledgeKeys.all, 'documents', namespace, base] as const,
   search: (query: KnowledgeDocumentSearchQuery) => [...knowledgeKeys.all, 'search', query] as const,
   document: (documentId: number) => [...knowledgeKeys.all, 'document', documentId] as const,
   versions: (documentId: number) => [...knowledgeKeys.all, 'versions', documentId] as const,
@@ -56,12 +53,18 @@ export function useKnowledgeFolders(namespace: string, base: string) {
 export function useKnowledgeDocuments(namespace: string, base: string, query: KnowledgeDocumentQuery) {
   const { user, isLoading } = useAuth()
   const scope = user?.userId ?? 'guest'
+  const queryKey = [...knowledgeKeys.documents(namespace, base), query, scope] as const
   return useQuery({
-    queryKey: [...knowledgeKeys.documents(namespace, base, query), scope],
+    queryKey,
     enabled: !isLoading,
     retry: false,
     queryFn: () => knowledgeApi.listDocuments(namespace, base, query),
-    placeholderData: (previous, query) => query?.queryKey.at(-1) === scope ? previous : undefined,
+    placeholderData: (previous, previousQuery) => {
+      const previousInput = previousQuery?.queryKey[4]
+      const sameLocation = previousQuery?.queryKey[2] === namespace && previousQuery.queryKey[3] === base
+      const sameScope = previousQuery?.queryKey[5] === scope && previousInput?.folderId === query.folderId
+      return sameLocation && sameScope && previousInput?.recursive === query.recursive ? previous : undefined
+    },
   })
 }
 
