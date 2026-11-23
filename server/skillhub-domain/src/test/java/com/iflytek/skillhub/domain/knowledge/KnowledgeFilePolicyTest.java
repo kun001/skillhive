@@ -47,12 +47,33 @@ class KnowledgeFilePolicyTest {
     }
 
     @Test
+    void acceptsWpsUploadsAsDownloadOnly() {
+        assertThat(policy.validateUpload("实施方案.WPS", 10)).isEqualTo("wps");
+        assertThat(policy.contentTypeFor("wps")).isEqualTo("application/wps-office.wps");
+        assertThat(policy.previewKindFor("wps")).isEqualTo(KnowledgePreviewKind.NONE);
+    }
+
+    @Test
     void rejectsEmptyOversizedAndPathLikeFiles() {
         assertThatThrownBy(() -> policy.validateUpload("a.pdf", 0)).isInstanceOf(DomainBadRequestException.class);
         assertThatThrownBy(() -> policy.validateUpload("a.pdf", KnowledgeFilePolicy.MAX_FILE_SIZE_BYTES + 1))
                 .isInstanceOf(DomainBadRequestException.class);
         assertThatThrownBy(() -> policy.validateUpload("../a.pdf", 10)).isInstanceOf(DomainBadRequestException.class);
         assertThatThrownBy(() -> policy.validateUpload("dir\\a.pdf", 10)).isInstanceOf(DomainBadRequestException.class);
+    }
+
+    @Test
+    void acceptsArchivesUpTo500MiBAndReportsTheirSizeLimit() {
+        long limit = 500L * 1024 * 1024;
+        for (String extension : java.util.List.of("ZIP", "rar", "7Z")) {
+            String filename = "archive." + extension;
+            assertThat(policy.validateUpload(filename, limit)).isEqualTo(extension.toLowerCase(java.util.Locale.ROOT));
+            assertThatThrownBy(() -> policy.validateUpload(filename, limit + 1))
+                    .isInstanceOfSatisfying(DomainBadRequestException.class, error -> {
+                        assertThat(error.messageCode()).isEqualTo("error.knowledge.file.tooLarge");
+                        assertThat(error.messageArgs()).containsExactly(500L);
+                    });
+        }
     }
 
     @Test

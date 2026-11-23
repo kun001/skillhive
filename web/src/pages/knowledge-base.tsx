@@ -11,6 +11,7 @@ import { KnowledgeDocumentGrid, KnowledgeDocumentTable } from '@/features/knowle
 import { knowledgeErrorMessage } from '@/features/knowledge/errors'
 import { extensionsForCategory, KNOWLEDGE_FILE_CATEGORIES, typeFilterAfterUpload } from '@/features/knowledge/file-types'
 import { KnowledgeFolderDialog } from '@/features/knowledge/folder-dialog'
+import { KnowledgeFolderSidebar } from '@/features/knowledge/folder-sidebar'
 import { buildFolderTree, flattenFolderTree, folderAncestry } from '@/features/knowledge/folder-tree'
 import { KnowledgeFolderTreeNav } from '@/features/knowledge/folder-tree-nav'
 import { KnowledgeBreadcrumb } from '@/features/knowledge/knowledge-breadcrumb'
@@ -187,8 +188,8 @@ export function KnowledgeBasePage() {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[15rem_minmax(0,1fr)]">
-        <aside className="lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:self-start lg:overflow-y-auto">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[auto_minmax(0,1fr)]">
+        <KnowledgeFolderSidebar>
           <KnowledgeFolderTreeNav
             tree={tree}
             ancestry={ancestry}
@@ -200,7 +201,7 @@ export function KnowledgeBasePage() {
             onEdit={(folder) => setFolderDialog({ folder })}
             onDelete={setDeletingFolder}
           />
-        </aside>
+        </KnowledgeFolderSidebar>
 
         <section
           className="relative min-w-0 space-y-4"

@@ -14,7 +14,7 @@ SkillHive extracts Word, PowerPoint, Excel, PDF and text files to Markdown, and 
 
 ## Supported Files
 
-Up to **100 MiB** per file.
+Each ZIP, RAR or 7z archive can be up to **500 MiB**. Other files can be up to **100 MiB** each.
 
 | Type | Formats | Access |
 |------|---------|--------|

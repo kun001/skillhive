@@ -17,8 +17,9 @@ describe('knowledge file types', () => {
   })
 
   it('maps categories to extensions and back', () => {
-    expect(extensionsForCategory('word')).toEqual(['doc', 'docx'])
+    expect(extensionsForCategory('word')).toEqual(['doc', 'docx', 'wps'])
     expect(extensionsForCategory('unknown')).toBeUndefined()
+    expect(categoryForExtension('WPS')).toBe('word')
     expect(categoryForExtension('XLSX')).toBe('excel')
     expect(categoryForExtension('exe')).toBeUndefined()
   })
@@ -31,6 +32,7 @@ describe('knowledge file types', () => {
     expect(validateKnowledgeFile({ name: 'a.HTM', size: 10 })).toBeUndefined()
     expect(categoryForExtension('html')).toBe('html')
     expect(validateKnowledgeFile({ name: '数据库脚本.SQL', size: 10 })).toBeUndefined()
+    expect(validateKnowledgeFile({ name: '实施方案.WPS', size: 10 })).toBeUndefined()
     expect(categoryForExtension('sql')).toBe('text')
     expect(validateKnowledgeFile({ name: 'a.svg', size: 10 })).toBe('knowledge.upload.errorType')
     expect(validateKnowledgeFile({ name: 'a.pdf', size: 0 })).toBe('knowledge.upload.errorEmpty')
@@ -43,6 +45,13 @@ describe('knowledge file types', () => {
     expect(formatFileSize(25 * 1024 * 1024)).toBe('25 MB')
   })
 
+  it.each(['ZIP', 'rar', '7Z'])('enforces the 500 MiB limit for %s archives', (extension) => {
+    const name = `archive.${extension}`
+    const limit = 500 * 1024 * 1024
+    expect(validateKnowledgeFile({ name, size: limit })).toBeUndefined()
+    expect(validateKnowledgeFile({ name, size: limit + 1 })).toBe('knowledge.upload.errorArchiveTooLarge')
+  })
+
   it('keeps All after uploads so existing files remain visible', () => {
     expect(typeFilterAfterUpload(['notes.md'])).toBeUndefined()
     expect(typeFilterAfterUpload(['a.docx', 'b.doc'])).toBeUndefined()
@@ -50,7 +59,7 @@ describe('knowledge file types', () => {
 
   it('preserves compatible filters and widens incompatible filters to All', () => {
     expect(typeFilterAfterUpload(['notes.md', 'query.sql'], 'text')).toBe('text')
-    expect(typeFilterAfterUpload(['a.docx', 'b.doc'], 'word')).toBe('word')
+    expect(typeFilterAfterUpload(['a.docx', 'b.doc', 'c.WPS'], 'word')).toBe('word')
     expect(typeFilterAfterUpload(['query.sql'], 'html')).toBeUndefined()
     expect(typeFilterAfterUpload(['a.md', 'b.docx'], 'text')).toBeUndefined()
     expect(typeFilterAfterUpload(['unknown.bin'], 'word')).toBeUndefined()

@@ -4,7 +4,7 @@ import { File, FileArchive, FileCode, FileImage, FileSpreadsheet, FileText, Pres
 /** Filter categories shown in the type dropdown; each maps to the extensions the backend accepts. */
 export const KNOWLEDGE_FILE_CATEGORIES = [
   { id: 'pdf', extensions: ['pdf'] },
-  { id: 'word', extensions: ['doc', 'docx'] },
+  { id: 'word', extensions: ['doc', 'docx', 'wps'] },
   { id: 'excel', extensions: ['xls', 'xlsx', 'csv'] },
   { id: 'ppt', extensions: ['ppt', 'pptx'] },
   { id: 'image', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp'] },
@@ -19,6 +19,8 @@ export const KNOWLEDGE_ACCEPTED_EXTENSIONS: string[] = KNOWLEDGE_FILE_CATEGORIES
 
 /** Must match KnowledgeFilePolicy.MAX_FILE_SIZE_BYTES on the server. */
 export const KNOWLEDGE_MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024
+/** Must match KnowledgeFilePolicy.MAX_ARCHIVE_SIZE_BYTES on the server. */
+export const KNOWLEDGE_MAX_ARCHIVE_SIZE_BYTES = 500 * 1024 * 1024
 
 export function extensionsForCategory(categoryId: string | undefined): string[] | undefined {
   const category = KNOWLEDGE_FILE_CATEGORIES.find((candidate) => candidate.id === categoryId)
@@ -69,13 +71,13 @@ export function validateKnowledgeFile(file: { name: string; size: number }): str
   if (file.size <= 0) {
     return 'knowledge.upload.errorEmpty'
   }
-  if (file.size > KNOWLEDGE_MAX_FILE_SIZE_BYTES) {
-    return 'knowledge.upload.errorTooLarge'
+  const category = categoryForExtension(fileExtension(file.name))
+  const isArchive = category === 'archive'
+  const maxSizeBytes = isArchive ? KNOWLEDGE_MAX_ARCHIVE_SIZE_BYTES : KNOWLEDGE_MAX_FILE_SIZE_BYTES
+  if (file.size > maxSizeBytes) {
+    return isArchive ? 'knowledge.upload.errorArchiveTooLarge' : 'knowledge.upload.errorTooLarge'
   }
-  if (!KNOWLEDGE_ACCEPTED_EXTENSIONS.includes(fileExtension(file.name))) {
-    return 'knowledge.upload.errorType'
-  }
-  return undefined
+  return category ? undefined : 'knowledge.upload.errorType'
 }
 
 export function formatFileSize(bytes: number): string {

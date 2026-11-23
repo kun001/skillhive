@@ -415,11 +415,10 @@ services:
 - 脚本和源码（`.py`、`.sh`、`.bash`、`.js`、`.ts`、`.java` 等）默认不超过 **2MB**（`skillhub.publish.max-script-file-size`，环境变量 `SKILLHUB_PUBLISH_MAX_SCRIPT_FILE_SIZE`）。安全扫描会完整解析这类文件，过大的脚本会占满扫描进程内存。
 - 图片、PDF、Office、CSV、JSON、Markdown（含 `SKILL.md`）及其他非脚本文件默认不超过 **100MB**（`skillhub.publish.max-data-file-size`，环境变量 `SKILLHUB_PUBLISH_MAX_DATA_FILE_SIZE`）。
 - 若仍设置旧项 `skillhub.publish.max-single-file-size`（`SKILLHUB_PUBLISH_MAX_SINGLE_FILE_SIZE`），它只覆盖数据文件上限，不会放宽脚本上限。
-- 一次请求还受 Spring multipart 与 nginx / Ingress 的 **110MB** 限制，以便接近 100MB 的数据文件连同 multipart 开销能到达应用。
 - 同时解包的技能包声明大小合计默认不超过 **200MB**（`skillhub.publish.extraction-budget-bytes`，`SKILLHUB_PUBLISH_EXTRACTION_BUDGET_BYTES`）。超出时返回 429，请稍后重试；设为 0 或负数可关闭该并发保护。
 - 解包时，大于 **1MB** 的单个条目写入临时文件，而不是 `byte[]`（`skillhub.publish.memory-entry-threshold-bytes`，`SKILLHUB_PUBLISH_MEMORY_ENTRY_THRESHOLD_BYTES`）。UTF-8、文件头和凭证检查按流读取；上传和 `bundle.zip` 也从该文件读取。请求结束或失败时删除临时文件。设为 0 时非空文件都落盘，设为负数时全部留在内存。`SKILL.md` 在解析元数据时仍会读入内存。
 
-知识库：单文件不超过 100MB（`KnowledgeFilePolicy`）。
+知识库的 ZIP、RAR、7z 单文件上限为 **500 MiB**，其他文件为 **100 MiB**（`KnowledgeFilePolicy`）。Spring multipart 与仓库内的 nginx / Ingress 将请求体上限设为 **510 MiB**，为压缩包及 multipart 开销留出空间。使用额外的反向代理时，其对应路径的请求体上限也需允许 **510 MiB**。
 
 在这些单次上传限制之外，每个用户还有总存储配额，默认 100MB：
 
@@ -433,7 +432,7 @@ SKILLHUB_USER_STORAGE_QUOTA_EXEMPT_ROLES=SUPER_ADMIN,SKILL_ADMIN,USER_ADMIN
 - **已用空间**：用户上传的所有技能版本文件（任意状态，含草稿、驳回、撤回、归档的技能）加上其上传的知识库文件版本与 Markdown 配图（含已删除/归档但尚未永久删除的文件，因为对象仍在存储中）。恢复版本、继承配图复用同一对象，不重复计入。技能下载用的 `bundle.zip` 是派生的压缩包，不计入。
 - **校验时机**：发布技能时，若上传包的声明大小已经超过剩余配额，会在整包解入内存之前直接返回 413 `error.storage.quota.exceeded`（替换自己未发布的同版本时，会先按旧版本占用抵扣）。解包后仍会按解压后的实际大小再校验一次。上传知识库文件或新版本前同样校验。提示中给出配额、已用和本次大小（MB），不会写入任何文件或记录。
 - **豁免**：拥有豁免角色的用户（默认 `SUPER_ADMIN`、`SKILL_ADMIN`、`USER_ADMIN`，初始化的 `admin` 账号即 `SUPER_ADMIN`）和系统账号（如内置技能发布账号）不受限制。
-- **与单文件限制的关系**：各项单文件/整包上限仍然生效；配额是额外的总量限制，两者都满足才能上传。例如配额剩余 20MB 时，即使知识库单文件允许 100MB，也只能上传不超过 20MB 的文件。
+- **与单文件限制的关系**：上传大小需同时满足文件类型上限和剩余配额。例如剩余配额为 20 MiB 时，压缩包最多上传 20 MiB。
 - **查询**：登录用户可调用 `GET /api/v1/me/storage-quota` 查看自己的已用空间与配额。
 - **释放空间**：删除知识库文件只是归档，仍占配额。文件上传者、团队所有者/管理员或超级管理员可永久删除已归档的文件（`DELETE /api/web/knowledge/documents/{id}/purge?confirm=true`，或按知识库批量 `DELETE /api/web/knowledge/bases/{namespace}/{base}/archived-documents?confirm=true`，详见 [API 设计 7.12](06-api-design.md#712-知识库-api)），提交后配额立即释放。存储对象在提交后删除；删除失败的键记录在 `skill_storage_delete_compensation`，由定时任务（每 5 分钟）重试，无需人工处理。
 - 配额实时按现有数据统计，无需数据库迁移；升级后已超出配额的用户保留现有数据，但在释放空间或调大配额前不能上传新内容。

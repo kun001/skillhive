@@ -124,9 +124,10 @@ spring:
             user-name-attribute: unionId
   servlet:
     multipart:
-      # 110MB leaves room for multipart framing around a 100MB package entry.
-      max-file-size: 110MB
-      max-request-size: 110MB
+      # Leave room for multipart framing around a 500 MiB knowledge archive.
+      # Knowledge files and skill packages enforce their own size limits.
+      max-file-size: 510MB
+      max-request-size: 510MB
   mail:
     host: ${SPRING_MAIL_HOST:localhost}
     port: ${SPRING_MAIL_PORT:25}

@@ -80,6 +80,7 @@ export function KnowledgeFolderTreeNav({
             type="button"
             className="flex min-w-0 flex-1 items-center gap-2 py-1.5 text-left"
             aria-current={selected ? 'page' : undefined}
+            title={folder.name}
             onClick={() => onSelect(folder.id)}
           >
             <FolderIcon className="h-4 w-4 shrink-0" aria-hidden />

@@ -40,7 +40,7 @@ Recreate the containers for the change to take effect; `restart` alone does not 
 
 ## Q: How much storage can each user use?
 
-A: By default each user gets **100MB**, counting the skill package files and knowledge files they uploaded (including older versions, images and deleted files that have not been permanently deleted). Administrators (`SUPER_ADMIN`, `SKILL_ADMIN`, `USER_ADMIN`) are exempt. Uploads over the quota are rejected with 413 and a message showing the quota, the space used and the upload size. A skill package whose declared size already exceeds the remaining quota is rejected before it is unpacked. `GET /api/v1/me/storage-quota` returns your usage. The quota applies on top of the per-file limits: 2MB per script, 100MB per other skill-package file and 100MB per knowledge file, but never more than the remaining quota. Self-hosted deployments can change it:
+A: By default each user gets **100MB**, counting the skill package files and knowledge files they uploaded (including older versions, images and deleted files that have not been permanently deleted). Administrators (`SUPER_ADMIN`, `SKILL_ADMIN`, `USER_ADMIN`) are exempt. Uploads over the quota are rejected with 413 and a message showing the quota, the space used and the upload size. A skill package whose declared size already exceeds the remaining quota is rejected before it is unpacked. `GET /api/v1/me/storage-quota` returns your usage. Uploads must fit both the remaining quota and the per-file limit. Skill packages allow 2MB per script and 100MB per other file. The knowledge base allows 500 MiB per ZIP, RAR or 7z archive and 100 MiB per other file. Self-hosted deployments can change the quota:
 
 ```bash
 SKILLHUB_USER_STORAGE_QUOTA_BYTES=524288000   # 500MB; 0 or a negative value means unlimited
@@ -82,7 +82,7 @@ A: The `name` in `SKILL.md` becomes the skill identifier (slug) and allows only 
 
 ## Q: Which files does the knowledge base support? Can I search file contents?
 
-A: PDF, images, Markdown / text, Word / PowerPoint (including legacy formats), spreadsheets / data files and archives, up to 100 MiB per file. Search matches file titles and descriptions only (the title defaults to the file name); it does not index contents and offers no document parsing or RAG Q&A. See [Knowledge Base](/en/guide/knowledge).
+A: PDF, images, Markdown / text, Word / PowerPoint (including legacy formats), spreadsheets / data files and archives. Each ZIP, RAR or 7z archive can be up to 500 MiB. Other files can be up to 100 MiB each. Search matches file titles and descriptions only (the title defaults to the file name); it does not index contents and offers no document parsing or RAG Q&A. See [Knowledge Base](/en/guide/knowledge).
 
 ## Q: How can AI tools such as Claude Code or Cursor use SkillHive content?
 

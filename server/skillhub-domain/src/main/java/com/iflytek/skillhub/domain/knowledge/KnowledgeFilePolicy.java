@@ -16,6 +16,7 @@ import java.util.regex.Pattern;
 public class KnowledgeFilePolicy {
 
     public static final long MAX_FILE_SIZE_BYTES = 100L * 1024 * 1024;
+    static final long MAX_ARCHIVE_SIZE_BYTES = 500L * 1024 * 1024;
     static final int MAX_FILENAME_LENGTH = 256;
     static final int MAX_TITLE_LENGTH = 256;
     static final int MAX_DESCRIPTION_LENGTH = 2000;
@@ -24,7 +25,10 @@ public class KnowledgeFilePolicy {
 
     private static final Pattern FORBIDDEN_NAME_CHARS = Pattern.compile("[\\\\/\\p{Cntrl}]");
 
-    private record FileType(String contentType, KnowledgePreviewKind previewKind) {
+    private record FileType(String contentType, KnowledgePreviewKind previewKind, long maxSizeBytes) {
+        private FileType(String contentType, KnowledgePreviewKind previewKind) {
+            this(contentType, previewKind, MAX_FILE_SIZE_BYTES);
+        }
     }
 
     private static final Map<String, FileType> FILE_TYPES = Map.ofEntries(
@@ -48,6 +52,7 @@ public class KnowledgeFilePolicy {
             Map.entry("docx", new FileType(
                     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                     KnowledgePreviewKind.OFFICE)),
+            Map.entry("wps", new FileType("application/wps-office.wps", KnowledgePreviewKind.NONE)),
             Map.entry("xls", new FileType("application/vnd.ms-excel", KnowledgePreviewKind.NONE)),
             Map.entry("xlsx", new FileType(
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -56,9 +61,9 @@ public class KnowledgeFilePolicy {
             Map.entry("pptx", new FileType(
                     "application/vnd.openxmlformats-officedocument.presentationml.presentation",
                     KnowledgePreviewKind.OFFICE)),
-            Map.entry("zip", new FileType("application/zip", KnowledgePreviewKind.NONE)),
-            Map.entry("rar", new FileType("application/vnd.rar", KnowledgePreviewKind.NONE)),
-            Map.entry("7z", new FileType("application/x-7z-compressed", KnowledgePreviewKind.NONE))
+            Map.entry("zip", new FileType("application/zip", KnowledgePreviewKind.NONE, MAX_ARCHIVE_SIZE_BYTES)),
+            Map.entry("rar", new FileType("application/vnd.rar", KnowledgePreviewKind.NONE, MAX_ARCHIVE_SIZE_BYTES)),
+            Map.entry("7z", new FileType("application/x-7z-compressed", KnowledgePreviewKind.NONE, MAX_ARCHIVE_SIZE_BYTES))
     );
 
     /** Validates an upload and returns its normalized (lower-case) extension. */
@@ -67,11 +72,13 @@ public class KnowledgeFilePolicy {
         if (sizeBytes <= 0) {
             throw new DomainBadRequestException("error.knowledge.file.empty");
         }
-        if (sizeBytes > MAX_FILE_SIZE_BYTES) {
-            throw new DomainBadRequestException("error.knowledge.file.tooLarge", MAX_FILE_SIZE_BYTES / (1024 * 1024));
-        }
         String extension = extensionOf(name);
-        if (extension.isEmpty() || !FILE_TYPES.containsKey(extension)) {
+        FileType type = FILE_TYPES.get(extension);
+        long maxSizeBytes = type == null ? MAX_FILE_SIZE_BYTES : type.maxSizeBytes();
+        if (sizeBytes > maxSizeBytes) {
+            throw new DomainBadRequestException("error.knowledge.file.tooLarge", maxSizeBytes / (1024 * 1024));
+        }
+        if (type == null) {
             throw new DomainBadRequestException("error.knowledge.file.typeNotAllowed", extension.isEmpty() ? name : extension);
         }
         return extension;
