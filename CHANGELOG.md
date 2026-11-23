@@ -6,6 +6,18 @@
 
 暂无。 / None.
 
+## v0.4.9 — 2026-11-23
+
+> 生产环境已于 2026-11-23 22:34（北京时间）完成 `v0.4.9` 部署。三个镜像提交一致，数据库备份、容器健康检查和线上冒烟通过。[部署记录](https://github.com/kun001/skillhive/actions/runs/45194836184)
+> Production deployment of `v0.4.9` completed on 2026-11-23 at 22:34 China Standard Time. Image revisions, database backup, container health and production smoke checks passed. [Deployment run](https://github.com/kun001/skillhive/actions/runs/45194836184)
+
+- 知识库支持逐层浏览目录，目录内搜索覆盖下级目录。桌面端可拖动侧栏，悬停显示目录全称。
+- Browse folders one level at a time and search their descendants. On desktop, resize the sidebar and hover for full folder names.
+- WPS 文字（.wps）支持上传、下载和版本管理。
+- WPS Writer (.wps) files support uploads, downloads and version history.
+- ZIP、RAR、7z 单个压缩包上限提高到 500 MiB。其他知识库文件上限为 100 MiB，上传仍受剩余存储配额约束。
+- ZIP, RAR and 7z archives can be up to 500 MiB each. Other knowledge files can be up to 100 MiB each, and the remaining storage quota still applies.
+
 ## v0.4.8 — 2026-11-18
 
 > 生产环境已于 2026-11-18 10:20（北京时间）切换到 `v0.4.8`。三个镜像提交一致，数据库备份、容器健康检查和部署冒烟检查均通过。[部署记录](https://github.com/kun001/skillhive/actions/runs/44221867861)
