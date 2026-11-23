@@ -14,6 +14,22 @@ export interface ReleaseNote {
 // Confirm the date and image tag when deploying; Git submission is not deployment.
 export const releases: ReleaseNote[] = [
   {
+    id: '20261123-knowledge-folders-and-archive-uploads',
+    version: 'v0.4.9',
+    date: '2026-11-23',
+    title: { zh: '知识库目录浏览与大文件上传', en: 'Knowledge folder browsing and large archive uploads' },
+    summary: {
+      zh: '知识库支持逐层浏览目录、拖动侧栏和悬停查看目录全称。新增 WPS 文字原件上传，ZIP、RAR、7z 单个压缩包上限提高到 500 MB。',
+      en: 'Browse knowledge folders one level at a time, resize the sidebar, and hover for full folder names. Upload WPS Writer originals and ZIP, RAR and 7z archives up to 500 MB each.',
+    },
+    changes: [
+      { zh: '进入目录后，列表显示该目录的直属子目录和文件。目录内搜索可查找下级目录。', en: 'Opening a folder lists its immediate subfolders and files. Searches within the folder also include its descendants.' },
+      { zh: '桌面端可拖动侧栏右缘调整宽度，鼠标悬停在目录名上可查看全称。', en: 'On desktop, drag the sidebar edge to resize it and hover over folder names to see the full name.' },
+      { zh: 'WPS 文字（.wps）支持上传、下载原件和管理版本，下载后可用 WPS 打开。', en: 'WPS Writer (.wps) documents support uploads, original downloads and version history. Open the downloaded file in WPS to view it.' },
+      { zh: 'ZIP、RAR、7z 单个压缩包上限为 500 MB，其他知识库文件上限为 100 MB。上传仍受剩余存储配额约束。', en: 'ZIP, RAR and 7z archives can be up to 500 MB each. Other knowledge files can be up to 100 MB each. Uploads are subject to the remaining storage quota.' },
+    ],
+  },
+  {
     id: '20261118-knowledge-upload-and-html-download',
     version: 'v0.4.8',
     date: '2026-11-18',
