@@ -105,11 +105,8 @@ public class JpaKnowledgeDocumentRepositoryAdapter implements KnowledgeDocumentR
             if (search.rootOnly()) {
                 predicates.add(cb.isNull(root.get("folderId")));
             } else if (search.folderIds() != null) {
-                if (search.folderIds().isEmpty()) {
-                    predicates.add(cb.disjunction());
-                } else {
-                    predicates.add(root.get("folderId").in(search.folderIds()));
-                }
+                Predicate inFolders = search.folderIds().isEmpty() ? cb.disjunction() : root.get("folderId").in(search.folderIds());
+                predicates.add(search.includeRoot() ? cb.or(inFolders, cb.isNull(root.get("folderId"))) : inFolders);
             }
             if (search.keyword() != null && !search.keyword().isBlank()) {
                 String pattern = "%" + escapeLike(search.keyword().strip().toLowerCase(Locale.ROOT)) + "%";

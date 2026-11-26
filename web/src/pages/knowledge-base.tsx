@@ -1,5 +1,5 @@
 import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
-import { Archive, LayoutGrid, List, Search, Settings2, Upload, UploadCloud } from 'lucide-react'
+import { Archive, LayoutGrid, List, Search, Settings2, Share2, Trash2, Upload, UploadCloud } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { KnowledgeDocument, KnowledgeFolder } from '@/api/knowledge-types'
@@ -12,12 +12,14 @@ import { knowledgeErrorMessage } from '@/features/knowledge/errors'
 import { extensionsForCategory, KNOWLEDGE_FILE_CATEGORIES, typeFilterAfterUpload } from '@/features/knowledge/file-types'
 import { KnowledgeFolderDialog } from '@/features/knowledge/folder-dialog'
 import { KnowledgeFolderSidebar } from '@/features/knowledge/folder-sidebar'
-import { buildFolderTree, flattenFolderTree, folderAncestry } from '@/features/knowledge/folder-tree'
+import { buildFolderTree, flattenFolderTree, folderAncestry, publicShareFolderIds } from '@/features/knowledge/folder-tree'
 import { KnowledgeFolderTreeNav } from '@/features/knowledge/folder-tree-nav'
 import { KnowledgeBreadcrumb } from '@/features/knowledge/knowledge-breadcrumb'
 import { updatedFromForRange, type KnowledgeBaseSearch } from '@/features/knowledge/search-params'
 import { KnowledgeUploadDialog } from '@/features/knowledge/upload-dialog'
+import { KnowledgeShareDialog } from '@/features/knowledge/share-dialog'
 import {
+  useBatchDeleteKnowledgeDocuments,
   useDeleteKnowledgeDocument,
   useDeleteKnowledgeFolder,
   useKnowledgeBase,
@@ -104,15 +106,54 @@ export function KnowledgeBasePage() {
   const [editing, setEditing] = useState<{ document: KnowledgeDocument; open: boolean } | null>(null)
   const [versioning, setVersioning] = useState<{ document: KnowledgeDocument; open: boolean } | null>(null)
   const [editBaseOpen, setEditBaseOpen] = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
+  const [sharingDocument, setSharingDocument] = useState<KnowledgeDocument>()
   const [archivedOpen, setArchivedOpen] = useState(false)
   const [deletingDocument, setDeletingDocument] = useState<KnowledgeDocument | null>(null)
+  const [selectedDocumentIds, setSelectedDocumentIds] = useState<Set<number>>(() => new Set())
+  const [batchDeleteIds, setBatchDeleteIds] = useState<number[] | null>(null)
   const deleteFolder = useDeleteKnowledgeFolder(namespace, base)
   const deleteDocument = useDeleteKnowledgeDocument()
+  const batchDelete = useBatchDeleteKnowledgeDocuments(namespace, base)
+
+  useEffect(() => {
+    setSelectedDocumentIds(new Set())
+    setBatchDeleteIds(null)
+  }, [namespace, base, user?.userId, page, search.folder, search.q, search.type, search.owner, search.time, search.sort])
 
   const [dragDepth, setDragDepth] = useState(0)
   const dragCounter = useRef(0)
   const knowledgeBase = baseQuery.data
+  const sharedFolders = useMemo(() => knowledgeBase?.sharingEnabled ? publicShareFolderIds(tree) : undefined, [knowledgeBase?.sharingEnabled, tree])
   const canContribute = knowledgeBase?.canContribute ?? false
+  const selectableIds = knowledgeBase?.canManage && !documentsQuery.isPlaceholderData
+    ? documents.filter((document) => document.canManage).map((document) => document.id)
+    : []
+  const selectedIds = selectableIds.filter((id) => selectedDocumentIds.has(id))
+  const allSelected = selectableIds.length > 0 && selectedIds.length === selectableIds.length
+
+  const toggleDocument = (id: number) => {
+    setSelectedDocumentIds((current) => {
+      const next = new Set(current)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const confirmBatchDelete = async () => {
+    if (!batchDeleteIds) return
+    try {
+      await batchDelete.mutateAsync(batchDeleteIds)
+      setSelectedDocumentIds(new Set())
+      toast.success(t('knowledge.bulk.deleted', { count: batchDeleteIds.length }))
+      if (page > 0 && page + 1 === totalPages && batchDeleteIds.length === documents.length) {
+        updateSearch({ page: page > 1 ? page : undefined })
+      }
+    } catch (error) {
+      toast.error(knowledgeErrorMessage(error))
+    }
+  }
 
   const isFileDrag = (event: DragEvent) => event.dataTransfer.types.includes('Files')
   const onDragEnter = (event: DragEvent) => {
@@ -166,7 +207,12 @@ export function KnowledgeBasePage() {
             <h1 className="truncate text-2xl font-semibold text-foreground">{knowledgeBase?.displayName ?? ' '}</h1>
             {knowledgeBase?.description ? <p className="mt-1 text-sm text-muted-foreground">{knowledgeBase.description}</p> : null}
           </div>
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {knowledgeBase?.canManage && namespace !== 'global' ? (
+              <Button variant="outline" onClick={() => setShareOpen(true)}>
+                <Share2 className="h-4 w-4" aria-hidden />{t('knowledge.share.settings')}
+              </Button>
+            ) : null}
             {knowledgeBase?.canManage ? (
               <Button variant="outline" size="icon" aria-label={t('knowledge.baseSettings')} title={t('knowledge.baseSettings')} onClick={() => setEditBaseOpen(true)}>
                 <Settings2 className="h-4 w-4" />
@@ -302,6 +348,27 @@ export function KnowledgeBasePage() {
             />
           ) : null}
 
+          {selectableIds.length > 0 ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectedDocumentIds(new Set(allSelected ? [] : selectableIds))}
+              >
+                {t(allSelected ? 'knowledge.bulk.clearSelection' : 'knowledge.bulk.selectPage')}
+              </Button>
+              {selectedIds.length > 0 ? (
+                <>
+                  <span className="text-sm text-muted-foreground" role="status">{t('knowledge.bulk.selected', { count: selectedIds.length })}</span>
+                  <Button variant="destructive" size="sm" onClick={() => setBatchDeleteIds(selectedIds)}>
+                    <Trash2 className="mr-1.5 h-4 w-4" aria-hidden />
+                    {t('knowledge.bulk.delete')}
+                  </Button>
+                </>
+              ) : null}
+            </div>
+          ) : null}
+
           {documentsQuery.isLoading || foldersQuery.isLoading ? (
             <div className="space-y-2">
               {Array.from({ length: 5 }).map((_, index) => (
@@ -342,6 +409,8 @@ export function KnowledgeBasePage() {
               onNewVersion={(document) => setVersioning({ document, open: true })}
               onEdit={(document) => setEditing({ document, open: true })}
               onDelete={setDeletingDocument}
+              onShare={knowledgeBase?.canManage && namespace !== 'global' ? setSharingDocument : undefined}
+              selection={selectableIds.length > 0 ? { ids: selectedDocumentIds, onToggle: toggleDocument } : undefined}
             />
           )}
 
@@ -367,6 +436,8 @@ export function KnowledgeBasePage() {
         namespace={namespace}
         base={base}
         tree={tree}
+        sharedFolders={sharedFolders}
+        sharedRootFiles={knowledgeBase?.sharedRootFiles}
         folderId={search.folder}
         initialFiles={upload.files}
         onUploaded={({ fileNames, folderId }) => {
@@ -383,6 +454,7 @@ export function KnowledgeBasePage() {
         namespace={namespace}
         base={base}
         tree={tree}
+        sharedFolders={sharedFolders}
         folder={folderDialog?.folder}
         parentId={folderDialog?.parentId}
         onSaved={(folder) => updateSearch({ folder: folder.id })}
@@ -413,6 +485,8 @@ export function KnowledgeBasePage() {
           onOpenChange={(open) => setEditing({ ...editing, open })}
           document={editing.document}
           tree={tree}
+          sharedFolders={sharedFolders}
+          sharedRootFiles={knowledgeBase?.sharedRootFiles}
         />
       ) : null}
       {versioning ? (
@@ -420,8 +494,19 @@ export function KnowledgeBasePage() {
           open={versioning.open}
           onOpenChange={(open) => setVersioning({ ...versioning, open })}
           document={versioning.document}
+          publicShare={versioning.document.folderId == null ? knowledgeBase?.sharedRootFiles : sharedFolders?.has(versioning.document.folderId)}
         />
       ) : null}
+      <ConfirmDialog
+        open={batchDeleteIds !== null}
+        onOpenChange={(open) => !open && !batchDelete.isPending && setBatchDeleteIds(null)}
+        title={t('knowledge.bulk.confirmTitle', { count: batchDeleteIds?.length ?? 0 })}
+        description={t('knowledge.bulk.confirmDescription')}
+        variant="destructive"
+        pending={batchDelete.isPending}
+        confirmText={t('knowledge.bulk.delete')}
+        onConfirm={confirmBatchDelete}
+      />
       <ConfirmDialog
         open={deletingDocument !== null}
         onOpenChange={(open) => !open && setDeletingDocument(null)}
@@ -440,6 +525,13 @@ export function KnowledgeBasePage() {
         }}
       />
       {knowledgeBase ? <EditKnowledgeBaseDialog open={editBaseOpen} onOpenChange={setEditBaseOpen} base={knowledgeBase} /> : null}
+      {shareOpen && knowledgeBase?.canManage ? (
+        <KnowledgeShareDialog onClose={() => setShareOpen(false)} namespace={namespace} base={base} tree={tree} />
+      ) : null}
+      {sharingDocument && knowledgeBase?.canManage ? (
+        <KnowledgeShareDialog key={sharingDocument.id} onClose={() => setSharingDocument(undefined)}
+          documentId={sharingDocument.id} documentTitle={sharingDocument.title} />
+      ) : null}
     </div>
   )
 }

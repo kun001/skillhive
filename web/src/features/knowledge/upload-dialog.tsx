@@ -24,13 +24,15 @@ interface UploadDialogProps {
   base: string
   tree: KnowledgeFolderNode[]
   folderId: number | undefined
+  sharedFolders?: ReadonlySet<number>
+  sharedRootFiles?: boolean
   /** Files dropped onto the page before the dialog opened. */
   initialFiles?: File[]
   /** Called after at least one file uploads successfully so the parent can adjust filters. */
   onUploaded?: (result: { fileNames: string[]; folderId: number | undefined }) => void
 }
 
-export function KnowledgeUploadDialog({ open, onOpenChange, namespace, base, tree, folderId, initialFiles, onUploaded }: UploadDialogProps) {
+export function KnowledgeUploadDialog({ open, onOpenChange, namespace, base, tree, folderId, sharedFolders, sharedRootFiles, initialFiles, onUploaded }: UploadDialogProps) {
   const { t } = useTranslation()
   const invalidate = useInvalidateKnowledge()
   const inputRef = useRef<HTMLInputElement>(null)
@@ -169,6 +171,9 @@ export function KnowledgeUploadDialog({ open, onOpenChange, namespace, base, tre
         <div className="space-y-2">
           <Label htmlFor="kb-upload-folder">{t('knowledge.upload.targetFolder')}</Label>
           <FolderSelect id="kb-upload-folder" tree={tree} value={targetFolder} onChange={setTargetFolder} disabled={locked || confirming} />
+          {(!directoryMode && targetFolder == null ? sharedRootFiles : targetFolder != null && sharedFolders?.has(targetFolder)) ? (
+            <p className="text-sm font-medium text-foreground" role="status">{t('knowledge.share.publicUpload')}</p>
+          ) : null}
         </div>
 
         <input

@@ -69,6 +69,32 @@ it('resizes the sidebar with the keyboard within the announced limits', () => {
   expect(width()).toBe(Number(handle.getAttribute('aria-valuemax')))
 })
 
+it('opens the selected visitor branch and keeps locked folders as read-only entries', () => {
+  const visible = [
+    { id: 1, name: 'Public folders', entryOnly: false },
+    { id: 2, name: 'Shared child', parentId: 1, entryOnly: false },
+    { id: 3, name: 'Locked folder', entryOnly: true },
+  ]
+  const onSelect = vi.fn()
+  render(
+    <KnowledgeFolderTreeNav
+      tree={buildFolderTree(visible)}
+      ancestry={[visible[0]]}
+      selectedFolderId={1}
+      expandSelected
+      onSelect={onSelect}
+    />,
+  )
+
+  expect(screen.getByRole('button', { name: 'Public folders' }).getAttribute('aria-current')).toBe('page')
+  expect(screen.getByRole('button', { name: 'Shared child' })).toBeTruthy()
+  fireEvent.click(screen.getByRole('button', { name: 'knowledge.tree.collapse' }))
+  expect(screen.queryByRole('button', { name: 'Shared child' })).toBeNull()
+  fireEvent.click(screen.getByRole('button', { name: /Locked folder/ }))
+  expect(onSelect).toHaveBeenCalledWith(3)
+  expect(screen.queryByRole('button', { name: 'knowledge.tree.newFolder' })).toBeNull()
+})
+
 describe('knowledge folder actions menu', () => {
   it('ports the nested folder menu out of the scrolling sidebar', async () => {
     mount()

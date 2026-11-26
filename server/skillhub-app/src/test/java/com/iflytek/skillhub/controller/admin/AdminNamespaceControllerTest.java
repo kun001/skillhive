@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -20,6 +21,7 @@ import com.iflytek.skillhub.dto.AdminNamespacePermissionsResponse;
 import com.iflytek.skillhub.dto.AdminNamespaceStatsResponse;
 import com.iflytek.skillhub.dto.AdminNamespaceSummaryResponse;
 import com.iflytek.skillhub.dto.MemberResponse;
+import com.iflytek.skillhub.dto.MessageResponse;
 import com.iflytek.skillhub.service.AdminNamespaceAppService;
 import java.time.Instant;
 import java.util.List;
@@ -79,6 +81,21 @@ class AdminNamespaceControllerTest {
                         .with(authentication(userAdminAuth())))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value(403));
+    }
+
+    @Test
+    void deleteNamespace_requiresSuperAdmin() throws Exception {
+        when(adminNamespaceAppService.delete(eq("team-a"), eq("admin"), any()))
+                .thenReturn(new MessageResponse("Namespace deleted successfully"));
+
+        mockMvc.perform(delete("/api/v1/admin/namespaces/team-a")
+                        .with(authentication(userAdminAuth())).with(csrf()))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(delete("/api/v1/admin/namespaces/team-a")
+                        .with(authentication(superAdminAuth())).with(csrf()))
+                .andExpect(status().isOk());
+
+        verify(adminNamespaceAppService).delete(eq("team-a"), eq("admin"), any());
     }
 
     @Test

@@ -58,7 +58,7 @@ export function useKnowledgeDocuments(namespace: string, base: string, query: Kn
     queryKey,
     enabled: !isLoading,
     retry: false,
-    queryFn: () => knowledgeApi.listDocuments(namespace, base, query),
+    queryFn: ({ signal }) => knowledgeApi.listDocuments(namespace, base, query, signal),
     placeholderData: (previous, previousQuery) => {
       const previousInput = previousQuery?.queryKey[4]
       const sameLocation = previousQuery?.queryKey[2] === namespace && previousQuery.queryKey[3] === base
@@ -69,15 +69,21 @@ export function useKnowledgeDocuments(namespace: string, base: string, query: Kn
 }
 
 /** File search across every visible knowledge base; idle until there is a keyword. */
-export function useKnowledgeDocumentSearch(query: KnowledgeDocumentSearchQuery) {
+export function useKnowledgeDocumentSearch(query: KnowledgeDocumentSearchQuery, enabled = true) {
   const { user, isLoading } = useAuth()
   const scope = user?.userId ?? 'guest'
+  const queryKey = [...knowledgeKeys.search(query), scope] as const
   return useQuery({
-    queryKey: [...knowledgeKeys.search(query), scope],
-    enabled: !isLoading && query.q.trim().length > 0,
+    queryKey,
+    enabled: enabled && !isLoading && query.q.trim().length > 0,
     retry: false,
-    queryFn: () => knowledgeApi.searchDocuments(query),
-    placeholderData: (previous, query) => query?.queryKey.at(-1) === scope ? previous : undefined,
+    queryFn: ({ signal }) => knowledgeApi.searchDocuments(query, signal),
+    placeholderData: (previous, previousQuery) => {
+      const previousInput = previousQuery?.queryKey[2]
+      const sameScope = previousQuery?.queryKey[3] === scope
+        && previousInput?.namespace === query.namespace && previousInput?.memberOnly === query.memberOnly
+      return sameScope && previousInput?.q === query.q ? previous : undefined
+    },
   })
 }
 
@@ -167,6 +173,14 @@ export function useDeleteKnowledgeDocument() {
   return useMutation({
     mutationFn: (documentId: number) => knowledgeApi.deleteDocument(documentId),
     onSuccess: invalidate,
+  })
+}
+
+export function useBatchDeleteKnowledgeDocuments(namespace: string, base: string) {
+  const invalidate = useInvalidateKnowledge()
+  return useMutation({
+    mutationFn: (documentIds: number[]) => knowledgeApi.batchDeleteDocuments(namespace, base, documentIds),
+    onSettled: invalidate,
   })
 }
 

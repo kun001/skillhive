@@ -22,9 +22,11 @@ interface EditDocumentDialogProps {
   onOpenChange: (open: boolean) => void
   document: KnowledgeDocument
   tree: KnowledgeFolderNode[]
+  sharedFolders?: ReadonlySet<number>
+  sharedRootFiles?: boolean
 }
 
-export function EditKnowledgeDocumentDialog({ open, onOpenChange, document, tree }: EditDocumentDialogProps) {
+export function EditKnowledgeDocumentDialog({ open, onOpenChange, document, tree, sharedFolders, sharedRootFiles }: EditDocumentDialogProps) {
   const { t } = useTranslation()
   const updateDocument = useUpdateKnowledgeDocument()
   const [title, setTitle] = useState(document.title)
@@ -83,6 +85,9 @@ export function EditKnowledgeDocumentDialog({ open, onOpenChange, document, tree
           <div className="space-y-2">
             <Label htmlFor="kb-doc-folder">{t('knowledge.editDialog.folder')}</Label>
             <FolderSelect id="kb-doc-folder" tree={tree} value={folderId} onChange={setFolderId} />
+            {(folderId ?? null) !== (document.folderId ?? null) && (folderId == null ? sharedRootFiles : sharedFolders?.has(folderId)) ? (
+              <p className="text-sm font-medium text-foreground" role="status">{t('knowledge.share.publicMove')}</p>
+            ) : null}
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
@@ -102,9 +107,10 @@ interface NewVersionDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   document: KnowledgeDocument
+  publicShare?: boolean
 }
 
-export function NewKnowledgeVersionDialog({ open, onOpenChange, document }: NewVersionDialogProps) {
+export function NewKnowledgeVersionDialog({ open, onOpenChange, document, publicShare }: NewVersionDialogProps) {
   const { t } = useTranslation()
   const invalidate = useInvalidateKnowledge()
   const inputRef = useRef<HTMLInputElement>(null)
@@ -149,6 +155,7 @@ export function NewKnowledgeVersionDialog({ open, onOpenChange, document }: NewV
         <DialogHeader>
           <DialogTitle>{t('knowledge.versionDialog.title')}</DialogTitle>
           <DialogDescription>{t('knowledge.versionDialog.description')}</DialogDescription>
+          {publicShare ? <p className="text-sm font-medium text-foreground">{t('knowledge.share.publicVersion')}</p> : null}
         </DialogHeader>
         <div className="space-y-4">
           <input

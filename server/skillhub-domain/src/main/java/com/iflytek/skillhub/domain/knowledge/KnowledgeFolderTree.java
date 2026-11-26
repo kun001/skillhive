@@ -45,6 +45,25 @@ public final class KnowledgeFolderTree {
         return result;
     }
 
+    /** A private folder hides its subtree. An entry-only folder exposes just its own name. */
+    public Map<Long, KnowledgeFolderShareVisibility> sharedFolders() {
+        Map<Long, KnowledgeFolderShareVisibility> visible = new HashMap<>();
+        Deque<Long> pending = new ArrayDeque<>(childrenByParent.getOrDefault(null, List.of()));
+        while (!pending.isEmpty()) {
+            Long id = pending.pop();
+            KnowledgeFolder folder = byId.get(id);
+            KnowledgeFolderShareVisibility mode = folder.getShareVisibility();
+            if (mode == KnowledgeFolderShareVisibility.INHERIT) {
+                mode = folder.getParentId() == null ? KnowledgeFolderShareVisibility.PRIVATE : KnowledgeFolderShareVisibility.PUBLIC;
+            }
+            if (mode != KnowledgeFolderShareVisibility.PRIVATE && visible.putIfAbsent(id, mode) == null
+                    && mode == KnowledgeFolderShareVisibility.PUBLIC) {
+                childrenByParent.getOrDefault(id, List.of()).forEach(pending::push);
+            }
+        }
+        return visible;
+    }
+
     /** Rejects a move that would place a folder inside itself or one of its descendants. */
     public void assertCanMove(Long folderId, Long newParentId) {
         if (newParentId == null) {

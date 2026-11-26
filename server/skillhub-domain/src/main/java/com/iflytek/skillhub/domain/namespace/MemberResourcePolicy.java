@@ -25,6 +25,16 @@ public class MemberResourcePolicy {
         return isSuperAdmin(roles) || member != null && member.canDownload();
     }
 
+    public record FilePermissions(boolean canEdit, boolean canDownload) {}
+
+    public FilePermissions filePermissions(Long namespaceId, String userId, Set<String> roles) {
+        if (isSuperAdmin(roles)) {
+            return new FilePermissions(true, true);
+        }
+        NamespaceMember member = member(namespaceId, userId);
+        return new FilePermissions(member != null && member.canEdit(), member != null && member.canDownload());
+    }
+
     public void assertRead(Long namespaceId, String userId, Set<String> roles) {
         if (!canRead(namespaceId, userId, roles)) throw new DomainForbiddenException("error.namespace.membership.required");
     }

@@ -13,6 +13,28 @@ interface DocumentListProps extends KnowledgeDocumentActionHandlers {
   documents: KnowledgeDocument[]
   canContribute: boolean
   onOpenFolder: (folderId: number) => void
+  selection?: {
+    ids: ReadonlySet<number>
+    onToggle: (documentId: number) => void
+  }
+}
+
+function DocumentCheckbox({ document, selection }: {
+  document: KnowledgeDocument
+  selection: NonNullable<DocumentListProps['selection']>
+}) {
+  const { t } = useTranslation()
+  return (
+    <input
+      type="checkbox"
+      aria-label={t('knowledge.bulk.selectFile', { title: document.title })}
+      checked={selection.ids.has(document.id)}
+      onChange={() => selection.onToggle(document.id)}
+      onClick={(event) => event.stopPropagation()}
+      onKeyDown={(event) => event.stopPropagation()}
+      className="h-4 w-4 shrink-0 cursor-pointer accent-primary"
+    />
+  )
 }
 
 function FolderEntry({ folder, onOpen, className }: {
@@ -38,13 +60,14 @@ function FolderEntry({ folder, onOpen, className }: {
  * File table. The fixed layout lets the name column take the remaining width and truncate long
  * names instead of widening the table; secondary columns collapse into the name cell on narrow screens.
  */
-export function KnowledgeDocumentTable({ folders, documents, canContribute, onOpenFolder, ...handlers }: DocumentListProps) {
+export function KnowledgeDocumentTable({ folders, documents, canContribute, onOpenFolder, selection, ...handlers }: DocumentListProps) {
   const { t, i18n } = useTranslation()
   return (
     <div className="overflow-hidden rounded-xl border border-border/60 bg-card">
       <Table className="table-fixed">
         <TableHeader>
           <TableRow>
+            {selection ? <TableHead className="w-11"><span className="sr-only">{t('knowledge.bulk.selectFiles')}</span></TableHead> : null}
             <TableHead>{t('knowledge.table.name')}</TableHead>
             <TableHead className="hidden w-24 lg:table-cell">{t('knowledge.table.size')}</TableHead>
             <TableHead className="hidden w-32 xl:table-cell">{t('knowledge.table.owner')}</TableHead>
@@ -56,6 +79,7 @@ export function KnowledgeDocumentTable({ folders, documents, canContribute, onOp
         <TableBody>
           {folders.map((folder) => (
             <TableRow key={`folder-${folder.id}`}>
+              {selection ? <TableCell /> : null}
               <TableCell className="p-0">
                 <FolderEntry folder={folder} onOpen={onOpenFolder} className="cursor-pointer p-4" />
               </TableCell>
@@ -70,6 +94,11 @@ export function KnowledgeDocumentTable({ folders, documents, canContribute, onOp
             const updated = formatLocalDateTime(document.updatedAt, i18n.language, { dateStyle: 'short', timeStyle: 'short' })
             return (
             <TableRow key={document.id} className="cursor-pointer" onClick={() => handlers.onOpen(document)}>
+              {selection ? (
+                <TableCell className="px-3" onClick={(event) => event.stopPropagation()}>
+                  {document.canManage ? <DocumentCheckbox document={document} selection={selection} /> : null}
+                </TableCell>
+              ) : null}
               <TableCell>
                 <div className="flex min-w-0 items-center gap-3">
                   <KnowledgeFileIcon extension={document.fileExtension} />
@@ -98,7 +127,7 @@ export function KnowledgeDocumentTable({ folders, documents, canContribute, onOp
   )
 }
 
-export function KnowledgeDocumentGrid({ folders, documents, canContribute, onOpenFolder, ...handlers }: DocumentListProps) {
+export function KnowledgeDocumentGrid({ folders, documents, canContribute, onOpenFolder, selection, ...handlers }: DocumentListProps) {
   const { i18n } = useTranslation()
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -122,6 +151,7 @@ export function KnowledgeDocumentGrid({ folders, documents, canContribute, onOpe
           className="group flex cursor-pointer flex-col rounded-xl border border-border/60 bg-card p-4 transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <div className="flex items-start gap-3">
+            {selection && document.canManage ? <DocumentCheckbox document={document} selection={selection} /> : null}
             <KnowledgeFileIcon extension={document.fileExtension} size="md" />
             <div className="min-w-0 flex-1">
               <p className="truncate font-semibold text-foreground">{document.title}</p>

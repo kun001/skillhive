@@ -8,6 +8,7 @@ import com.iflytek.skillhub.dto.ApiResponse;
 import com.iflytek.skillhub.dto.ApiResponseFactory;
 import com.iflytek.skillhub.dto.MessageResponse;
 import com.iflytek.skillhub.dto.PageResponse;
+import com.iflytek.skillhub.dto.knowledge.BatchDeleteKnowledgeDocumentsRequest;
 import com.iflytek.skillhub.dto.knowledge.CreateKnowledgeBaseRequest;
 import com.iflytek.skillhub.dto.knowledge.CreateKnowledgeFolderRequest;
 import com.iflytek.skillhub.dto.knowledge.KnowledgeBaseResponse;
@@ -18,9 +19,12 @@ import com.iflytek.skillhub.dto.knowledge.KnowledgeDocumentTextResponse;
 import com.iflytek.skillhub.dto.knowledge.KnowledgeDocumentVersionResponse;
 import com.iflytek.skillhub.dto.knowledge.KnowledgeFolderResponse;
 import com.iflytek.skillhub.dto.knowledge.KnowledgeMarkdownImagesResponse;
+import com.iflytek.skillhub.dto.knowledge.KnowledgeShareSettingsResponse;
 import com.iflytek.skillhub.dto.knowledge.UpdateKnowledgeBaseRequest;
 import com.iflytek.skillhub.dto.knowledge.UpdateKnowledgeDocumentRequest;
+import com.iflytek.skillhub.dto.knowledge.UpdateKnowledgeDocumentShareRequest;
 import com.iflytek.skillhub.dto.knowledge.UpdateKnowledgeFolderRequest;
+import com.iflytek.skillhub.dto.knowledge.UpdateKnowledgeShareRequest;
 import com.iflytek.skillhub.ratelimit.RateLimit;
 import com.iflytek.skillhub.service.AuditRequestContext;
 import com.iflytek.skillhub.service.knowledge.KnowledgeAppService;
@@ -122,6 +126,29 @@ public class KnowledgeController extends BaseApiController {
     }
 
     // ---------------------------------------------------------------- folders
+
+    @GetMapping("/bases/{namespace}/{base}/share")
+    @Operation(operationId = "getKnowledgeShareSettings", summary = "Read a knowledge base's visitor link as an administrator")
+    public ApiResponse<KnowledgeShareSettingsResponse> getShareSettings(
+            @PathVariable String namespace, @PathVariable String base,
+            @RequestAttribute("userId") String userId,
+            @RequestAttribute(value = "userNsRoles", required = false) Map<Long, NamespaceRole> userNsRoles,
+            @AuthenticationPrincipal PlatformPrincipal principal) {
+        return ok("response.success.read", knowledgeAppService.getShareSettings(namespace, base, caller(userId, userNsRoles, principal)));
+    }
+
+    @PutMapping("/bases/{namespace}/{base}/share")
+    @Operation(operationId = "updateKnowledgeShareSettings", summary = "Configure the visitor link and folder visibility")
+    public ApiResponse<KnowledgeShareSettingsResponse> updateShareSettings(
+            @PathVariable String namespace, @PathVariable String base,
+            @Valid @RequestBody UpdateKnowledgeShareRequest request,
+            @RequestAttribute("userId") String userId,
+            @RequestAttribute(value = "userNsRoles", required = false) Map<Long, NamespaceRole> userNsRoles,
+            @AuthenticationPrincipal PlatformPrincipal principal,
+            HttpServletRequest httpRequest) {
+        return ok("response.success.updated", knowledgeAppService.updateShareSettings(namespace, base, request,
+                caller(userId, userNsRoles, principal), AuditRequestContext.from(httpRequest)));
+    }
 
     @GetMapping("/bases/{namespace}/{base}/folders")
     @Operation(operationId = "listKnowledgeFolders", summary = "List every folder in a knowledge base")
@@ -228,19 +255,58 @@ public class KnowledgeController extends BaseApiController {
                 caller(userId, userNsRoles, principal), AuditRequestContext.from(httpRequest)));
     }
 
+    @PostMapping("/bases/{namespace}/{base}/documents/batch-delete")
+    @Operation(operationId = "batchDeleteKnowledgeDocuments", summary = "Archive selected files in one knowledge base")
+    public ApiResponse<MessageResponse> batchDeleteDocuments(
+            @PathVariable String namespace,
+            @PathVariable String base,
+            @Valid @RequestBody BatchDeleteKnowledgeDocumentsRequest request,
+            @RequestAttribute("userId") String userId,
+            @RequestAttribute(value = "userNsRoles", required = false) Map<Long, NamespaceRole> userNsRoles,
+            @AuthenticationPrincipal PlatformPrincipal principal,
+            HttpServletRequest httpRequest) {
+        knowledgeAppService.batchDeleteDocuments(namespace, base, request.documentIds(),
+                caller(userId, userNsRoles, principal), AuditRequestContext.from(httpRequest));
+        return ok("response.success.deleted", new MessageResponse("Documents deleted successfully"));
+    }
+
     @GetMapping("/documents/search")
     @Operation(operationId = "searchKnowledgeDocuments",
             summary = "Search titles, descriptions, summaries and extracted text across the knowledge bases visible to the caller")
     public ApiResponse<PageResponse<KnowledgeDocumentSearchHitResponse>> searchDocuments(
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String namespace,
+            @RequestParam(defaultValue = "false") boolean memberOnly,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestAttribute("userId") String userId,
             @RequestAttribute(value = "userNsRoles", required = false) Map<Long, NamespaceRole> userNsRoles,
             @AuthenticationPrincipal PlatformPrincipal principal) {
         return ok("response.success.read",
-                knowledgeAppService.searchDocuments(q, namespace, page, size, caller(userId, userNsRoles, principal)));
+                knowledgeAppService.searchDocuments(q, namespace, memberOnly, page, size, caller(userId, userNsRoles, principal)));
+    }
+
+    @GetMapping("/documents/{documentId}/share")
+    @Operation(operationId = "getKnowledgeDocumentShareSettings")
+    public ApiResponse<KnowledgeShareSettingsResponse> getDocumentShareSettings(
+            @PathVariable Long documentId,
+            @RequestAttribute("userId") String userId,
+            @RequestAttribute(value = "userNsRoles", required = false) Map<Long, NamespaceRole> userNsRoles,
+            @AuthenticationPrincipal PlatformPrincipal principal) {
+        return ok("response.success.read", knowledgeAppService.getDocumentShareSettings(documentId, caller(userId, userNsRoles, principal)));
+    }
+
+    @PutMapping("/documents/{documentId}/share")
+    @Operation(operationId = "updateKnowledgeDocumentShareSettings")
+    public ApiResponse<KnowledgeShareSettingsResponse> updateDocumentShareSettings(
+            @PathVariable Long documentId,
+            @Valid @RequestBody UpdateKnowledgeDocumentShareRequest request,
+            @RequestAttribute("userId") String userId,
+            @RequestAttribute(value = "userNsRoles", required = false) Map<Long, NamespaceRole> userNsRoles,
+            @AuthenticationPrincipal PlatformPrincipal principal,
+            HttpServletRequest httpRequest) {
+        return ok("response.success.updated", knowledgeAppService.updateDocumentShareSettings(documentId, request,
+                caller(userId, userNsRoles, principal), AuditRequestContext.from(httpRequest)));
     }
 
     @GetMapping("/documents/{documentId}")
@@ -390,7 +456,7 @@ public class KnowledgeController extends BaseApiController {
         return streamContent(knowledgeAppService.openImage(documentId, imageId, version, caller(userId, userNsRoles, principal)), "inline");
     }
 
-    private static ResponseEntity<InputStreamResource> streamContent(KnowledgeAppService.FileContent content, String disposition) throws IOException {
+    static ResponseEntity<InputStreamResource> streamContent(KnowledgeAppService.FileContent content, String disposition) throws IOException {
         boolean inline = "inline".equalsIgnoreCase(disposition) && Set.of(KnowledgePreviewKind.PDF, KnowledgePreviewKind.IMAGE,
                 KnowledgePreviewKind.MARKDOWN, KnowledgePreviewKind.TEXT, KnowledgePreviewKind.OFFICE).contains(content.previewKind());
         MediaType mediaType = switch (content.previewKind()) {

@@ -1649,6 +1649,12 @@
     "freezeErrorTitle": "Failed to freeze namespace",
     "unfreezeErrorTitle": "Failed to unfreeze namespace",
     "archiveErrorTitle": "Failed to archive namespace",
-    "restoreErrorTitle": "Failed to restore namespace"
+    "restoreErrorTitle": "Failed to restore namespace",
+    "deleteAction": "Delete team space",
+    "deleteConfirmTitle": "Permanently delete this team space?",
+    "deleteConfirmDescription": "Memberships, empty knowledge bases, and archived files in “{{name}}” will be permanently deleted. Resolve any skills, undeleted knowledge files, or governance records before deleting the space.",
+    "deleteSuccessTitle": "Team space deleted",
+    "deleteSuccessDescription": "“{{name}}” was deleted.",
+    "deleteErrorTitle": "Failed to delete team space"
   }
 }

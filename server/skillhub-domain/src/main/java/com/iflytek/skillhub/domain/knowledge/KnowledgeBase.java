@@ -3,6 +3,7 @@ package com.iflytek.skillhub.domain.knowledge;
 import jakarta.persistence.*;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.UUID;
 
 @Entity
 @Table(name = "knowledge_base")
@@ -27,6 +28,15 @@ public class KnowledgeBase {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 32)
     private KnowledgeBaseStatus status = KnowledgeBaseStatus.ACTIVE;
+
+    @Column(name = "share_id")
+    private UUID shareId;
+
+    @Column(name = "share_expires_at")
+    private Instant shareExpiresAt;
+
+    @Column(name = "share_root_files", nullable = false)
+    private boolean shareRootFiles;
 
     @Column(name = "created_by", nullable = false, length = 128)
     private String createdBy;
@@ -79,6 +89,24 @@ public class KnowledgeBase {
     public String getDisplayName() { return displayName; }
     public String getDescription() { return description; }
     public KnowledgeBaseStatus getStatus() { return status; }
+    public UUID getShareId() { return shareId; }
+    public Instant getShareExpiresAt() { return shareExpiresAt; }
+    public boolean isShareRootFiles() { return shareRootFiles; }
+    public void setShareRootFiles(boolean shareRootFiles) { this.shareRootFiles = shareRootFiles; }
+
+    public boolean hasActiveShareAt(Instant now) {
+        return shareId != null && (shareExpiresAt == null || shareExpiresAt.isAfter(now));
+    }
+
+    public void configureSharing(boolean enabled, Instant expiresAt, Instant now, String updatedBy) {
+        if (!enabled) {
+            shareId = null;
+        } else if (shareId == null || (!hasActiveShareAt(now) && (expiresAt == null || expiresAt.isAfter(now)))) {
+            shareId = UUID.randomUUID();
+        }
+        shareExpiresAt = enabled ? expiresAt : null;
+        this.updatedBy = updatedBy;
+    }
     public String getCreatedBy() { return createdBy; }
     public Instant getCreatedAt() { return createdAt; }
     public String getUpdatedBy() { return updatedBy; }

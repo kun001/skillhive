@@ -1,5 +1,7 @@
 package com.iflytek.skillhub.dto.knowledge;
 
+import com.iflytek.skillhub.domain.knowledge.KnowledgeFolderShareVisibility;
+
 /**
  * One folder in a flat list; clients assemble the tree from {@code parentId}.
  *
@@ -10,6 +12,7 @@ public record KnowledgeFolderResponse(
         Long parentId,
         String name,
         long documentCount,
-        boolean canManage
+        boolean canManage,
+        KnowledgeFolderShareVisibility shareVisibility
 ) {
 }

@@ -67,6 +67,7 @@ public class RouteSecurityPolicyRegistry {
             RouteAuthorizationPolicy.permitAll(HttpMethod.GET, "/api/web/skills/*/*/tags/*/files"),
             RouteAuthorizationPolicy.permitAll(HttpMethod.GET, "/api/web/skills/*/*/tags/*/file"),
             RouteAuthorizationPolicy.permitAll(HttpMethod.GET, "/api/web/labels"),
+            RouteAuthorizationPolicy.permitAll(HttpMethod.GET, "/api/web/knowledge-shares/**"),
             // Team resource reads require an authenticated member.
             RouteAuthorizationPolicy.authenticated(HttpMethod.GET, "/api/web/knowledge/**"),
             RouteAuthorizationPolicy.roles(HttpMethod.DELETE, "/api/v1/skills/id/*", "SUPER_ADMIN"),
@@ -161,7 +162,7 @@ public class RouteSecurityPolicyRegistry {
      * Authorization routes that intentionally have no API-token counterpart, keyed as
      * {@code "<METHOD|ANY> <pattern>"} to match {@link #routeKey(HttpMethod, String)}.
      *
-     * <p>These are browser-session surfaces: the interactive login flows, the admin console,
+     * <p>These are browser surfaces: visitor shares, interactive login flows, the admin console,
      * and skill deletion through the web surface, which goes through {@code /api/v1} with the
      * {@code skill:delete} scope instead. Bearer tokens are
      * deliberately rejected on exactly these routes and nowhere else &mdash; anything else the
@@ -169,6 +170,7 @@ public class RouteSecurityPolicyRegistry {
      */
     private static final Set<String> SESSION_ONLY_ROUTES = Set.of(
             "GET /api/web/knowledge/**",
+            "GET /api/web/knowledge-shares/**",
             "ANY /api/v1/auth/session/bootstrap",
             "ANY /api/v1/auth/direct/login",
             "ANY /api/v1/auth/local/**",

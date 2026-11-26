@@ -39,7 +39,7 @@ DOCX and PPTX are rendered by the browser, so layout may differ slightly from Mi
 | Permanently delete archived files | The uploader, space owners / admins (edit permission required) |
 | Create or edit knowledge bases | Space owners / admins |
 
-Knowledge bases are never open to anonymous users. Platform super admins can see every team's knowledge bases on the web, but access through an API token is decided by team membership only.
+Knowledge bases are restricted to team members by default. Platform super admins can see every team's knowledge bases on the web, but access through an API token is decided by team membership only. Space owners and admins can share selected material using visitor links.
 
 Previews send file data to the browser, so download permission controls the download entry points and APIs; it cannot stop a member who can preview from extracting the preview data.
 
@@ -51,6 +51,12 @@ Previews send file data to the browser, so download permission controls the down
 4. **Preview and download**: open a file to preview it; members with download permission can download the current or any earlier version.
 5. **Update and roll back**: add a change note when uploading a new version; download or restore any version from the history.
 6. **Free up space**: deleted files are archived and still count toward the uploader's storage quota. Open **Archived files** at the top right of the knowledge base to see each file's versions and stored size, and delete files permanently one at a time or in batches (up to 100 per run). This cannot be undone. Space admins see every archived file; other members see only their own.
+
+## Sharing with visitors
+
+- Open **Share settings** in the knowledge base and enable the visitor link. Set an expiration, select folders to share, and optionally enable **Share root files**. Save and copy the link. The root setting covers current and future root files.
+- A folder can be public, listed as an entry only, or hidden. An entry-only folder shows its name to visitors and asks them to sign in and obtain team access to see its files.
+- Choose **Share file** on a file page or in the file list menu to create an independent link. Visitors can preview supported file types and download the current published version. Use the same settings to disable the link.
 
 ## Audit
 

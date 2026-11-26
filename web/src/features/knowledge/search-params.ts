@@ -22,6 +22,18 @@ export interface KnowledgeIndexSearch {
   namespace?: string
 }
 
+export interface KnowledgeShareSearch {
+  folder?: number
+  file?: number
+  q?: string
+  page?: number
+}
+
+export function validateKnowledgeShareSearch(search: Record<string, unknown>): KnowledgeShareSearch {
+  const q = typeof search.q === 'string' ? search.q.trim().slice(0, 100) : ''
+  return { folder: positiveInteger(search.folder), file: positiveInteger(search.file), q: q || undefined, page: positiveInteger(search.page) }
+}
+
 export function validateKnowledgeIndexSearch(search: Record<string, unknown>): KnowledgeIndexSearch {
   const q = typeof search.q === 'string' ? search.q.trim().slice(0, 100) : ''
   const namespace = typeof search.namespace === 'string' ? search.namespace.trim().replace(/^@/, '') : ''

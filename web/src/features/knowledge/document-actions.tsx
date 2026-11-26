@@ -10,6 +10,7 @@ export interface KnowledgeDocumentActionHandlers {
   onNewVersion: (document: KnowledgeDocument) => void
   onEdit: (document: KnowledgeDocument) => void
   onDelete: (document: KnowledgeDocument) => void
+  onShare?: (document: KnowledgeDocument) => void
 }
 
 interface DocumentActionsProps extends KnowledgeDocumentActionHandlers {
@@ -17,7 +18,7 @@ interface DocumentActionsProps extends KnowledgeDocumentActionHandlers {
   canContribute: boolean
 }
 
-export function KnowledgeDocumentActions({ document, canContribute, onOpen, onNewVersion, onEdit, onDelete }: DocumentActionsProps) {
+export function KnowledgeDocumentActions({ document, canContribute, onOpen, onNewVersion, onEdit, onDelete, onShare }: DocumentActionsProps) {
   const { t } = useTranslation()
   return (
     <div className="flex items-center justify-end gap-1" onClick={(event) => event.stopPropagation()}>
@@ -38,6 +39,9 @@ export function KnowledgeDocumentActions({ document, canContribute, onOpen, onNe
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onSelect={() => onOpen(document)}>{t('knowledge.actions.open')}</DropdownMenuItem>
+          {document.canDownload && onShare ? (
+            <DropdownMenuItem onSelect={() => onShare(document)}>{t('knowledge.share.fileSettings')}</DropdownMenuItem>
+          ) : null}
           {canContribute ? (
             <DropdownMenuItem onSelect={() => onNewVersion(document)}>{t('knowledge.actions.newVersion')}</DropdownMenuItem>
           ) : null}

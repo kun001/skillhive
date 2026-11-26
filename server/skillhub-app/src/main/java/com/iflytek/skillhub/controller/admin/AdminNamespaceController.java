@@ -148,4 +148,12 @@ public class AdminNamespaceController extends BaseApiController {
         return ok("response.success.updated",
                 adminNamespaceAppService.restore(slug, principal.userId(), AuditRequestContext.from(httpRequest)));
     }
+
+    @DeleteMapping("/{slug}")
+    public ApiResponse<MessageResponse> deleteNamespaceByPlatformAdmin(@PathVariable String slug,
+                                                                       @AuthenticationPrincipal PlatformPrincipal principal,
+                                                                       HttpServletRequest httpRequest) {
+        return ok("response.success.deleted",
+                adminNamespaceAppService.delete(slug, principal.userId(), AuditRequestContext.from(httpRequest)));
+    }
 }

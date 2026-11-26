@@ -1,5 +1,7 @@
 package com.iflytek.skillhub.service;
 
+import com.iflytek.skillhub.domain.audit.AuditDetail;
+import com.iflytek.skillhub.domain.audit.AuditLogService;
 import com.iflytek.skillhub.domain.namespace.Namespace;
 import com.iflytek.skillhub.domain.namespace.NamespaceAccessPolicy;
 import com.iflytek.skillhub.domain.namespace.NamespaceGovernanceService;
@@ -51,6 +53,7 @@ public class AdminNamespaceAppService {
     private final NamespaceMemberCandidateService namespaceMemberCandidateService;
     private final NamespaceAccessPolicy namespaceAccessPolicy;
     private final UserAccountRepository userAccountRepository;
+    private final AuditLogService auditLogService;
 
     public AdminNamespaceAppService(AdminNamespaceQueryRepository adminNamespaceQueryRepository,
                                     NamespaceService namespaceService,
@@ -59,7 +62,8 @@ public class AdminNamespaceAppService {
                                     NamespaceMemberRepository namespaceMemberRepository,
                                     NamespaceMemberCandidateService namespaceMemberCandidateService,
                                     NamespaceAccessPolicy namespaceAccessPolicy,
-                                    UserAccountRepository userAccountRepository) {
+                                    UserAccountRepository userAccountRepository,
+                                    AuditLogService auditLogService) {
         this.adminNamespaceQueryRepository = adminNamespaceQueryRepository;
         this.namespaceService = namespaceService;
         this.namespaceGovernanceService = namespaceGovernanceService;
@@ -68,6 +72,7 @@ public class AdminNamespaceAppService {
         this.namespaceMemberCandidateService = namespaceMemberCandidateService;
         this.namespaceAccessPolicy = namespaceAccessPolicy;
         this.userAccountRepository = userAccountRepository;
+        this.auditLogService = auditLogService;
     }
 
     @Transactional(readOnly = true)
@@ -272,6 +277,15 @@ public class AdminNamespaceAppService {
                 auditContext.clientIp(),
                 auditContext.userAgent());
         return detail(namespace.getSlug(), actorUserId);
+    }
+
+    @Transactional
+    public MessageResponse delete(String slug, String actorUserId, AuditRequestContext auditContext) {
+        Namespace namespace = namespaceService.deleteNamespaceByPlatformAdmin(slug);
+        auditLogService.record(actorUserId, "DELETE_NAMESPACE", "NAMESPACE", namespace.getId(),
+                null, auditContext.clientIp(), auditContext.userAgent(),
+                AuditDetail.builder().put("slug", namespace.getSlug()).build());
+        return new MessageResponse("Namespace deleted successfully");
     }
 
     private AdminNamespaceStatsResponse stats(Namespace namespace,
