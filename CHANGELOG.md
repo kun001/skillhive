@@ -4,6 +4,13 @@
 
 ## 待发布 / Unreleased
 
+暂无。 / None.
+
+## v0.4.10 — 2026-11-26
+
+> 已于 2026-11-26 16:58（北京时间）完成 `v0.4.10` 生产部署。数据库备份、容器健康检查及线上冒烟通过。
+> Production deployment of `v0.4.10` completed on 2026-11-26 at 16:58 China Standard Time. Database backup, container health checks and production smoke checks passed.
+
 - 知识库支持通过访客链接分享指定目录、根目录文件或单个文件，并可设置到期时间。
 - Knowledge visitor links can share selected folders, root files or a single file, with optional expiration.
 - 知识库首页默认显示自己所属的团队空间。管理员可批量归档文件，并删除已清理的团队空间。
