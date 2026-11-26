@@ -105,7 +105,7 @@ export function useTransferAdminNamespaceOwnership() {
 export function useAdminNamespaceLifecycleAction() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ slug, action, reason }: { slug: string; action: 'freeze' | 'unfreeze' | 'archive' | 'restore'; reason?: string }) => {
+    mutationFn: async ({ slug, action, reason }: { slug: string; action: 'freeze' | 'unfreeze' | 'archive' | 'restore' | 'delete'; reason?: string }) => {
       if (action === 'freeze') {
         return adminApi.freezeNamespace(slug, reason)
       }
@@ -115,8 +115,20 @@ export function useAdminNamespaceLifecycleAction() {
       if (action === 'archive') {
         return adminApi.archiveNamespace(slug, reason)
       }
+      if (action === 'delete') {
+        return adminApi.deleteNamespace(slug)
+      }
       return adminApi.restoreNamespace(slug)
     },
-    onSuccess: (_namespace, variables) => invalidateAdminNamespaceQueries(queryClient, variables.slug),
+    onSuccess: (_namespace, { slug, action }) => {
+      if (action === 'delete') {
+        return Promise.all([
+          queryClient.invalidateQueries({ queryKey: ['admin', 'namespaces'] }),
+          queryClient.invalidateQueries({ queryKey: ['namespaces'] }),
+          queryClient.invalidateQueries({ queryKey: ['knowledge'] }),
+        ])
+      }
+      invalidateAdminNamespaceQueries(queryClient, slug)
+    },
   })
 }

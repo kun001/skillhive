@@ -39,4 +39,29 @@ class KnowledgeFolderTreeTest {
         assertThatCode(() -> tree.assertCanMove(1L, 3L)).doesNotThrowAnyException();
         assertThatCode(() -> tree.assertCanMove(2L, null)).doesNotThrowAnyException();
     }
+
+    @Test
+    void sharesOnlyPublicBranchesAndEntryNames() throws ReflectiveOperationException {
+        KnowledgeFolder publicRoot = folder(1, null);
+        publicRoot.setShareVisibility(KnowledgeFolderShareVisibility.PUBLIC);
+        KnowledgeFolder inherited = folder(2, 1L);
+        KnowledgeFolder locked = folder(3, 1L);
+        locked.setShareVisibility(KnowledgeFolderShareVisibility.ENTRY);
+        KnowledgeFolder hidden = folder(4, 1L);
+        hidden.setShareVisibility(KnowledgeFolderShareVisibility.PRIVATE);
+        KnowledgeFolder privateRoot = folder(5, null);
+        KnowledgeFolder publicBelowEntry = folder(6, 3L);
+        publicBelowEntry.setShareVisibility(KnowledgeFolderShareVisibility.PUBLIC);
+        KnowledgeFolder publicBelowHidden = folder(7, 4L);
+        publicBelowHidden.setShareVisibility(KnowledgeFolderShareVisibility.PUBLIC);
+        KnowledgeFolder publicBelowPrivateRoot = folder(8, 5L);
+        publicBelowPrivateRoot.setShareVisibility(KnowledgeFolderShareVisibility.PUBLIC);
+
+        var tree = new KnowledgeFolderTree(List.of(publicRoot, inherited, locked, hidden, privateRoot,
+                publicBelowEntry, publicBelowHidden, publicBelowPrivateRoot));
+
+        assertThat(tree.sharedFolders()).containsExactlyInAnyOrderEntriesOf(java.util.Map.of(
+                1L, KnowledgeFolderShareVisibility.PUBLIC, 2L, KnowledgeFolderShareVisibility.PUBLIC,
+                3L, KnowledgeFolderShareVisibility.ENTRY));
+    }
 }

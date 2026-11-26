@@ -91,13 +91,26 @@ if [[ -z "$USER_CSRF" || -z "$ADMIN_CSRF" ]]; then
   exit 1
 fi
 
-CREATE_RESPONSE="$(curl -sS "${USER_HEADERS[@]}" \
-  -H "X-XSRF-TOKEN: $USER_CSRF" \
+CREATE_RESPONSE="$(curl -sS "${ADMIN_HEADERS[@]}" \
+  -H "X-XSRF-TOKEN: $ADMIN_CSRF" \
   -H "Content-Type: application/json" \
   -X POST "$BASE_URL/api/web/namespaces" \
   -d "{\"slug\":\"$SLUG\",\"displayName\":\"Namespace Smoke $SLUG\",\"description\":\"namespace workflow smoke test\"}")"
-assert_code "Owner can create namespace" "$CREATE_RESPONSE" "0"
+assert_code "Platform admin can create the test namespace" "$CREATE_RESPONSE" "0"
 NAMESPACE_ID="$(json_field "$CREATE_RESPONSE" "data.id")"
+
+ADMIN_NAMESPACE="$BASE_URL/api/v1/admin/namespaces/$SLUG"
+ADD_OWNER_RESPONSE="$(curl -sS "${ADMIN_HEADERS[@]}" \
+  -H "X-XSRF-TOKEN: $ADMIN_CSRF" -H "Content-Type: application/json" \
+  -X POST "$ADMIN_NAMESPACE/members" -d '{"userId":"local-user","role":"MEMBER"}')"
+assert_code "Platform admin can add the future owner" "$ADD_OWNER_RESPONSE" "0"
+TRANSFER_RESPONSE="$(curl -sS "${ADMIN_HEADERS[@]}" \
+  -H "X-XSRF-TOKEN: $ADMIN_CSRF" -H "Content-Type: application/json" \
+  -X POST "$ADMIN_NAMESPACE/transfer-ownership" -d '{"newOwnerId":"local-user"}')"
+assert_code "Platform admin can transfer ownership to a member" "$TRANSFER_RESPONSE" "0"
+LEAVE_RESPONSE="$(curl -sS "${ADMIN_HEADERS[@]}" \
+  -H "X-XSRF-TOKEN: $ADMIN_CSRF" -X DELETE "$ADMIN_NAMESPACE/members/local-admin")"
+assert_code "Platform admin can leave the test namespace" "$LEAVE_RESPONSE" "0"
 
 MINE_RESPONSE="$(curl -sS "${USER_HEADERS[@]}" "$BASE_URL/api/web/me/namespaces")"
 assert_code "Owner can list my namespaces" "$MINE_RESPONSE" "0"
@@ -249,6 +262,96 @@ REMOVE_MEMBER_RESPONSE="$(curl -sS "${USER_HEADERS[@]}" \
   -H "X-XSRF-TOKEN: $USER_CSRF" \
   -X DELETE "$BASE_URL/api/web/namespaces/$SLUG/members/local-admin")"
 assert_code "Owner can remove namespace admin" "$REMOVE_MEMBER_RESPONSE" "0"
+
+BASE_RESPONSE="$(curl -sS "${USER_HEADERS[@]}" \
+  -H "X-XSRF-TOKEN: $USER_CSRF" -H "Content-Type: application/json" \
+  -X POST "$BASE_URL/api/web/knowledge/bases" \
+  -d "{\"namespace\":\"$SLUG\",\"slug\":\"smoke-files\",\"displayName\":\"Smoke files\"}")"
+assert_code "Owner can create a knowledge base" "$BASE_RESPONSE" "0"
+KNOWLEDGE_BASE_URL="$BASE_URL/api/web/knowledge/bases/$SLUG/smoke-files"
+DOCUMENTS_URL="$KNOWLEDGE_BASE_URL/documents"
+FOLDER_IDS=()
+for folder in Public Project; do
+  FOLDER_RESPONSE="$(curl -sS "${USER_HEADERS[@]}" \
+    -H "X-XSRF-TOKEN: $USER_CSRF" -H "Content-Type: application/json" \
+    -X POST "$KNOWLEDGE_BASE_URL/folders" -d "{\"name\":\"$folder\"}")"
+  assert_code "Owner can create the $folder folder" "$FOLDER_RESPONSE" "0"
+  FOLDER_IDS+=("$(json_field "$FOLDER_RESPONSE" "data.id")")
+done
+DOCUMENT_IDS=()
+for number in 1 2; do
+  UPLOAD_RESPONSE="$(curl -sS "${USER_HEADERS[@]}" -H "X-XSRF-TOKEN: $USER_CSRF" \
+    -F "folderId=${FOLDER_IDS[number - 1]}" \
+    -F "file=@-;filename=smoke-$number.txt;type=text/plain" "$DOCUMENTS_URL" <<<"Test file $number")"
+  assert_code "Owner can upload test file $number" "$UPLOAD_RESPONSE" "0"
+  DOCUMENT_IDS+=("$(json_field "$UPLOAD_RESPONSE" "data.id")")
+done
+
+ROOT_UPLOAD_RESPONSE="$(curl -sS "${USER_HEADERS[@]}" -H "X-XSRF-TOKEN: $USER_CSRF" \
+  -F "file=@-;filename=root-smoke.txt;type=text/plain" "$DOCUMENTS_URL" <<<"Root smoke file")"
+assert_code "Owner can upload a root file" "$ROOT_UPLOAD_RESPONSE" "0"
+DOCUMENT_IDS+=("$(json_field "$ROOT_UPLOAD_RESPONSE" "data.id")")
+
+PAST_SHARE_RESPONSE="$(curl -sS "${USER_HEADERS[@]}" \
+  -H "X-XSRF-TOKEN: $USER_CSRF" -H "Content-Type: application/json" \
+  -X PUT "$KNOWLEDGE_BASE_URL/share" \
+  -d '{"enabled":true,"folders":[],"expiration":{"expiresAt":"2000-01-01T00:00:00Z"}}')"
+assert_code "A share cannot be given an expiration in the past" "$PAST_SHARE_RESPONSE" "400"
+SHARE_EXPIRATION="$(python3 -c 'from datetime import datetime, timedelta, timezone; print((datetime.now(timezone.utc) + timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%SZ"))')"
+SHARE_RESPONSE="$(curl -sS "${USER_HEADERS[@]}" \
+  -H "X-XSRF-TOKEN: $USER_CSRF" -H "Content-Type: application/json" \
+  -X PUT "$KNOWLEDGE_BASE_URL/share" \
+  -d "{\"enabled\":true,\"folders\":[{\"folderId\":${FOLDER_IDS[0]},\"visibility\":\"PUBLIC\"},{\"folderId\":${FOLDER_IDS[1]},\"visibility\":\"ENTRY\"}],\"expiration\":{\"expiresAt\":\"$SHARE_EXPIRATION\"}}")"
+assert_code "Owner can enable a visitor link with per-folder visibility" "$SHARE_RESPONSE" "0"
+VISITOR_URL="$BASE_URL/api/web/knowledge-shares/$(json_field "$SHARE_RESPONSE" "data.shareId")"
+assert_code "Visitors can see the shared directory" "$(curl -sS "$VISITOR_URL")" "0"
+if [[ "$(json_field "$SHARE_RESPONSE" "data.expiresAt")" == "$SHARE_EXPIRATION" ]]; then
+  pass "The configured share expiration is persisted"
+else
+  fail "The configured share expiration should be returned"
+fi
+assert_code "Visitors can see public file details" "$(curl -sS "$VISITOR_URL/documents/${DOCUMENT_IDS[0]}")" "0"
+assert_code "Visitors cannot see restricted file details" "$(curl -sS "$VISITOR_URL/documents/${DOCUMENT_IDS[1]}")" "404"
+assert_code "Visitors cannot see root file details before opt-in" "$(curl -sS "$VISITOR_URL/documents/${DOCUMENT_IDS[2]}")" "404"
+if [[ "$(curl -fsS "$VISITOR_URL/documents/${DOCUMENT_IDS[0]}/content")" == "Test file 1" ]]; then
+  pass "Visitors can download the public file"
+else
+  fail "Visitors should receive the original public file"
+fi
+ROOT_SHARE_RESPONSE="$(curl -sS "${USER_HEADERS[@]}" \
+  -H "X-XSRF-TOKEN: $USER_CSRF" -H "Content-Type: application/json" \
+  -X PUT "$KNOWLEDGE_BASE_URL/share" -d '{"enabled":true,"folders":[],"shareRootFiles":true}')"
+assert_code "Owner can opt in to sharing root files" "$ROOT_SHARE_RESPONSE" "0"
+assert_code "The original visitor link can now open a root file" "$(curl -sS "$VISITOR_URL/documents/${DOCUMENT_IDS[2]}")" "0"
+FILE_SETTINGS_URL="$BASE_URL/api/web/knowledge/documents/${DOCUMENT_IDS[1]}/share"
+FILE_SHARE_RESPONSE="$(curl -sS "${USER_HEADERS[@]}" \
+  -H "X-XSRF-TOKEN: $USER_CSRF" -H "Content-Type: application/json" \
+  -X PUT "$FILE_SETTINGS_URL" -d '{"enabled":true}')"
+assert_code "Owner can share one file independently" "$FILE_SHARE_RESPONSE" "0"
+VISITOR_FILE_URL="$BASE_URL/api/web/knowledge-shares/$(json_field "$FILE_SHARE_RESPONSE" "data.shareId")"
+assert_code "The single-file link can open the selected file" "$(curl -sS "$VISITOR_FILE_URL/documents/${DOCUMENT_IDS[1]}")" "0"
+assert_code "The single-file link cannot open another public file" "$(curl -sS "$VISITOR_FILE_URL/documents/${DOCUMENT_IDS[0]}")" "404"
+assert_code "The library link cannot open the independently shared file" "$(curl -sS "$VISITOR_URL/documents/${DOCUMENT_IDS[1]}")" "404"
+FILE_UNSHARE_RESPONSE="$(curl -sS "${USER_HEADERS[@]}" \
+  -H "X-XSRF-TOKEN: $USER_CSRF" -H "Content-Type: application/json" \
+  -X PUT "$FILE_SETTINGS_URL" -d '{"enabled":false}')"
+assert_code "Owner can revoke the single-file link" "$FILE_UNSHARE_RESPONSE" "0"
+assert_code "Revoked single-file links cannot serve content" "$(curl -sS "$VISITOR_FILE_URL/documents/${DOCUMENT_IDS[1]}/content")" "404"
+UNSHARE_RESPONSE="$(curl -sS "${USER_HEADERS[@]}" \
+  -H "X-XSRF-TOKEN: $USER_CSRF" -H "Content-Type: application/json" \
+  -X PUT "$KNOWLEDGE_BASE_URL/share" -d '{"enabled":false,"folders":[]}')"
+assert_code "Owner can disable the visitor link" "$UNSHARE_RESPONSE" "0"
+assert_code "Disabled visitor links stop serving formerly public files" \
+  "$(curl -sS "$VISITOR_URL/documents/${DOCUMENT_IDS[0]}")" "404"
+
+DEPENDENCY_RESPONSE="$(curl -sS "${ADMIN_HEADERS[@]}" -H "X-XSRF-TOKEN: $ADMIN_CSRF" -X DELETE "$ADMIN_NAMESPACE")"
+assert_code "Active files block platform admin deletion of a namespace" "$DEPENDENCY_RESPONSE" "400"
+BATCH_RESPONSE="$(curl -sS "${ADMIN_HEADERS[@]}" \
+  -H "X-XSRF-TOKEN: $ADMIN_CSRF" -H "Content-Type: application/json" \
+  -X POST "$DOCUMENTS_URL/batch-delete" -d "{\"documentIds\":[${DOCUMENT_IDS[0]},${DOCUMENT_IDS[1]},${DOCUMENT_IDS[2]}]}")"
+assert_code "Platform admin can batch delete files uploaded by a member" "$BATCH_RESPONSE" "0"
+DELETE_RESPONSE="$(curl -sS "${ADMIN_HEADERS[@]}" -H "X-XSRF-TOKEN: $ADMIN_CSRF" -X DELETE "$ADMIN_NAMESPACE")"
+assert_code "Platform admin can delete a namespace owned by another user" "$DELETE_RESPONSE" "0"
 
 echo
 echo "Results: $PASS passed, $FAIL failed"

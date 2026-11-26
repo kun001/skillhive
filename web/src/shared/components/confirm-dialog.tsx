@@ -18,6 +18,7 @@ interface ConfirmDialogProps {
   confirmText?: string
   cancelText?: string
   variant?: 'default' | 'destructive'
+  pending?: boolean
   onConfirm: () => void | Promise<void>
   contentTestId?: string
   confirmButtonTestId?: string
@@ -31,6 +32,7 @@ export function ConfirmDialog({
   confirmText,
   cancelText,
   variant = 'default',
+  pending = false,
   onConfirm,
   contentTestId,
   confirmButtonTestId,
@@ -57,10 +59,10 @@ export function ConfirmDialog({
           {description && <DialogDescription className="text-center break-all">{description}</DialogDescription>}
         </DialogHeader>
         <DialogFooter className="sm:justify-center sm:space-x-3">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" disabled={pending} onClick={() => onOpenChange(false)}>
             {resolvedCancelText}
           </Button>
-          <Button data-testid={confirmButtonTestId} variant={variant} onClick={handleConfirm}>
+          <Button data-testid={confirmButtonTestId} variant={variant} disabled={pending} onClick={handleConfirm}>
             {resolvedConfirmText}
           </Button>
         </DialogFooter>

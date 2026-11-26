@@ -1,4 +1,4 @@
-import type { components } from './generated/schema'
+import type { components, operations } from './generated/schema'
 
 type Schemas = components['schemas']
 
@@ -20,6 +20,21 @@ export type KnowledgeBase = Populated<
 >
 
 export type KnowledgeFolder = Populated<Schemas['KnowledgeFolderResponse'], 'id' | 'name' | 'documentCount' | 'canManage'>
+
+export type KnowledgeShareVisibility = NonNullable<Schemas['KnowledgeFolderResponse']['shareVisibility']>
+export type KnowledgeShareSettings = Schemas['KnowledgeShareSettingsResponse']
+export type UpdateKnowledgeShareRequest = Schemas['UpdateKnowledgeShareRequest']
+export type UpdateKnowledgeDocumentShareRequest = Schemas['UpdateKnowledgeDocumentShareRequest']
+export type KnowledgeShareFolder = Populated<Schemas['SharedKnowledgeFolder'], 'id' | 'name' | 'entryOnly'>
+export type KnowledgeShare = Omit<Schemas['KnowledgeShareResponse'], 'folders' | 'memberWorkspace' | 'displayName'> & {
+  displayName: string
+  folders: KnowledgeShareFolder[]
+  memberWorkspace?: Populated<Schemas['MemberWorkspace'], 'namespace' | 'base'> | null
+}
+export type KnowledgePreviewDocument = Pick<KnowledgeDocument,
+  'id' | 'title' | 'fileName' | 'fileExtension' | 'sizeBytes' | 'currentVersion' | 'previewKind' | 'canDownload'
+>
+export type SharedKnowledgeFile = KnowledgePreviewDocument & Pick<Schemas['SharedKnowledgeFileResponse'], 'folderId'>
 
 export type KnowledgeDocument = Omit<
   Populated<
@@ -96,12 +111,10 @@ export type KnowledgeDocumentSearchHit = Omit<
   document: KnowledgeDocument
 }
 
-export interface KnowledgeDocumentSearchQuery {
-  q: string
-  namespace?: string
-  page?: number
-  size?: number
-}
+export type KnowledgeDocumentSearchQuery = Populated<
+  NonNullable<operations['searchKnowledgeDocuments']['parameters']['query']>,
+  'q'
+>
 
 export interface KnowledgeDocumentSearchPage {
   items: KnowledgeDocumentSearchHit[]

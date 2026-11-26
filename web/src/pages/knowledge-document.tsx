@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from '@tanstack/react-router'
-import { Bot, Download, History, MoreHorizontal, Pencil, Trash2, Upload } from 'lucide-react'
+import { Bot, Download, History, MoreHorizontal, Pencil, Share2, Trash2, Upload } from 'lucide-react'
 import { useMemo, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { knowledgeApi } from '@/api/client'
@@ -7,8 +7,9 @@ import { EditKnowledgeDocumentDialog, NewKnowledgeVersionDialog } from '@/featur
 import { knowledgeErrorMessage } from '@/features/knowledge/errors'
 import { KnowledgeFileIcon } from '@/features/knowledge/file-icon'
 import { KnowledgeFilePreview } from '@/features/knowledge/file-preview'
+import { KnowledgeShareDialog } from '@/features/knowledge/share-dialog'
 import { formatFileSize } from '@/features/knowledge/file-types'
-import { buildFolderTree } from '@/features/knowledge/folder-tree'
+import { buildFolderTree, publicShareFolderIds } from '@/features/knowledge/folder-tree'
 import { KnowledgeBreadcrumb } from '@/features/knowledge/knowledge-breadcrumb'
 import { useDeleteKnowledgeDocument, useKnowledgeDocument, useKnowledgeFolders } from '@/features/knowledge/use-knowledge-queries'
 import { KnowledgeVersionDrawer } from '@/features/knowledge/version-drawer'
@@ -38,11 +39,14 @@ export function KnowledgeDocumentPage() {
   const detail = useKnowledgeDocument(id)
   const folders = useKnowledgeFolders(namespace, base)
   const tree = useMemo(() => buildFolderTree(folders.data ?? []), [folders.data])
+  const sharedFolders = useMemo(() => detail.data?.knowledgeBase.sharingEnabled ? publicShareFolderIds(tree) : undefined,
+    [detail.data?.knowledgeBase.sharingEnabled, tree])
   const deleteDocument = useDeleteKnowledgeDocument()
   const [versionsOpen, setVersionsOpen] = useState(false)
   const [newVersionOpen, setNewVersionOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
 
   if (detail.isLoading) {
     return (
@@ -96,6 +100,11 @@ export function KnowledgeDocumentPage() {
               <History className="mr-1.5 h-4 w-4" aria-hidden />
               {t('knowledge.actions.versions')}
             </Button>
+            {knowledgeBase.canManage && document.canDownload && namespace !== 'global' ? (
+              <Button variant="outline" onClick={() => setShareOpen(true)}>
+                <Share2 className="h-4 w-4" aria-hidden />{t('knowledge.share.fileSettings')}
+              </Button>
+            ) : null}
             {document.canDownload ? <a href={knowledgeApi.contentUrl(document.id)} download className={buttonVariants({ variant: 'default' })}>
               <Download className="mr-1.5 h-4 w-4" aria-hidden />
               {t('knowledge.actions.download')}
@@ -189,8 +198,13 @@ export function KnowledgeDocumentPage() {
       </div>
 
       <KnowledgeVersionDrawer open={versionsOpen} onOpenChange={setVersionsOpen} document={document} />
-      <NewKnowledgeVersionDialog open={newVersionOpen} onOpenChange={setNewVersionOpen} document={document} />
-      <EditKnowledgeDocumentDialog open={editOpen} onOpenChange={setEditOpen} document={document} tree={tree} />
+      <NewKnowledgeVersionDialog open={newVersionOpen} onOpenChange={setNewVersionOpen} document={document}
+        publicShare={document.folderId == null ? knowledgeBase.sharedRootFiles : sharedFolders?.has(document.folderId)} />
+      <EditKnowledgeDocumentDialog open={editOpen} onOpenChange={setEditOpen} document={document} tree={tree}
+        sharedFolders={sharedFolders} sharedRootFiles={knowledgeBase.sharedRootFiles} />
+      {shareOpen && knowledgeBase.canManage ? (
+        <KnowledgeShareDialog key={document.id} onClose={() => setShareOpen(false)} documentId={document.id} documentTitle={document.title} />
+      ) : null}
       <ConfirmDialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}

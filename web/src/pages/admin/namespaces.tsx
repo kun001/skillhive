@@ -55,7 +55,7 @@ const EMPTY_MEMBERS: NamespaceMember[] = []
 type PendingLifecycleAction = {
   slug: string
   name: string
-  action: 'freeze' | 'unfreeze' | 'archive' | 'restore'
+  action: 'freeze' | 'unfreeze' | 'archive' | 'restore' | 'delete'
 }
 
 type PendingRemoval = {
@@ -307,11 +307,14 @@ export function AdminNamespacesPage() {
         t(`adminNamespaces.${pendingLifecycleAction.action}SuccessTitle`),
         t(`adminNamespaces.${pendingLifecycleAction.action}SuccessDescription`, { name: pendingLifecycleAction.name }),
       )
+      if (pendingLifecycleAction.action === 'delete') {
+        setSelectedSlug((current) => current === pendingLifecycleAction.slug ? null : current)
+        if (namespaces.length === 1 && page > 0) setPage(page - 1)
+      }
       setPendingLifecycleAction(null)
       setLifecycleReason('')
     } catch (error) {
       toast.error(t(`adminNamespaces.${pendingLifecycleAction.action}ErrorTitle`), error instanceof Error ? error.message : '')
-      throw error
     }
   }
 
@@ -522,6 +525,15 @@ export function AdminNamespacesPage() {
                   >
                     {t('myNamespaces.restore')}
                   </Button>
+                  {selectedNamespace.permissions.canGovernNamespace ? (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setPendingLifecycleAction({ slug: selectedNamespace.slug, name: selectedNamespace.displayName, action: 'delete' })}
+                    >
+                      {t('adminNamespaces.deleteAction')}
+                    </Button>
+                  ) : null}
                 </div>
               </div>
             </div>
@@ -649,7 +661,7 @@ export function AdminNamespacesPage() {
       <Dialog
         open={!!pendingLifecycleAction}
         onOpenChange={(open) => {
-          if (!open) {
+          if (!open && !lifecycleMutation.isPending) {
             setPendingLifecycleAction(null)
             setLifecycleReason('')
           }
@@ -673,10 +685,10 @@ export function AdminNamespacesPage() {
             </div>
           ) : null}
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setPendingLifecycleAction(null)}>{t('dialog.cancel')}</Button>
+            <Button type="button" variant="outline" disabled={lifecycleMutation.isPending} onClick={() => setPendingLifecycleAction(null)}>{t('dialog.cancel')}</Button>
             <Button
               type="button"
-              variant={pendingLifecycleAction?.action === 'archive' ? 'destructive' : 'default'}
+              variant={pendingLifecycleAction?.action === 'archive' || pendingLifecycleAction?.action === 'delete' ? 'destructive' : 'default'}
               disabled={lifecycleMutation.isPending}
               onClick={runLifecycleAction}
             >

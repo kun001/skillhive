@@ -3,12 +3,14 @@ package com.iflytek.skillhub.domain.knowledge;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Domain repository contract for knowledge bases.
  */
 public interface KnowledgeBaseRepository {
     Optional<KnowledgeBase> findById(Long id);
+    Optional<KnowledgeBase> findByShareId(UUID shareId);
     default Optional<KnowledgeBase> findByIdForUpdate(Long id) { return findById(id); }
     Optional<KnowledgeBase> findByNamespaceIdAndSlug(Long namespaceId, String slug);
     Optional<KnowledgeBase> findByNamespaceIdAndSlugForUpdate(Long namespaceId, String slug);

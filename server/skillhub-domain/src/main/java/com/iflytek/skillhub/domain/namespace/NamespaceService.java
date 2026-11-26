@@ -135,6 +135,19 @@ public class NamespaceService {
         if (!namespaceAccessPolicy.canDelete(namespace, role)) {
             throw new DomainForbiddenException("error.namespace.owner.required");
         }
+        deleteEmptyNamespace(namespaceId, namespace);
+    }
+
+    /** Uses the same dependency checks after platform authorization at the admin endpoint. */
+    @Transactional
+    public Namespace deleteNamespaceByPlatformAdmin(String slug) {
+        Namespace namespace = getNamespaceBySlug(slug);
+        assertNotImmutable(namespace);
+        deleteEmptyNamespace(namespace.getId(), namespace);
+        return namespace;
+    }
+
+    private void deleteEmptyNamespace(Long namespaceId, Namespace namespace) {
         knowledgeNamespaceRepository.lockContent(namespaceId);
         assertNoDependentData(namespaceId);
 

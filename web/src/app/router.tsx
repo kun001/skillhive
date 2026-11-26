@@ -8,7 +8,7 @@ import { createRequireAuth } from '@/shared/lib/auth-route'
 import { API_TOKEN_UI_ENABLED } from '@/shared/lib/feature-flags'
 import { clearDynamicImportReloadGuard, recoverFromDynamicImportError } from '@/shared/lib/dynamic-import-recovery'
 import { normalizeSearchQuery } from '@/shared/lib/search-query'
-import { validateKnowledgeBaseSearch, validateKnowledgeIndexSearch } from '@/features/knowledge/search-params'
+import { validateKnowledgeBaseSearch, validateKnowledgeIndexSearch, validateKnowledgeShareSearch } from '@/features/knowledge/search-params'
 
 /**
  * Central route registry for the SkillHive web app.
@@ -87,6 +87,7 @@ const PrivacyPolicyPage = createLazyRouteComponent(() => import('@/pages/privacy
 const SearchPage = createLazyRouteComponent(() => import('@/pages/search'), 'SearchPage')
 const SkillLibraryPage = createLazyRouteComponent(() => import('@/pages/skill-library'), 'SkillLibraryPage')
 const KnowledgePage = createLazyRouteComponent(() => import('@/pages/knowledge'), 'KnowledgePage')
+const KnowledgeSharePage = createLazyRouteComponent(() => import('@/pages/knowledge-share'), 'KnowledgeSharePage')
 const ChangelogPage = createLazyRouteComponent(() => import('@/pages/changelog'), 'ChangelogPage')
 const KnowledgeBasePage = createLazyRouteComponent(() => import('@/pages/knowledge-base'), 'KnowledgeBasePage')
 const KnowledgeDocumentPage = createLazyRouteComponent(() => import('@/pages/knowledge-document'), 'KnowledgeDocumentPage')
@@ -273,6 +274,13 @@ const knowledgeRoute = createRoute({
   beforeLoad: requireAuth,
   validateSearch: validateKnowledgeIndexSearch,
   component: KnowledgePage,
+})
+
+const knowledgeShareRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: 'knowledge-share/$shareId',
+  validateSearch: validateKnowledgeShareSearch,
+  component: KnowledgeSharePage,
 })
 
 const changelogRoute = createRoute({
@@ -566,6 +574,7 @@ const routeTree = rootRoute.addChildren([
   privacyRoute,
   searchRoute,
   knowledgeRoute,
+  knowledgeShareRoute,
   changelogRoute,
   knowledgeBaseRoute,
   knowledgeDocumentRoute,

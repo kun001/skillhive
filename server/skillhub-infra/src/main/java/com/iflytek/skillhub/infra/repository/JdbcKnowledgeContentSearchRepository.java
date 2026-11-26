@@ -5,8 +5,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -64,13 +64,10 @@ public class JdbcKnowledgeContentSearchRepository implements KnowledgeContentSea
                 .addValue("first", normalized.split("\\s+", 2)[0])
                 .addValue("limit", pageable.getPageSize())
                 .addValue("offset", pageable.getOffset());
-        Long total = jdbc.queryForObject("SELECT count(*) " + FROM, params, Long.class);
-        if (total == null || total == 0) {
-            return Page.empty(pageable);
-        }
         List<Hit> hits = jdbc.query(SELECT, params,
                 (row, index) -> new Hit(row.getLong("id"), cleanSnippet(row.getString("snippet"))));
-        return new PageImpl<>(hits, pageable, total);
+        return PageableExecutionUtils.getPage(hits, pageable,
+                () -> jdbc.queryForObject("SELECT count(*) " + FROM, params, Long.class));
     }
 
     static String cleanSnippet(String raw) {

@@ -23,11 +23,14 @@ import com.iflytek.skillhub.domain.knowledge.KnowledgeDocument;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeBaseStatus;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeDocumentRepository;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeDocumentSearch;
+import com.iflytek.skillhub.domain.knowledge.KnowledgeDocumentShare;
+import com.iflytek.skillhub.domain.knowledge.KnowledgeDocumentShareRepository;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeDocumentStatus;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeDocumentVersion;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeDocumentVersionRepository;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeFilePolicy;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeFolder;
+import com.iflytek.skillhub.domain.knowledge.KnowledgeFolderShareVisibility;
 import com.iflytek.skillhub.domain.knowledge.KnowledgePreviewKind;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeFolderRepository;
 import com.iflytek.skillhub.domain.namespace.Namespace;
@@ -41,16 +44,21 @@ import com.iflytek.skillhub.domain.storage.StorageQuotaExceededException;
 import com.iflytek.skillhub.domain.storage.StorageQuotaGuard;
 import com.iflytek.skillhub.domain.user.UserAccountRepository;
 import com.iflytek.skillhub.dto.knowledge.KnowledgeDocumentResponse;
+import com.iflytek.skillhub.dto.knowledge.UpdateKnowledgeShareRequest;
+import com.iflytek.skillhub.dto.knowledge.UpdateKnowledgeDocumentShareRequest;
 import com.iflytek.skillhub.observability.RequestIdAccessor;
 import com.iflytek.skillhub.storage.ObjectStorageService;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import com.iflytek.skillhub.service.AuditRequestContext;
@@ -86,6 +94,8 @@ class KnowledgeAppServiceTest {
     private final AuditLogService auditLogService = mock(AuditLogService.class);
     private final KnowledgeTextService textService = mock(KnowledgeTextService.class);
     private final StorageQuotaGuard storageQuotaGuard = mock(StorageQuotaGuard.class);
+    private final Clock clock = mock(Clock.class);
+    private final KnowledgeDocumentShareRepository documentShares = mock(KnowledgeDocumentShareRepository.class);
 
     private final com.iflytek.skillhub.domain.namespace.NamespaceMemberRepository members = mock(com.iflytek.skillhub.domain.namespace.NamespaceMemberRepository.class);
     private final com.iflytek.skillhub.domain.namespace.MemberResourcePolicy memberPolicy = new com.iflytek.skillhub.domain.namespace.MemberResourcePolicy(members);
@@ -95,10 +105,11 @@ class KnowledgeAppServiceTest {
 
     @BeforeEach
     void setUp() throws Exception {
+        when(clock.instant()).thenReturn(Instant.parse("2026-11-26T00:00:00Z"));
         service = new KnowledgeAppService(namespaceRepository, baseRepository, folderRepository, documentRepository,
                 versionRepository, attachmentRepository, userAccountRepository, new KnowledgeAccessPolicy(), new KnowledgeFilePolicy(),
                 new KnowledgeMarkdownPolicy(new KnowledgeFilePolicy()),
-                storageService, auditLogService, new RequestIdAccessor(), memberPolicy, textService, storageQuotaGuard);
+                storageService, auditLogService, new RequestIdAccessor(), memberPolicy, textService, storageQuotaGuard, clock, documentShares);
         when(members.findByNamespaceIdAndUserId(eq(NAMESPACE_ID), anyString())).thenAnswer(invocation -> Optional.of(new com.iflytek.skillhub.domain.namespace.NamespaceMember(NAMESPACE_ID, invocation.getArgument(1), NamespaceRole.MEMBER)));
 
         namespace = new Namespace("team-a", "Team A", "owner");
@@ -139,6 +150,96 @@ class KnowledgeAppServiceTest {
         assertThat(searches.get(1).folderIds()).containsExactly(40L);
         assertThat(searches.get(2).rootOnly()).isFalse();
         assertThat(searches.get(2).folderIds()).containsExactlyInAnyOrder(40L, 51L);
+    }
+
+    @Test
+    void onlyAdministratorsCanEnableSharingAndDisablingRevokesTheUrl() throws Exception {
+        var folder = withId(new KnowledgeFolder(11L, null, "Public files", "alice"), 21L);
+        when(folderRepository.findById(21L)).thenReturn(Optional.of(folder));
+        var settings = new UpdateKnowledgeShareRequest(true,
+                List.of(new UpdateKnowledgeShareRequest.FolderSetting(21L, KnowledgeFolderShareVisibility.PUBLIC)), null, null);
+        var admin = new KnowledgeAppService.Caller("admin", Map.of(), Set.of("SUPER_ADMIN"));
+
+        assertThatThrownBy(() -> service.updateShareSettings("team-a", "handbook", settings, member("alice"), null))
+                .isInstanceOf(DomainForbiddenException.class);
+        assertThat(base.getShareId()).isNull();
+        assertThat(folder.getShareVisibility()).isEqualTo(KnowledgeFolderShareVisibility.INHERIT);
+
+        var first = service.updateShareSettings("team-a", "handbook", settings, admin, null).shareId();
+        assertThat(first).isNotNull();
+        assertThat(folder.getShareVisibility()).isEqualTo(KnowledgeFolderShareVisibility.PUBLIC);
+        assertThat(service.updateShareSettings("team-a", "handbook", settings, admin, null).shareId()).isEqualTo(first);
+        assertThat(service.updateShareSettings("team-a", "handbook",
+                new UpdateKnowledgeShareRequest(false, List.of(), null, null), admin, null).shareId()).isNull();
+        assertThat(service.updateShareSettings("team-a", "handbook", settings, admin, null).shareId()).isNotEqualTo(first);
+    }
+
+    @Test
+    void expirationAppliesToEveryReadAndRenewalAfterExpiryReplacesTheLink() {
+        var admin = new KnowledgeAppService.Caller("admin", Map.of(), Set.of("SUPER_ADMIN"));
+        var guest = new KnowledgeAppService.Caller(null, Map.of(), Set.of());
+        var expiresAt = clock.instant().plusSeconds(60);
+        var update = new UpdateKnowledgeShareRequest(true, List.of(), new UpdateKnowledgeShareRequest.Expiration(expiresAt), null);
+        var initial = service.updateShareSettings("team-a", "handbook", update, admin, null);
+        when(baseRepository.findByShareId(UUID.fromString(initial.shareId()))).thenReturn(Optional.of(base));
+        var shares = new KnowledgeShareAppService(baseRepository, namespaceRepository, folderRepository, documentRepository,
+                versionRepository, new KnowledgeAccessPolicy(), new KnowledgeFilePolicy(), service, clock, documentShares);
+
+        assertThat(shares.getShare(initial.shareId(), guest).expiresAt()).isEqualTo(expiresAt);
+        var unchanged = new UpdateKnowledgeShareRequest(true, List.of(), null, null);
+        assertThat(service.updateShareSettings("team-a", "handbook", unchanged, admin, null)).isEqualTo(initial);
+
+        when(clock.instant()).thenReturn(expiresAt);
+        assertThatThrownBy(() -> shares.getShare(initial.shareId(), guest)).isInstanceOf(DomainNotFoundException.class);
+        assertThatThrownBy(() -> shares.listFiles(initial.shareId(), null, null, 0, 20)).isInstanceOf(DomainNotFoundException.class);
+        assertThatThrownBy(() -> shares.openFile(initial.shareId(), 21L, null)).isInstanceOf(DomainNotFoundException.class);
+        assertThatThrownBy(() -> shares.openImage(initial.shareId(), 21L, 1L, null)).isInstanceOf(DomainNotFoundException.class);
+        assertThatThrownBy(() -> service.updateShareSettings("team-a", "handbook", update, admin, null))
+                .hasMessage("error.knowledge.share.expiration.future");
+        assertThat(service.updateShareSettings("team-a", "handbook", unchanged, admin, null)).isEqualTo(initial);
+
+        var renewed = service.updateShareSettings("team-a", "handbook",
+                new UpdateKnowledgeShareRequest(true, List.of(), new UpdateKnowledgeShareRequest.Expiration(null), null), admin, null);
+        assertThat(renewed.expiresAt()).isNull();
+        assertThat(renewed.shareId()).isNotEqualTo(initial.shareId());
+    }
+
+    @Test
+    void rootSharingIsOptInAndAStandaloneLinkCannotOpenAnotherFile() throws Exception {
+        var admin = new KnowledgeAppService.Caller("admin", Map.of(), Set.of("SUPER_ADMIN"));
+        var guest = new KnowledgeAppService.Caller(null, Map.of(), Set.of());
+        var document = withId(new KnowledgeDocument(11L, null, "report", "Report", null, "alice"), 21L);
+        var version = withId(new KnowledgeDocumentVersion(21L, 1, "key", "text/plain", "report.txt", 1, "sha", null, "alice"), 31L);
+        version.publishDirectly("alice");
+        document.publish(version, "txt");
+        when(documentRepository.findById(21L)).thenReturn(Optional.of(document));
+        when(versionRepository.findById(31L)).thenReturn(Optional.of(version));
+        var library = service.updateShareSettings("team-a", "handbook",
+                new UpdateKnowledgeShareRequest(true, List.of(), null, null), admin, null);
+        when(baseRepository.findByShareId(UUID.fromString(library.shareId()))).thenReturn(Optional.of(base));
+        var shares = new KnowledgeShareAppService(baseRepository, namespaceRepository, folderRepository, documentRepository,
+                versionRepository, new KnowledgeAccessPolicy(), new KnowledgeFilePolicy(), service, clock, documentShares);
+        assertThatThrownBy(() -> shares.getFile(library.shareId(), 21L)).isInstanceOf(DomainNotFoundException.class);
+
+        assertThatThrownBy(() -> service.updateDocumentShareSettings(21L,
+                new UpdateKnowledgeDocumentShareRequest(true, null), member("alice"), null))
+                .isInstanceOf(DomainForbiddenException.class);
+        when(documentShares.save(any(KnowledgeDocumentShare.class))).thenAnswer(invocation -> {
+            KnowledgeDocumentShare created = invocation.getArgument(0);
+            when(documentShares.findByShareId(created.getShareId())).thenReturn(Optional.of(created));
+            return created;
+        });
+        var file = service.updateDocumentShareSettings(21L, new UpdateKnowledgeDocumentShareRequest(true, null), admin, null);
+        var overview = shares.getShare(file.shareId(), guest);
+        assertThat(overview.documentId()).isEqualTo(21L);
+        assertThat(overview.folders()).isEmpty();
+        assertThat(overview.memberWorkspace()).isNull();
+        assertThat(shares.getFile(file.shareId(), 21L).folderId()).isNull();
+        assertThatThrownBy(() -> shares.openFile(file.shareId(), 22L, null)).isInstanceOf(DomainNotFoundException.class);
+        assertThatThrownBy(() -> shares.getFile(library.shareId(), 21L)).isInstanceOf(DomainNotFoundException.class);
+
+        service.updateShareSettings("team-a", "handbook", new UpdateKnowledgeShareRequest(true, List.of(), null, true), admin, null);
+        assertThat(shares.getFile(library.shareId(), 21L).id()).isEqualTo(21L);
     }
 
     @Test
@@ -441,7 +542,7 @@ class KnowledgeAppServiceTest {
         when(textService.summaries(any())).thenReturn(Map.of());
         when(versionRepository.findByIdIn(any())).thenReturn(List.of(version));
 
-        var page = service.searchDocuments(" 年假 ", null, 0, 20, member("alice"));
+        var page = service.searchDocuments(" 年假 ", null, false, 0, 20, member("alice"));
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<java.util.Collection<Long>> bases = ArgumentCaptor.forClass(java.util.Collection.class);
@@ -459,10 +560,62 @@ class KnowledgeAppServiceTest {
         });
 
         org.mockito.Mockito.clearInvocations(textService);
-        assertThat(service.searchDocuments("   ", null, 0, 20, member("alice")).items()).isEmpty();
-        assertThat(service.searchDocuments("年假", "other-team", 0, 20, member("alice")).items()).isEmpty();
-        assertThat(service.searchDocuments("年假", null, 0, 20, new KnowledgeAppService.Caller("mallory", Map.of(), Set.of())).items()).isEmpty();
+        assertThat(service.searchDocuments("   ", null, false, 0, 20, member("alice")).items()).isEmpty();
+        assertThat(service.searchDocuments("年假", "other-team", false, 0, 20, member("alice")).items()).isEmpty();
+        assertThat(service.searchDocuments("年假", null, false, 0, 20, new KnowledgeAppService.Caller("mallory", Map.of(), Set.of())).items()).isEmpty();
         verify(textService, never()).search(any(), anyString(), any());
+    }
+
+    @Test
+    void memberOnlySearchLimitsSuperAdminsToTheirTeamMemberships() throws Exception {
+        var otherTeam = withId(new Namespace("team-b", "Team B", "another-owner"), 8L);
+        var otherBase = withId(new KnowledgeBase(8L, "files", "Files", null, "another-owner"), 12L);
+        when(baseRepository.findByStatus(KnowledgeBaseStatus.ACTIVE)).thenReturn(List.of(base, otherBase));
+        when(namespaceRepository.findByIdIn(any())).thenReturn(List.of(namespace, otherTeam));
+        var page = PageRequest.of(0, 20);
+        when(textService.search(any(), eq("handbook"), eq(page))).thenReturn(new PageImpl<>(List.of(), page, 0));
+        var admin = new KnowledgeAppService.Caller("admin", Map.of(NAMESPACE_ID, NamespaceRole.MEMBER), Set.of("SUPER_ADMIN"));
+
+        service.searchDocuments("handbook", null, true, 0, 20, admin);
+        verify(textService).search(eq(Set.of(11L)), eq("handbook"), eq(page));
+
+        service.searchDocuments("handbook", null, false, 0, 20, admin);
+        verify(textService).search(eq(Set.of(11L, 12L)), eq("handbook"), eq(page));
+    }
+
+    @Test
+    void superAdminCanBatchArchiveOtherMembersFiles() throws Exception {
+        var first = withId(new KnowledgeDocument(11L, null, "first", "First", null, "alice"), 21L);
+        var second = withId(new KnowledgeDocument(11L, null, "second", "Second", null, "bob"), 22L);
+        when(documentRepository.findByIdForUpdate(21L)).thenReturn(Optional.of(first));
+        when(documentRepository.findByIdForUpdate(22L)).thenReturn(Optional.of(second));
+        var admin = new KnowledgeAppService.Caller("admin", Map.of(), Set.of("SUPER_ADMIN"));
+
+        service.batchDeleteDocuments("team-a", "handbook", List.of(22L, 21L, 21L), admin, null);
+
+        assertThat(first.getStatus()).isEqualTo(KnowledgeDocumentStatus.ARCHIVED);
+        assertThat(second.getStatus()).isEqualTo(KnowledgeDocumentStatus.ARCHIVED);
+        verify(documentRepository).save(first);
+        verify(documentRepository).save(second);
+        verify(auditLogService).record(eq("admin"), eq("KNOWLEDGE_DOCUMENT_DELETE"), eq("KNOWLEDGE_DOCUMENT"),
+                eq(21L), any(), any(), any(), anyString());
+    }
+
+    @Test
+    void batchArchiveRejectsMembersAndFilesOutsideTheSelectedBaseWithoutDeletingAnything() throws Exception {
+        var first = withId(new KnowledgeDocument(11L, null, "first", "First", null, "alice"), 21L);
+        var outside = withId(new KnowledgeDocument(12L, null, "outside", "Outside", null, "alice"), 22L);
+        when(documentRepository.findByIdForUpdate(21L)).thenReturn(Optional.of(first));
+        when(documentRepository.findByIdForUpdate(22L)).thenReturn(Optional.of(outside));
+        var admin = new KnowledgeAppService.Caller("admin", Map.of(), Set.of("SUPER_ADMIN"));
+
+        assertThatThrownBy(() -> service.batchDeleteDocuments("team-a", "handbook", List.of(21L), member("alice"), null))
+                .isInstanceOf(DomainForbiddenException.class);
+        assertThatThrownBy(() -> service.batchDeleteDocuments("team-a", "handbook", List.of(21L, 22L), admin, null))
+                .isInstanceOf(DomainNotFoundException.class);
+
+        assertThat(first.isActive()).isTrue();
+        verify(documentRepository, never()).save(any());
     }
 
     @Test

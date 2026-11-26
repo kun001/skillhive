@@ -21,6 +21,10 @@ public class KnowledgeFolder {
     @Column(nullable = false, length = 128)
     private String name;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "share_visibility", nullable = false, length = 16)
+    private KnowledgeFolderShareVisibility shareVisibility = KnowledgeFolderShareVisibility.INHERIT;
+
     @Column(name = "created_by", nullable = false, length = 128)
     private String createdBy;
 
@@ -63,6 +67,8 @@ public class KnowledgeFolder {
     public Long getKnowledgeBaseId() { return knowledgeBaseId; }
     public Long getParentId() { return parentId; }
     public String getName() { return name; }
+    public KnowledgeFolderShareVisibility getShareVisibility() { return shareVisibility; }
+    public void setShareVisibility(KnowledgeFolderShareVisibility shareVisibility) { this.shareVisibility = shareVisibility; }
     public String getCreatedBy() { return createdBy; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }

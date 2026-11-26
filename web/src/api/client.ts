@@ -1,6 +1,6 @@
 import createClient from 'openapi-fetch'
 import { BASE_PATH } from '@/shared/lib/base-path'
-import type { paths } from './generated/schema'
+import type { components, paths } from './generated/schema'
 import type {
   ChangePasswordRequest,
   PasswordResetConfirmRequest,
@@ -63,9 +63,14 @@ import type {
   KnowledgeDocumentSearchQuery,
   KnowledgeDocumentVersion,
   KnowledgeFolder,
+  KnowledgeShare,
+  KnowledgeShareSettings,
+  SharedKnowledgeFile,
   UpdateKnowledgeBaseRequest,
   UpdateKnowledgeDocumentRequest,
+  UpdateKnowledgeDocumentShareRequest,
   UpdateKnowledgeFolderRequest,
+  UpdateKnowledgeShareRequest,
 } from './knowledge-types'
 import type {
   ArchivedKnowledgeDocumentPage,
@@ -1328,6 +1333,13 @@ export const adminApi = {
     })
   },
 
+  async deleteNamespace(slug: string): Promise<void> {
+    await fetchJson<components['schemas']['MessageResponse']>(`/api/v1/admin/namespaces/${encodeURIComponent(normalizeNamespaceSlug(slug))}`, {
+      method: 'DELETE',
+      headers: await ensureCsrfHeaders(),
+    })
+  },
+
   async getUsers(params: { search?: string; status?: string; page?: number; size?: number }) {
     const searchParams = new URLSearchParams()
     if (params.search) searchParams.set('search', params.search)
@@ -1560,6 +1572,16 @@ export const notificationApi = {
 }
 
 const KNOWLEDGE_PREFIX = `${WEB_API_PREFIX}/knowledge`
+const KNOWLEDGE_SHARES_PREFIX = `${WEB_API_PREFIX}/knowledge-shares`
+
+function knowledgeSharePath(shareId: string): string {
+  return `${KNOWLEDGE_SHARES_PREFIX}/${encodeURIComponent(shareId)}`
+}
+
+function knowledgeDocumentPath(documentId: number, shareId?: string): string {
+  const prefix = shareId ? knowledgeSharePath(shareId) : KNOWLEDGE_PREFIX
+  return `${prefix}/documents/${documentId}`
+}
 
 function knowledgeBasePath(namespace: string, base: string): string {
   return `${KNOWLEDGE_PREFIX}/bases/${encodeURIComponent(normalizeNamespaceSlug(namespace))}/${encodeURIComponent(base)}`
@@ -1632,6 +1654,30 @@ export const knowledgeApi = {
     return fetchJson<KnowledgeBase>(knowledgeBasePath(namespace, base))
   },
 
+  getShareSettings(namespace: string, base: string): Promise<KnowledgeShareSettings> {
+    return fetchJson(`${knowledgeBasePath(namespace, base)}/share`)
+  },
+
+  getDocumentShareSettings(documentId: number): Promise<KnowledgeShareSettings> {
+    return fetchJson(`${knowledgeDocumentPath(documentId)}/share`)
+  },
+
+  async updateDocumentShareSettings(documentId: number, request: UpdateKnowledgeDocumentShareRequest): Promise<KnowledgeShareSettings> {
+    return fetchJson(`${knowledgeDocumentPath(documentId)}/share`, {
+      method: 'PUT',
+      headers: await ensureCsrfHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(request),
+    })
+  },
+
+  async updateShareSettings(namespace: string, base: string, request: UpdateKnowledgeShareRequest): Promise<KnowledgeShareSettings> {
+    return fetchJson(`${knowledgeBasePath(namespace, base)}/share`, {
+      method: 'PUT',
+      headers: await ensureCsrfHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(request),
+    })
+  },
+
   async updateBase(namespace: string, base: string, request: UpdateKnowledgeBaseRequest): Promise<KnowledgeBase> {
     return fetchJson<KnowledgeBase>(knowledgeBasePath(namespace, base), {
       method: 'PUT',
@@ -1667,7 +1713,7 @@ export const knowledgeApi = {
     })
   },
 
-  listDocuments(namespace: string, base: string, query: KnowledgeDocumentQuery): Promise<KnowledgeDocumentPage> {
+  listDocuments(namespace: string, base: string, query: KnowledgeDocumentQuery, signal?: AbortSignal): Promise<KnowledgeDocumentPage> {
     const params = new URLSearchParams()
     if (query.folderId !== undefined) params.set('folderId', String(query.folderId))
     if (query.recursive !== undefined) params.set('recursive', String(query.recursive))
@@ -1679,15 +1725,16 @@ export const knowledgeApi = {
     params.set('sort', query.sort ?? 'updated')
     params.set('page', String(query.page ?? 0))
     params.set('size', String(query.size ?? 20))
-    return fetchJson<KnowledgeDocumentPage>(`${knowledgeBasePath(namespace, base)}/documents?${params.toString()}`)
+    return fetchJson<KnowledgeDocumentPage>(`${knowledgeBasePath(namespace, base)}/documents?${params.toString()}`, { signal })
   },
 
-  searchDocuments(query: KnowledgeDocumentSearchQuery): Promise<KnowledgeDocumentSearchPage> {
+  searchDocuments(query: KnowledgeDocumentSearchQuery, signal?: AbortSignal): Promise<KnowledgeDocumentSearchPage> {
     const params = new URLSearchParams({ q: query.q.trim() })
     if (query.namespace) params.set('namespace', query.namespace)
+    if (query.memberOnly) params.set('memberOnly', 'true')
     params.set('page', String(query.page ?? 0))
     params.set('size', String(query.size ?? 20))
-    return fetchJson<KnowledgeDocumentSearchPage>(`${KNOWLEDGE_PREFIX}/documents/search?${params.toString()}`)
+    return fetchJson<KnowledgeDocumentSearchPage>(`${KNOWLEDGE_PREFIX}/documents/search?${params.toString()}`, { signal })
   },
 
   uploadDocument(
@@ -1722,6 +1769,15 @@ export const knowledgeApi = {
     await fetchJson<unknown>(`${KNOWLEDGE_PREFIX}/documents/${documentId}`, {
       method: 'DELETE',
       headers: await ensureCsrfHeaders(),
+    })
+  },
+
+  async batchDeleteDocuments(namespace: string, base: string, documentIds: number[]): Promise<void> {
+    const request: components['schemas']['BatchDeleteKnowledgeDocumentsRequest'] = { documentIds }
+    await fetchJson<components['schemas']['MessageResponse']>(`${knowledgeBasePath(namespace, base)}/documents/batch-delete`, {
+      method: 'POST',
+      headers: await ensureCsrfHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(request),
     })
   },
 
@@ -1782,12 +1838,12 @@ export const knowledgeApi = {
   },
 
   /** URL that downloads (or, for previewable types, displays) a file version. */
-  listImages(documentId: number, version?: number): Promise<import('./knowledge-types').KnowledgeMarkdownImages> {
-    return fetchJson(`${KNOWLEDGE_PREFIX}/documents/${documentId}/images${version === undefined ? '' : `?version=${version}`}`)
+  listImages(documentId: number, version?: number, shareId?: string): Promise<import('./knowledge-types').KnowledgeMarkdownImages> {
+    return fetchJson(`${knowledgeDocumentPath(documentId, shareId)}/images${version === undefined ? '' : `?version=${version}`}`)
   },
 
-  imageUrl(documentId: number, imageId: number, version: number): string {
-    return buildApiUrl(`${KNOWLEDGE_PREFIX}/documents/${documentId}/images/${imageId}/content?version=${version}`)
+  imageUrl(documentId: number, imageId: number, version: number, shareId?: string): string {
+    return buildApiUrl(`${knowledgeDocumentPath(documentId, shareId)}/images/${imageId}/content?version=${version}`)
   },
 
   async officeContent(documentId: number, version: number, signal?: AbortSignal): Promise<Blob> {
@@ -1799,11 +1855,28 @@ export const knowledgeApi = {
     return data
   },
 
-  contentUrl(documentId: number, options?: { version?: number; inline?: boolean }): string {
+  contentUrl(documentId: number, options?: { version?: number; inline?: boolean; shareId?: string }): string {
     const params = new URLSearchParams()
     if (options?.version !== undefined) params.set('version', String(options.version))
     if (options?.inline) params.set('disposition', 'inline')
     const query = params.toString()
-    return buildApiUrl(`${KNOWLEDGE_PREFIX}/documents/${documentId}/content${query ? `?${query}` : ''}`)
+    return buildApiUrl(`${knowledgeDocumentPath(documentId, options?.shareId)}/content${query ? `?${query}` : ''}`)
+  },
+}
+
+export const knowledgeShareApi = {
+  get(shareId: string): Promise<KnowledgeShare> {
+    return fetchJson(knowledgeSharePath(shareId))
+  },
+
+  listFiles(shareId: string, query: { folderId?: number; q?: string; page: number; size: number }, signal?: AbortSignal): Promise<PagedResponse<SharedKnowledgeFile>> {
+    const params = new URLSearchParams({ page: String(query.page), size: String(query.size) })
+    if (query.folderId != null) params.set('folderId', String(query.folderId))
+    if (query.q) params.set('q', query.q)
+    return fetchJson(`${knowledgeSharePath(shareId)}/documents?${params.toString()}`, { signal })
+  },
+
+  getFile(shareId: string, fileId: number): Promise<SharedKnowledgeFile> {
+    return fetchJson(knowledgeDocumentPath(fileId, shareId))
   },
 }

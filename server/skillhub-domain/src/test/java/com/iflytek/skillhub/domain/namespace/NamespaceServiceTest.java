@@ -257,6 +257,22 @@ class NamespaceServiceTest {
     }
 
     @Test
+    void platformAdminCanDeleteAnotherOwnersTeamAfterItsActiveFilesAreRemoved() {
+        Long namespaceId = 1L;
+        Namespace namespace = new Namespace("team-a", "Team A", "owner-1");
+        setField(namespace, "id", namespaceId);
+        when(namespaceRepository.findBySlug("team-a")).thenReturn(Optional.of(namespace));
+        when(knowledgeNamespaceRepository.hasActiveDocuments(namespaceId)).thenReturn(true, false);
+
+        assertThrows(DomainBadRequestException.class, () -> namespaceService.deleteNamespaceByPlatformAdmin("team-a"));
+        verify(namespaceRepository, never()).delete(namespace);
+
+        namespaceService.deleteNamespaceByPlatformAdmin("team-a");
+        verify(namespaceMemberRepository).deleteByNamespaceId(namespaceId);
+        verify(namespaceRepository).delete(namespace);
+    }
+
+    @Test
     void deleteNamespace_shouldRejectNamespaceWithDependentData() {
         Long namespaceId = 1L;
         String operatorUserId = "owner-1";

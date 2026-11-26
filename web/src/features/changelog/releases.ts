@@ -14,6 +14,21 @@ export interface ReleaseNote {
 // Confirm the date and image tag when deploying; Git submission is not deployment.
 export const releases: ReleaseNote[] = [
   {
+    id: '20261126-knowledge-visitor-sharing',
+    version: 'v0.4.10',
+    date: '2026-11-26',
+    title: { zh: '知识库访客分享与批量管理', en: 'Knowledge visitor sharing and bulk management' },
+    summary: {
+      zh: '可以为目录、根目录文件或单个文件创建访客分享链接，并设置到期时间。',
+      en: 'Share folders, root files or an individual file with visitors and set an optional expiration.',
+    },
+    changes: [
+      { zh: '分享页支持分层浏览。公开文件可免登录预览和下载，仅展示入口的目录需登录并获得团队权限后才能查看文件。', en: 'The visitor page shows a folder tree. Visitors can preview and download shared files. Entry-only folders require sign-in and team access to view files.' },
+      { zh: '知识库首页默认显示自己所属的团队空间。', en: 'The Knowledge page opens in the user’s team spaces by default.' },
+      { zh: '管理员可以批量归档知识库文件，并删除已清理的团队空间。', en: 'Administrators can bulk-archive knowledge files and delete team spaces after clearing the required content.' },
+    ],
+  },
+  {
     id: '20261123-knowledge-folders-and-archive-uploads',
     version: 'v0.4.9',
     date: '2026-11-23',

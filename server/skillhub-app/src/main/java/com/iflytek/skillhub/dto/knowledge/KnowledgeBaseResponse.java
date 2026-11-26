@@ -16,6 +16,8 @@ public record KnowledgeBaseResponse(
         long documentCount,
         Instant updatedAt,
         boolean canManage,
-        boolean canContribute
+        boolean canContribute,
+        boolean sharingEnabled,
+        boolean sharedRootFiles
 ) {
 }

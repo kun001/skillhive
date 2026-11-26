@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/features/auth/use-auth'
 import { knowledgeApi } from '@/api/client'
-import type { KnowledgeDocument } from '@/api/knowledge-types'
+import type { KnowledgePreviewDocument } from '@/api/knowledge-types'
 import { CodeRenderer } from '@/features/skill/code-renderer'
 import { MAX_SYNTAX_HIGHLIGHT_BYTES } from '@/features/skill/file-type-utils'
 import { MarkdownRenderer } from '@/features/skill/markdown-renderer'
@@ -26,7 +26,7 @@ async function fetchPreview(url: string, as: 'text' | 'blob') {
   return as === 'text' ? response.text() : response.blob()
 }
 
-function PreviewMessage({ document, title, description }: { document: KnowledgeDocument; title: string; description?: string }) {
+function PreviewMessage({ document, title, description, shareId }: { document: KnowledgePreviewDocument; title: string; description?: string; shareId?: string }) {
   const { t } = useTranslation()
   return (
     <div className="flex min-h-[24rem] flex-col items-center justify-center gap-4 p-8 text-center">
@@ -35,7 +35,7 @@ function PreviewMessage({ document, title, description }: { document: KnowledgeD
         <p className="font-medium text-foreground">{title}</p>
         {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
       </div>
-      {document.canDownload ? <a href={knowledgeApi.contentUrl(document.id)} download className={buttonVariants({ variant: 'default' })}>
+      {document.canDownload ? <a href={knowledgeApi.contentUrl(document.id, shareId ? { shareId } : undefined)} download className={buttonVariants({ variant: 'default' })}>
         <Download className="mr-2 h-4 w-4" aria-hidden />
         {t('knowledge.actions.download')}
       </a> : null}
@@ -53,10 +53,11 @@ function PreviewLoading() {
   )
 }
 
-export function KnowledgeFilePreview({ document }: { document: KnowledgeDocument }) {
+export function KnowledgeFilePreview({ document, shareId }: { document: KnowledgePreviewDocument; shareId?: string }) {
   const { t } = useTranslation()
   const { user } = useAuth()
-  const url = knowledgeApi.contentUrl(document.id, { version: document.currentVersion, inline: true })
+  const url = knowledgeApi.contentUrl(document.id, { version: document.currentVersion, inline: true, ...(shareId && { shareId }) })
+  const previewKey = shareId ? [...knowledgeKeys.all, 'share', shareId, 'document', document.id] : knowledgeKeys.document(document.id)
   const extension = document.fileExtension?.toLowerCase()
   const kind = ['html', 'htm'].includes(extension ?? '') ? 'NONE' : document.previewKind
   const isMdx = extension === 'mdx'
@@ -65,17 +66,19 @@ export function KnowledgeFilePreview({ document }: { document: KnowledgeDocument
   const textTooLarge = isText && document.sizeBytes > MAX_TEXT_PREVIEW_BYTES
 
   const content = useQuery({
-    queryKey: [...knowledgeKeys.document(document.id), 'preview', document.currentVersion, user?.userId ?? 'guest'],
+    queryKey: [...previewKey, 'preview', document.currentVersion, user?.userId ?? 'guest'],
     queryFn: () => fetchPreview(url, isText ? 'text' : 'blob'),
     // Preview streams the original file, so it shares the download permission.
     enabled: !!document.canDownload && ((isText && !textTooLarge) || kind === 'PDF'),
-    staleTime: Infinity,
+    staleTime: shareId ? 0 : Infinity,
+    gcTime: shareId ? 0 : undefined,
   })
   const images = useQuery({
-    queryKey: [...knowledgeKeys.document(document.id), 'images', document.currentVersion, user?.userId ?? 'guest'],
-    queryFn: () => knowledgeApi.listImages(document.id, document.currentVersion),
+    queryKey: [...previewKey, 'images', document.currentVersion, user?.userId ?? 'guest'],
+    queryFn: () => shareId ? knowledgeApi.listImages(document.id, document.currentVersion, shareId) : knowledgeApi.listImages(document.id, document.currentVersion),
     enabled: !!document.canDownload && hasImages && !textTooLarge,
-    staleTime: Infinity,
+    staleTime: shareId ? 0 : Infinity,
+    gcTime: shareId ? 0 : undefined,
   })
 
   const [pdfUrl, setPdfUrl] = useState<string>()
@@ -93,6 +96,7 @@ export function KnowledgeFilePreview({ document }: { document: KnowledgeDocument
     return (
       <PreviewMessage
         document={document}
+        shareId={shareId}
         title={t('knowledge.preview.noDownloadTitle')}
         description={t('knowledge.preview.noDownloadDescription')}
       />
@@ -102,16 +106,17 @@ export function KnowledgeFilePreview({ document }: { document: KnowledgeDocument
     return (
       <PreviewMessage
         document={document}
+        shareId={shareId}
         title={t('knowledge.preview.unsupportedTitle')}
         description={t('knowledge.preview.unsupportedDescription')}
       />
     )
   }
   if (kind === 'OFFICE') {
-    return <KnowledgeBrowserOfficePreview key={`${document.id}:${document.currentVersion}`} document={document} />
+    return <KnowledgeBrowserOfficePreview key={`${document.id}:${document.currentVersion}`} document={document} shareId={shareId} />
   }
   if (textTooLarge) {
-    return <PreviewMessage document={document} title={t('knowledge.preview.tooLarge')} />
+    return <PreviewMessage document={document} shareId={shareId} title={t('knowledge.preview.tooLarge')} />
   }
   if (kind === 'IMAGE') {
     return (
@@ -121,7 +126,7 @@ export function KnowledgeFilePreview({ document }: { document: KnowledgeDocument
     )
   }
   if (content.isError || (hasImages && images.isError)) {
-    return <PreviewMessage document={document} title={t('knowledge.preview.failed')} />
+    return <PreviewMessage document={document} shareId={shareId} title={t('knowledge.preview.failed')} />
   }
   if (content.isLoading || (hasImages && images.isLoading) || (kind === 'PDF' && !pdfUrl)) {
     return <PreviewLoading />
@@ -134,7 +139,7 @@ export function KnowledgeFilePreview({ document }: { document: KnowledgeDocument
     return <MdxPreview key={`${document.id}:${document.currentVersion}`} content={text} resolveImageUrl={(src) => {
       const path = resolveImagePath(images.data?.sourcePath ?? document.fileName, src)
       const image = images.data?.images.find((candidate) => candidate.path === path)
-      return image ? knowledgeApi.imageUrl(document.id, image.id, document.currentVersion) : undefined
+      return image ? knowledgeApi.imageUrl(document.id, image.id, document.currentVersion, shareId) : undefined
     }} />
   }
   if (kind === 'MARKDOWN') {
@@ -143,7 +148,7 @@ export function KnowledgeFilePreview({ document }: { document: KnowledgeDocument
         <MarkdownRenderer content={text} resolveImageUrl={(src) => {
           const path = resolveImagePath(images.data?.sourcePath ?? document.fileName, src)
           const image = images.data?.images.find((candidate) => candidate.path === path)
-          return image ? knowledgeApi.imageUrl(document.id, image.id, document.currentVersion) : src
+          return image ? knowledgeApi.imageUrl(document.id, image.id, document.currentVersion, shareId) : src
         }} />
       </div>
     )

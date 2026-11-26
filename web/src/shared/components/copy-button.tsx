@@ -22,6 +22,7 @@ export function CopyButton({ text, className, ariaLabel }: CopyButtonProps) {
 
   return (
     <Button
+      type="button"
       variant="outline"
       size="sm"
       onClick={handleCopy}

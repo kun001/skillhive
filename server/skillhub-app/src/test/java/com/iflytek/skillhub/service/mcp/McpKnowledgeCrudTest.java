@@ -85,7 +85,7 @@ class McpKnowledgeCrudTest {
         member.setRole(NamespaceRole.OWNER);
         allow("knowledge_base_create", "create", change);
         when(knowledge.createBase(any(), any(), any())).thenReturn(
-                new KnowledgeBaseResponse(8L, "team", "Team", "new-docs", "Docs", null, "ACTIVE", 0, null, true, true));
+                new KnowledgeBaseResponse(8L, "team", "Team", "new-docs", "Docs", null, "ACTIVE", 0, null, true, true, false, false));
         assertThat(service.createBase(change, actor, owner, request(null)).path("id").asLong()).isEqualTo(8L);
     }
 
@@ -141,7 +141,8 @@ class McpKnowledgeCrudTest {
         var params = Map.of("namespace", "team", "base", "docs", "folderId", 4L, "change", change);
         allow("knowledge_folder_update", "folder", params);
         when(knowledge.updateFolder(eq("team"), eq("docs"), eq(4L), any(), any(), any()))
-                .thenReturn(new KnowledgeFolderResponse(4L, 3L, "Policies", 0, true));
+                .thenReturn(new KnowledgeFolderResponse(4L, 3L, "Policies", 0, true,
+                        com.iflytek.skillhub.domain.knowledge.KnowledgeFolderShareVisibility.INHERIT));
         assertThat(service.updateFolder("team", "docs", 4L, change, actor, owner, request(Set.of(5L)))
                 .path("parentId").asLong()).isEqualTo(3L);
         assertThatThrownBy(() -> service.updateFolder("team", "docs", 4L,

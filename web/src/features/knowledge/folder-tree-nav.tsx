@@ -1,49 +1,51 @@
-import { ChevronRight, Folder, FolderOpen, FolderPlus, Library, MoreHorizontal } from 'lucide-react'
+import { ChevronRight, Folder, FolderOpen, FolderPlus, Library, Lock, MoreHorizontal } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { KnowledgeFolder } from '@/api/knowledge-types'
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/shared/ui/dropdown-menu'
-import type { KnowledgeFolderNode } from './folder-tree'
+import type { FolderTreeItem, KnowledgeFolderNode } from './folder-tree'
 
-interface FolderTreeNavProps {
-  tree: KnowledgeFolderNode[]
-  ancestry: KnowledgeFolder[]
+interface FolderTreeNavProps<Folder extends FolderTreeItem> {
+  tree: KnowledgeFolderNode<Folder>[]
+  ancestry: readonly { id: number }[]
   selectedFolderId: number | undefined
-  totalCount: number
-  canContribute: boolean
+  totalCount?: number
+  expandSelected?: boolean
+  canContribute?: boolean
   onSelect: (folderId: number | undefined) => void
-  onCreate: (parentId: number | undefined) => void
-  onEdit: (folder: KnowledgeFolder) => void
-  onDelete: (folder: KnowledgeFolder) => void
+  onCreate?: (parentId: number | undefined) => void
+  onEdit?: (folder: Folder) => void
+  onDelete?: (folder: Folder) => void
 }
 
 /** Yuque-style directory tree: "All files" plus nested folders with per-folder file counts. */
-export function KnowledgeFolderTreeNav({
+export function KnowledgeFolderTreeNav<Folder extends FolderTreeItem>({
   tree,
   ancestry,
   selectedFolderId,
   totalCount,
+  expandSelected,
   canContribute,
   onSelect,
   onCreate,
   onEdit,
   onDelete,
-}: FolderTreeNavProps) {
+}: FolderTreeNavProps<Folder>) {
   const { t } = useTranslation()
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
 
   // Keep the selected folder visible when it is chosen from a link or the breadcrumb.
   useEffect(() => {
-    if (ancestry.length > 1) {
+    const toExpand = expandSelected ? ancestry : ancestry.slice(0, -1)
+    if (toExpand.length > 0) {
       setExpanded((current) => {
         const next = new Set(current)
-        ancestry.slice(0, -1).forEach((folder) => next.add(folder.id))
+        toExpand.forEach((folder) => next.add(folder.id))
         return next.size === current.size ? current : next
       })
     }
-  }, [ancestry])
+  }, [ancestry, expandSelected])
 
   const toggle = (folderId: number) =>
     setExpanded((current) => {
@@ -53,12 +55,12 @@ export function KnowledgeFolderTreeNav({
       return next
     })
 
-  const renderNode = (node: KnowledgeFolderNode) => {
+  const renderNode = (node: KnowledgeFolderNode<Folder>) => {
     const { folder } = node
     const selected = folder.id === selectedFolderId
     const isOpen = expanded.has(folder.id)
-    const hasChildren = node.children.length > 0
-    const FolderIcon = selected || isOpen ? FolderOpen : Folder
+    const hasChildren = !folder.entryOnly && node.children.length > 0
+    const FolderIcon = folder.entryOnly ? Lock : selected || isOpen ? FolderOpen : Folder
     return (
       <li key={folder.id}>
         <div
@@ -72,6 +74,8 @@ export function KnowledgeFolderTreeNav({
             type="button"
             className={cn('flex h-6 w-5 shrink-0 items-center justify-center rounded text-muted-foreground', !hasChildren && 'invisible')}
             aria-label={t(isOpen ? 'knowledge.tree.collapse' : 'knowledge.tree.expand')}
+            aria-expanded={hasChildren ? isOpen : undefined}
+            disabled={!hasChildren}
             onClick={() => toggle(folder.id)}
           >
             <ChevronRight className={cn('h-3.5 w-3.5 transition-transform', isOpen && 'rotate-90')} />
@@ -85,9 +89,10 @@ export function KnowledgeFolderTreeNav({
           >
             <FolderIcon className="h-4 w-4 shrink-0" aria-hidden />
             <span className="truncate">{folder.name}</span>
+            {folder.entryOnly ? <span className="sr-only">{t('knowledge.share.authorization')}</span> : null}
           </button>
-          <span className="text-xs tabular-nums text-muted-foreground group-hover:hidden">{node.totalCount || ''}</span>
-          {canContribute ? (
+          {totalCount !== undefined ? <span className="text-xs tabular-nums text-muted-foreground group-hover:hidden">{node.totalCount || ''}</span> : null}
+          {canContribute && onCreate ? (
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
                 <button
@@ -105,7 +110,7 @@ export function KnowledgeFolderTreeNav({
                 collisionPadding={{ top: 88, right: 12, bottom: 12, left: 12 }}
               >
                 <DropdownMenuItem onSelect={() => onCreate(folder.id)}>{t('knowledge.tree.newSubfolder')}</DropdownMenuItem>
-                {folder.canManage ? (
+                {folder.canManage && onEdit && onDelete ? (
                   <>
                     <DropdownMenuItem onSelect={() => onEdit(folder)}>{t('knowledge.tree.edit')}</DropdownMenuItem>
                     <DropdownMenuSeparator />
@@ -136,13 +141,13 @@ export function KnowledgeFolderTreeNav({
       >
         <Library className="h-4 w-4" aria-hidden />
         <span className="flex-1 text-left">{t('knowledge.tree.root')}</span>
-        <span className="text-xs tabular-nums text-muted-foreground">{totalCount}</span>
+        {totalCount !== undefined ? <span className="text-xs tabular-nums text-muted-foreground">{totalCount}</span> : null}
       </button>
 
       <div className="border-t border-border/50 pt-3">
         <div className="mb-1 flex items-center justify-between px-2">
           <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('knowledge.tree.folders')}</span>
-          {canContribute ? (
+          {canContribute && onCreate ? (
             <Button variant="ghost" size="icon" className="h-7 w-7" aria-label={t('knowledge.tree.newFolder')} title={t('knowledge.tree.newFolder')} onClick={() => onCreate(undefined)}>
               <FolderPlus className="h-4 w-4" />
             </Button>

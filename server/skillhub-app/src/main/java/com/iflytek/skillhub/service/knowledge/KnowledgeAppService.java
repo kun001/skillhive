@@ -16,6 +16,8 @@ import com.iflytek.skillhub.domain.knowledge.KnowledgeDocumentText;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeDocument;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeDocumentRepository;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeDocumentSearch;
+import com.iflytek.skillhub.domain.knowledge.KnowledgeDocumentShare;
+import com.iflytek.skillhub.domain.knowledge.KnowledgeDocumentShareRepository;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeDocumentVersion;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeDocumentVersionRepository;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeDocumentVersionStatus;
@@ -24,9 +26,11 @@ import com.iflytek.skillhub.domain.knowledge.KnowledgeFolder;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeFolderRepository;
 import com.iflytek.skillhub.domain.knowledge.KnowledgeFolderTree;
 import com.iflytek.skillhub.domain.knowledge.KnowledgePreviewKind;
+import com.iflytek.skillhub.domain.namespace.MemberResourcePolicy;
 import com.iflytek.skillhub.domain.namespace.Namespace;
 import com.iflytek.skillhub.domain.namespace.NamespaceRepository;
 import com.iflytek.skillhub.domain.namespace.NamespaceRole;
+import com.iflytek.skillhub.domain.namespace.NamespaceType;
 import com.iflytek.skillhub.domain.namespace.SlugValidator;
 import com.iflytek.skillhub.domain.shared.exception.DomainBadRequestException;
 import com.iflytek.skillhub.domain.shared.exception.DomainConflictException;
@@ -48,9 +52,12 @@ import com.iflytek.skillhub.dto.knowledge.KnowledgeFolderPathItem;
 import com.iflytek.skillhub.dto.knowledge.KnowledgeFolderResponse;
 import com.iflytek.skillhub.dto.knowledge.KnowledgeUserResponse;
 import com.iflytek.skillhub.dto.knowledge.KnowledgeMarkdownImagesResponse;
+import com.iflytek.skillhub.dto.knowledge.KnowledgeShareSettingsResponse;
 import com.iflytek.skillhub.dto.knowledge.UpdateKnowledgeBaseRequest;
 import com.iflytek.skillhub.dto.knowledge.UpdateKnowledgeDocumentRequest;
+import com.iflytek.skillhub.dto.knowledge.UpdateKnowledgeDocumentShareRequest;
 import com.iflytek.skillhub.dto.knowledge.UpdateKnowledgeFolderRequest;
+import com.iflytek.skillhub.dto.knowledge.UpdateKnowledgeShareRequest;
 import com.iflytek.skillhub.observability.RequestIdAccessor;
 import com.iflytek.skillhub.auth.rbac.PlatformPrincipal;
 import com.iflytek.skillhub.service.AuditRequestContext;
@@ -71,6 +78,7 @@ import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -104,11 +112,12 @@ public class KnowledgeAppService {
     private static final int MAX_SEARCH_KEYWORD_LENGTH = 100;
     private static final SecureRandom RANDOM = new SecureRandom();
 
-    private final com.iflytek.skillhub.domain.namespace.MemberResourcePolicy memberPolicy;
+    private final MemberResourcePolicy memberPolicy;
     private final NamespaceRepository namespaceRepository;
     private final KnowledgeBaseRepository baseRepository;
     private final KnowledgeFolderRepository folderRepository;
     private final KnowledgeDocumentRepository documentRepository;
+    private final KnowledgeDocumentShareRepository documentShares;
     private final KnowledgeDocumentVersionRepository versionRepository;
     private final KnowledgeAttachmentRepository attachmentRepository;
     private final UserAccountRepository userAccountRepository;
@@ -120,6 +129,7 @@ public class KnowledgeAppService {
     private final RequestIdAccessor requestIdAccessor;
     private final KnowledgeTextService textService;
     private final StorageQuotaGuard storageQuotaGuard;
+    private final Clock clock;
 
     public KnowledgeAppService(NamespaceRepository namespaceRepository,
                                KnowledgeBaseRepository baseRepository,
@@ -134,9 +144,11 @@ public class KnowledgeAppService {
                                ObjectStorageService storageService,
                                AuditLogService auditLogService,
                                RequestIdAccessor requestIdAccessor,
-                               com.iflytek.skillhub.domain.namespace.MemberResourcePolicy memberPolicy,
+                               MemberResourcePolicy memberPolicy,
                                KnowledgeTextService textService,
-                               StorageQuotaGuard storageQuotaGuard) {
+                               StorageQuotaGuard storageQuotaGuard,
+                               Clock clock,
+                               KnowledgeDocumentShareRepository documentShares) {
         this.storageQuotaGuard = storageQuotaGuard == null ? StorageQuotaGuard.UNLIMITED : storageQuotaGuard;
         this.memberPolicy = memberPolicy;
         this.textService = textService;
@@ -153,6 +165,8 @@ public class KnowledgeAppService {
         this.storageService = storageService;
         this.auditLogService = auditLogService;
         this.requestIdAccessor = requestIdAccessor;
+        this.clock = clock;
+        this.documentShares = documentShares;
     }
 
     /** The authenticated caller with their namespace memberships and platform roles. */
@@ -288,6 +302,93 @@ public class KnowledgeAppService {
                 statsFor(List.of(saved.getId())).get(saved.getId()), caller);
     }
 
+    @Transactional(readOnly = true)
+    public KnowledgeShareSettingsResponse getShareSettings(String namespace, String base, Caller caller) {
+        BaseContext context = resolveBase(namespace, base, caller);
+        requireShareManager(context, caller);
+        return baseShareSettings(context.base());
+    }
+
+    @Transactional
+    public KnowledgeShareSettingsResponse updateShareSettings(String namespace, String base, UpdateKnowledgeShareRequest request,
+                                                               Caller caller, AuditRequestContext audit) {
+        BaseContext context = resolveWritableBase(namespace, base, caller);
+        requireShareManager(context, caller);
+        Instant now = clock.instant();
+        Instant expiresAt = shareExpiration(request.enabled(), request.expiration(), context.base().getShareExpiresAt(), now);
+        for (var setting : request.folders()) {
+            KnowledgeFolder folder = findFolderInBase(context, setting.folderId());
+            folder.setShareVisibility(setting.visibility());
+            recordAudit(caller, "KNOWLEDGE_FOLDER_SHARING", TARGET_FOLDER, folder.getId(), audit,
+                    AuditDetail.builder().put("visibility", setting.visibility().name()).build());
+        }
+        if (request.shareRootFiles() != null) {
+            context.base().setShareRootFiles(request.shareRootFiles());
+        }
+        context.base().configureSharing(request.enabled(), expiresAt, now, caller.userId());
+        recordAudit(caller, "KNOWLEDGE_BASE_SHARING", TARGET_BASE, context.base().getId(), audit,
+                AuditDetail.builder().put("enabled", request.enabled())
+                        .put("shareRootFiles", context.base().isShareRootFiles())
+                        .put("expiresAt", expiresAt == null ? null : expiresAt.toString()).build());
+        return baseShareSettings(context.base());
+    }
+
+    @Transactional(readOnly = true)
+    public KnowledgeShareSettingsResponse getDocumentShareSettings(Long documentId, Caller caller) {
+        requireShareManager(resolveDocument(documentId, caller).baseContext(), caller);
+        return documentShareSettings(documentShares.findById(documentId).orElse(null));
+    }
+
+    @Transactional
+    public KnowledgeShareSettingsResponse updateDocumentShareSettings(Long documentId, UpdateKnowledgeDocumentShareRequest request,
+                                                                       Caller caller, AuditRequestContext audit) {
+        documentRepository.findByIdForUpdate(documentId);
+        requireShareManager(resolveDocument(documentId, caller).baseContext(), caller);
+        var existing = documentShares.findById(documentId);
+        Instant now = clock.instant();
+        Instant expiration = shareExpiration(request.enabled(), request.expiration(),
+                existing.map(KnowledgeDocumentShare::getExpiresAt).orElse(null), now);
+        KnowledgeDocumentShare saved = null;
+        if (request.enabled()) {
+            var share = existing.orElseGet(() -> new KnowledgeDocumentShare(documentId));
+            share.updateExpiration(expiration, now);
+            saved = documentShares.save(share);
+        } else {
+            existing.ifPresent(documentShares::delete);
+        }
+        recordAudit(caller, "KNOWLEDGE_DOCUMENT_SHARING", TARGET_DOCUMENT, documentId, audit,
+                AuditDetail.builder().put("enabled", request.enabled())
+                        .put("expiresAt", expiration == null ? null : expiration.toString()).build());
+        return documentShareSettings(saved);
+    }
+
+    private static Instant shareExpiration(boolean enabled, UpdateKnowledgeShareRequest.Expiration expiration, Instant previous, Instant now) {
+        if (!enabled) return null;
+        if (expiration == null) return previous;
+        Instant expiresAt = expiration.expiresAt();
+        if (expiresAt != null && !expiresAt.isAfter(now)) {
+            throw new DomainBadRequestException("error.knowledge.share.expiration.future");
+        }
+        return expiresAt;
+    }
+
+    private static KnowledgeShareSettingsResponse baseShareSettings(KnowledgeBase base) {
+        return KnowledgeShareSettingsResponse.forBase(base.getShareId(), base.getShareExpiresAt(), base.isShareRootFiles());
+    }
+
+    private static KnowledgeShareSettingsResponse documentShareSettings(KnowledgeDocumentShare share) {
+        return share == null
+                ? new KnowledgeShareSettingsResponse(null, null, null)
+                : new KnowledgeShareSettingsResponse(KnowledgeDocumentShare.URL_PREFIX + share.getShareId(), share.getExpiresAt(), null);
+    }
+
+    private void requireShareManager(BaseContext context, Caller caller) {
+        if (context.namespace().getType() != NamespaceType.TEAM
+                || !accessPolicy.canManageBase(context.namespace(), context.base(), context.role(), caller.platformRoles())) {
+            throw new DomainForbiddenException("error.knowledge.permission.denied");
+        }
+    }
+
     /** Archive an empty base, retaining its folders and historical bytes. */
     @Transactional
     public void archiveBase(String namespaceSlug, String baseSlug, Caller caller, AuditRequestContext audit) {
@@ -310,9 +411,10 @@ public class KnowledgeAppService {
     public List<KnowledgeFolderResponse> listFolders(String namespaceSlug, String baseSlug, Caller caller) {
         BaseContext context = resolveBase(namespaceSlug, baseSlug, caller);
         Map<Long, Long> counts = documentRepository.countActiveByFolder(context.base().getId());
+        boolean canEdit = memberPolicy.canEdit(context.namespace().getId(), caller.userId(), caller.platformRoles());
         return folderRepository.findByKnowledgeBaseId(context.base().getId()).stream()
                 .sorted(Comparator.comparing(KnowledgeFolder::getName, String.CASE_INSENSITIVE_ORDER))
-                .map(folder -> toFolderResponse(context, folder, counts.getOrDefault(folder.getId(), 0L), caller))
+                .map(folder -> toFolderResponse(context, folder, counts.getOrDefault(folder.getId(), 0L), caller, canEdit))
                 .toList();
     }
 
@@ -417,11 +519,12 @@ public class KnowledgeAppService {
 
     /**
      * Searches title, description, summary and extracted text across every knowledge base the
-     * caller can read, optionally limited to one namespace. A blank keyword returns an empty page.
+     * caller can read, optionally narrowed by team space and membership.
      */
     @Transactional(readOnly = true)
     public PageResponse<KnowledgeDocumentSearchHitResponse> searchDocuments(String keyword,
                                                                            String namespaceSlug,
+                                                                           boolean memberOnly,
                                                                            int page,
                                                                            int size,
                                                                            Caller caller) {
@@ -436,6 +539,7 @@ public class KnowledgeAppService {
                 : namespaceSlug.strip().replaceFirst("^@", "");
         Map<Long, BaseContext> contexts = visibleBases(caller).stream()
                 .filter(context -> namespaceFilter == null || context.namespace().getSlug().equals(namespaceFilter))
+                .filter(context -> !memberOnly || (context.namespace().getType() == NamespaceType.TEAM && context.role() != null))
                 .collect(Collectors.toMap(context -> context.base().getId(), Function.identity()));
         if (normalizedKeyword.isEmpty() || contexts.isEmpty()) {
             return new PageResponse<>(List.of(), 0, pageNumber, pageSize);
@@ -557,7 +661,29 @@ public class KnowledgeAppService {
     public void deleteDocument(Long documentId, Caller caller, AuditRequestContext audit) {
         DocumentContext context = resolveDocument(documentId, caller);
         requireManageDocument(context, caller);
-        KnowledgeDocument document = context.document();
+        archiveDocument(context.document(), caller, audit);
+    }
+
+    /** Validates the entire selection before archiving files in the same transaction. */
+    @Transactional
+    public void batchDeleteDocuments(String namespaceSlug, String baseSlug, List<Long> documentIds,
+                                     Caller caller, AuditRequestContext audit) {
+        BaseContext context = resolveWritableBase(namespaceSlug, baseSlug, caller);
+        if (!accessPolicy.canManageBase(context.namespace(), context.base(), context.role(), caller.platformRoles())) {
+            throw new DomainForbiddenException("error.knowledge.permission.denied");
+        }
+        memberPolicy.assertEdit(context.namespace().getId(), caller.userId(), caller.platformRoles());
+
+        List<KnowledgeDocument> documents = documentIds.stream().distinct().sorted()
+                .map(id -> documentRepository.findByIdForUpdate(id)
+                        .filter(document -> context.base().getId().equals(document.getKnowledgeBaseId()))
+                        .filter(document -> document.isActive() && !document.isHidden())
+                        .orElseThrow(() -> new DomainNotFoundException("error.knowledge.document.notFound", id)))
+                .toList();
+        documents.forEach(document -> archiveDocument(document, caller, audit));
+    }
+
+    private void archiveDocument(KnowledgeDocument document, Caller caller, AuditRequestContext audit) {
         document.archive();
         documentRepository.save(document);
         recordAudit(caller, "KNOWLEDGE_DOCUMENT_DELETE", TARGET_DOCUMENT, document.getId(), audit,
@@ -693,7 +819,6 @@ public class KnowledgeAppService {
         String filename = version.getSourceFilename() != null && !version.getSourceFilename().isBlank()
                 ? version.getSourceFilename()
                 : document.getTitle();
-        String extension = filePolicy.extensionOf(filename);
         // Previews stream the original file to the browser, so they are bound to the download capability.
         memberPolicy.assertDownload(context.baseContext().namespace().getId(), caller.userId(), caller.platformRoles());
         Long apiTokenId = audit != null ? audit.apiTokenId() : null;
@@ -706,9 +831,13 @@ public class KnowledgeAppService {
                         .put("authMethod", apiTokenId != null ? "api_token" : "session")
                         .put("apiTokenId", apiTokenId)
                         .build());
+        return fileContent(filename, version);
+    }
+
+    FileContent fileContent(String filename, KnowledgeDocumentVersion version) {
         String objectKey = version.getContentObjectKey();
         return new FileContent(filename, version.getContentType(), version.getSizeBytes(),
-                filePolicy.previewKindFor(extension), () -> storageService.getObject(objectKey));
+                filePolicy.previewKindFor(filePolicy.extensionOf(filename)), () -> storageService.getObject(objectKey));
     }
 
     /**
@@ -754,6 +883,10 @@ public class KnowledgeAppService {
         memberPolicy.assertDownload(context.baseContext().namespace().getId(), caller.userId(), caller.platformRoles());
         KnowledgeDocument document = context.document();
         KnowledgeDocumentVersion version = versionNumber == null ? currentVersion(document) : findPublishedVersion(document, versionNumber);
+        return versionImages(version);
+    }
+
+    KnowledgeMarkdownImagesResponse versionImages(KnowledgeDocumentVersion version) {
         return new KnowledgeMarkdownImagesResponse(version.getSourcePath(),
                 attachmentRepository.findByDocumentVersionId(version.getId()).stream()
                         .map(image -> new KnowledgeMarkdownImagesResponse.Image(image.getId(), image.getRelativePath())).toList());
@@ -766,6 +899,10 @@ public class KnowledgeAppService {
         // Markdown and MDX images are document content and follow the same download capability.
         memberPolicy.assertDownload(context.baseContext().namespace().getId(), caller.userId(), caller.platformRoles());
         KnowledgeDocumentVersion version = versionNumber == null ? currentVersion(document) : findPublishedVersion(document, versionNumber);
+        return versionImage(version, imageId);
+    }
+
+    FileContent versionImage(KnowledgeDocumentVersion version, Long imageId) {
         KnowledgeAttachment image = attachmentRepository.findById(imageId)
                 .filter(candidate -> candidate.getDocumentVersionId().equals(version.getId()))
                 .orElseThrow(() -> new DomainNotFoundException("error.knowledge.markdown.imageNotFound"));
@@ -1001,7 +1138,7 @@ public class KnowledgeAppService {
                 .toList();
     }
 
-    private KnowledgeDocumentVersion currentVersion(KnowledgeDocument document) {
+    KnowledgeDocumentVersion currentVersion(KnowledgeDocument document) {
         Long versionId = document.getPublishedVersionId();
         return (versionId == null ? java.util.Optional.<KnowledgeDocumentVersion>empty() : versionRepository.findById(versionId))
                 .filter(version -> version.getStatus() == KnowledgeDocumentVersionStatus.PUBLISHED)
@@ -1086,6 +1223,7 @@ public class KnowledgeAppService {
         if (stats != null && stats.lastUpdatedAt() != null && (updatedAt == null || stats.lastUpdatedAt().isAfter(updatedAt))) {
             updatedAt = stats.lastUpdatedAt();
         }
+        boolean sharingEnabled = base.hasActiveShareAt(clock.instant());
         return new KnowledgeBaseResponse(
                 base.getId(),
                 context.namespace().getSlug(),
@@ -1097,13 +1235,21 @@ public class KnowledgeAppService {
                 stats == null ? 0 : stats.documentCount(),
                 updatedAt,
                 accessPolicy.canManageBase(context.namespace(), base, context.role(), caller.platformRoles()),
-                memberPolicy.canEdit(context.namespace().getId(), caller.userId(), caller.platformRoles()) && accessPolicy.canContribute(context.namespace(), base, context.role(), caller.platformRoles()));
+                memberPolicy.canEdit(context.namespace().getId(), caller.userId(), caller.platformRoles()) && accessPolicy.canContribute(context.namespace(), base, context.role(), caller.platformRoles()),
+                sharingEnabled,
+                sharingEnabled && base.isShareRootFiles());
     }
 
     private KnowledgeFolderResponse toFolderResponse(BaseContext context, KnowledgeFolder folder, long documentCount, Caller caller) {
+        boolean canEdit = memberPolicy.canEdit(context.namespace().getId(), caller.userId(), caller.platformRoles());
+        return toFolderResponse(context, folder, documentCount, caller, canEdit);
+    }
+
+    private KnowledgeFolderResponse toFolderResponse(BaseContext context, KnowledgeFolder folder, long documentCount,
+                                                     Caller caller, boolean canEdit) {
         return new KnowledgeFolderResponse(folder.getId(), folder.getParentId(), folder.getName(), documentCount,
-                memberPolicy.canEdit(context.namespace().getId(), caller.userId(), caller.platformRoles()) && accessPolicy.canManageFolder(context.namespace(), context.base(), folder, caller.userId(),
-                        context.role(), caller.platformRoles()));
+                canEdit && accessPolicy.canManageFolder(context.namespace(), context.base(), folder, caller.userId(),
+                        context.role(), caller.platformRoles()), folder.getShareVisibility());
     }
 
     /** Maps files with the context of the knowledge base each belongs to; files outside {@code contexts} are skipped. */
@@ -1119,12 +1265,15 @@ public class KnowledgeAppService {
                         .toList()).stream()
                 .collect(Collectors.toMap(KnowledgeDocumentVersion::getId, Function.identity()));
         Map<String, String> names = userNames(documents.stream().map(KnowledgeDocument::getOwnerId).toList());
+        Map<Long, MemberResourcePolicy.FilePermissions> permissions = new java.util.HashMap<>();
         List<KnowledgeDocumentResponse> result = new ArrayList<>();
         for (KnowledgeDocument document : documents) {
             KnowledgeDocumentVersion version = versions.get(document.getPublishedVersionId());
             BaseContext context = contexts.get(document.getKnowledgeBaseId());
             if (version != null && context != null) {
-                result.add(toDocumentResponse(context, document, version, names, caller));
+                var filePermissions = permissions.computeIfAbsent(context.namespace().getId(),
+                        namespaceId -> memberPolicy.filePermissions(namespaceId, caller.userId(), caller.platformRoles()));
+                result.add(toDocumentResponse(context, document, version, names, caller, filePermissions));
             }
         }
         return result;
@@ -1135,6 +1284,16 @@ public class KnowledgeAppService {
                                                          KnowledgeDocumentVersion version,
                                                          Map<String, String> names,
                                                          Caller caller) {
+        var permissions = memberPolicy.filePermissions(context.namespace().getId(), caller.userId(), caller.platformRoles());
+        return toDocumentResponse(context, document, version, names, caller, permissions);
+    }
+
+    private KnowledgeDocumentResponse toDocumentResponse(BaseContext context,
+                                                         KnowledgeDocument document,
+                                                         KnowledgeDocumentVersion version,
+                                                         Map<String, String> names,
+                                                         Caller caller,
+                                                         MemberResourcePolicy.FilePermissions permissions) {
         String extension = document.getFileExtension() != null
                 ? document.getFileExtension()
                 : filePolicy.extensionOf(version.getSourceFilename());
@@ -1153,9 +1312,9 @@ public class KnowledgeAppService {
                 user(document.getOwnerId(), names),
                 document.getCreatedAt(),
                 document.getUpdatedAt(),
-                memberPolicy.canEdit(context.namespace().getId(), caller.userId(), caller.platformRoles()) && accessPolicy.canManageDocument(context.namespace(), context.base(), document, caller.userId(),
+                permissions.canEdit() && accessPolicy.canManageDocument(context.namespace(), context.base(), document, caller.userId(),
                         context.role(), caller.platformRoles()),
-                memberPolicy.canDownload(context.namespace().getId(), caller.userId(), caller.platformRoles()));
+                permissions.canDownload());
     }
 
     private KnowledgeDocumentVersionResponse toVersionResponse(KnowledgeDocumentVersion version,

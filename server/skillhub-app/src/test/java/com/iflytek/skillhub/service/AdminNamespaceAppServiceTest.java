@@ -9,6 +9,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.iflytek.skillhub.domain.audit.AuditLogService;
 import com.iflytek.skillhub.domain.namespace.Namespace;
 import com.iflytek.skillhub.domain.namespace.NamespaceAccessPolicy;
 import com.iflytek.skillhub.domain.namespace.NamespaceGovernanceService;
@@ -43,6 +44,7 @@ class AdminNamespaceAppServiceTest {
     private final NamespaceMemberCandidateService namespaceMemberCandidateService = mock(NamespaceMemberCandidateService.class);
     private final NamespaceAccessPolicy namespaceAccessPolicy = mock(NamespaceAccessPolicy.class);
     private final UserAccountRepository userAccountRepository = mock(UserAccountRepository.class);
+    private final AuditLogService auditLogService = mock(AuditLogService.class);
     private final AdminNamespaceAppService service = new AdminNamespaceAppService(
             adminNamespaceQueryRepository,
             namespaceService,
@@ -51,8 +53,20 @@ class AdminNamespaceAppServiceTest {
             namespaceMemberRepository,
             namespaceMemberCandidateService,
             namespaceAccessPolicy,
-            userAccountRepository
+            userAccountRepository,
+            auditLogService
     );
+
+    @Test
+    void deleteRecordsThePlatformAdministratorAndDeletedTeam() {
+        Namespace namespace = namespace(1L, "team-a", NamespaceStatus.ACTIVE, NamespaceType.TEAM);
+        when(namespaceService.deleteNamespaceByPlatformAdmin("team-a")).thenReturn(namespace);
+
+        service.delete("team-a", "super-1", new AuditRequestContext("127.0.0.1", "browser"));
+
+        verify(auditLogService).record(eq("super-1"), eq("DELETE_NAMESPACE"), eq("NAMESPACE"), eq(1L),
+                eq(null), eq("127.0.0.1"), eq("browser"), any());
+    }
 
     @Test
     void listProjectsPlatformAdminGovernancePermissionsWithoutMembership() {

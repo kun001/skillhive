@@ -1649,6 +1649,12 @@
     "freezeErrorTitle": "冻结命名空间失败",
     "unfreezeErrorTitle": "解冻命名空间失败",
     "archiveErrorTitle": "归档命名空间失败",
-    "restoreErrorTitle": "恢复命名空间失败"
+    "restoreErrorTitle": "恢复命名空间失败",
+    "deleteAction": "删除团队空间",
+    "deleteConfirmTitle": "永久删除团队空间？",
+    "deleteConfirmDescription": "“{{name}}”的成员关系、空知识库和已归档文件将一并删除，无法恢复。空间内如有技能、未删除的知识文件或治理记录，需先处理这些内容。",
+    "deleteSuccessTitle": "团队空间已删除",
+    "deleteSuccessDescription": "已删除“{{name}}”。",
+    "deleteErrorTitle": "删除团队空间失败"
   }
 }

@@ -20,13 +20,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 const FILE_PAGE_SIZE = 20
 const ALL = '__all__'
+const MINE = '__mine__'
 
-/** Knowledge bases the caller can see, with their team space, plus file search across all of them. */
+/** Knowledge bases and file search, scoped to the caller's team memberships by default. */
 export function KnowledgePage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const search = useSearch({ from: '/knowledge' })
-  const { user, hasRole } = useAuth()
+  const { user, hasRole, isLoading: isLoadingAuth } = useAuth()
   const bases = useKnowledgeBases()
   const myNamespaces = useMyNamespaces(!!user)
   const [keyword, setKeyword] = useState(search.q ?? '')
@@ -66,7 +67,13 @@ export function KnowledgePage() {
     }
     return [...seen].map(([slug, displayName]) => ({ slug, displayName }))
   }, [bases.data])
-  const namespaceFilter = baseNamespaces.some((namespace) => namespace.slug === search.namespace) ? search.namespace : undefined
+  const namespaceFilter = baseNamespaces.find((namespace) => namespace.slug === search.namespace)?.slug
+  const memberOnly = search.namespace !== ALL && !namespaceFilter
+  const memberSlugs = useMemo(
+    () => new Set((myNamespaces.data ?? []).filter((namespace) => namespace.type === 'TEAM').map((namespace) => namespace.slug)),
+    [myNamespaces.data],
+  )
+  const isLoadingScope = isLoadingAuth || (memberOnly && myNamespaces.isLoading)
 
   const query = search.q ?? ''
   const visibleBases = useMemo(() => {
@@ -74,14 +81,21 @@ export function KnowledgePage() {
     return (bases.data ?? []).filter(
       (base) =>
         (!namespaceFilter || base.namespace === namespaceFilter)
+        && (!memberOnly || memberSlugs.has(base.namespace))
         && (!lowered
           || base.displayName.toLowerCase().includes(lowered)
           || (base.description ?? '').toLowerCase().includes(lowered)
           || base.namespaceDisplayName.toLowerCase().includes(lowered)),
     )
-  }, [bases.data, query, namespaceFilter])
+  }, [bases.data, query, namespaceFilter, memberOnly, memberSlugs])
 
-  const fileSearch = useKnowledgeDocumentSearch({ q: query, namespace: namespaceFilter, page: filePage, size: FILE_PAGE_SIZE })
+  const fileSearch = useKnowledgeDocumentSearch({
+    q: query,
+    namespace: namespaceFilter,
+    memberOnly,
+    page: filePage,
+    size: FILE_PAGE_SIZE,
+  }, !isLoadingScope && bases.isSuccess && (!memberOnly || !myNamespaces.isError))
   const fileHits = fileSearch.data?.items ?? []
   const fileTotal = fileSearch.data?.total ?? 0
   const fileTotalPages = Math.max(Math.ceil(fileTotal / FILE_PAGE_SIZE), 1)
@@ -129,32 +143,31 @@ export function KnowledgePage() {
               className="pl-9"
             />
           </div>
-          {baseNamespaces.length > 1 ? (
-            <Select
-              value={namespaceFilter ?? ALL}
-              onValueChange={(value) => updateSearch({ namespace: value === ALL ? undefined : value })}
-            >
-              <SelectTrigger className="w-full sm:w-[12rem]" aria-label={t('knowledge.allNamespaces')}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL}>{t('knowledge.allNamespaces')}</SelectItem>
-                {baseNamespaces.map((namespace) => (
-                  <SelectItem key={namespace.slug} value={namespace.slug}>{namespace.displayName}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : null}
+          <Select
+            value={namespaceFilter ?? (memberOnly ? MINE : ALL)}
+            onValueChange={(value) => updateSearch({ namespace: value === MINE ? undefined : value })}
+          >
+            <SelectTrigger className="w-full sm:w-[12rem]" aria-label={t('knowledge.namespaceFilter')}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={MINE}>{t('knowledge.myNamespaces')}</SelectItem>
+              <SelectItem value={ALL}>{t('knowledge.allNamespaces')}</SelectItem>
+              {baseNamespaces.map((namespace) => (
+                <SelectItem key={namespace.slug} value={namespace.slug}>{namespace.displayName}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       ) : null}
 
-      {bases.isLoading ? (
+      {bases.isLoading || isLoadingScope ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 3 }).map((_, index) => (
             <div key={index} className="h-36 animate-shimmer rounded-xl" />
           ))}
         </div>
-      ) : bases.isError ? (
+      ) : bases.isError || (memberOnly && myNamespaces.isError) ? (
         <EmptyState title={t('knowledge.loadFailed')} />
       ) : total === 0 ? (
         <EmptyState
@@ -163,7 +176,9 @@ export function KnowledgePage() {
           action={canCreate ? <Button onClick={() => setCreateOpen(true)}>{t('knowledge.createBase')}</Button> : undefined}
         />
       ) : !searching ? (
-        visibleBases.length === 0 ? <EmptyState title={t('knowledge.noMatch')} /> : baseGrid
+        visibleBases.length === 0
+          ? <EmptyState title={t(memberOnly ? 'knowledge.emptyMyNamespaces' : 'knowledge.noMatch')} />
+          : baseGrid
       ) : (
         <div className="space-y-8">
           {visibleBases.length > 0 ? (

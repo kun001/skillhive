@@ -17,6 +17,7 @@ interface FolderDialogProps {
   namespace: string
   base: string
   tree: KnowledgeFolderNode[]
+  sharedFolders?: ReadonlySet<number>
   /** Folder being edited; omit to create a folder. */
   folder?: KnowledgeFolder
   /** Initial parent when creating. */
@@ -24,7 +25,7 @@ interface FolderDialogProps {
   onSaved?: (folder: KnowledgeFolder) => void
 }
 
-export function KnowledgeFolderDialog({ open, onOpenChange, namespace, base, tree, folder, parentId, onSaved }: FolderDialogProps) {
+export function KnowledgeFolderDialog({ open, onOpenChange, namespace, base, tree, folder, parentId, sharedFolders, onSaved }: FolderDialogProps) {
   const { t } = useTranslation()
   const createFolder = useCreateKnowledgeFolder(namespace, base)
   const updateFolder = useUpdateKnowledgeFolder(namespace, base)
@@ -39,6 +40,10 @@ export function KnowledgeFolderDialog({ open, onOpenChange, namespace, base, tre
   }, [open, folder, parentId])
 
   const pending = createFolder.isPending || updateFolder.isPending
+  const mode = folder?.shareVisibility ?? 'INHERIT'
+  const publicDestination = sharedFolders !== undefined && (parent === undefined
+    ? mode === 'PUBLIC'
+    : sharedFolders.has(parent) && (mode === 'PUBLIC' || mode === 'INHERIT'))
 
   const submit = async () => {
     try {
@@ -87,6 +92,7 @@ export function KnowledgeFolderDialog({ open, onOpenChange, namespace, base, tre
               onChange={setParent}
               disabledIds={folder ? descendantIds(tree, folder.id) : undefined}
             />
+            {publicDestination ? <p className="text-sm font-medium text-foreground" role="status">{t('knowledge.share.publicFolder')}</p> : null}
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

@@ -344,6 +344,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/web/knowledge/documents/{documentId}/share": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getKnowledgeDocumentShareSettings"];
+        put: operations["updateKnowledgeDocumentShareSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/knowledge/documents/{documentId}/share": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getKnowledgeDocumentShareSettings_1"];
+        put: operations["updateKnowledgeDocumentShareSettings_1"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/knowledge/documents/{documentId}": {
         parameters: {
             query?: never;
@@ -377,6 +409,42 @@ export interface paths {
         post?: never;
         /** Delete (archive) a file */
         delete: operations["deleteKnowledgeDocument_1"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/knowledge/bases/{namespace}/{base}/share": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read a knowledge base's visitor link as an administrator */
+        get: operations["getKnowledgeShareSettings"];
+        /** Configure the visitor link and folder visibility */
+        put: operations["updateKnowledgeShareSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/web/knowledge/bases/{namespace}/{base}/share": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read a knowledge base's visitor link as an administrator */
+        get: operations["getKnowledgeShareSettings_1"];
+        /** Configure the visitor link and folder visibility */
+        put: operations["updateKnowledgeShareSettings_1"];
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1471,6 +1539,40 @@ export interface paths {
         put?: never;
         /** Create a folder */
         post: operations["createKnowledgeFolder_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/web/knowledge/bases/{namespace}/{base}/documents/batch-delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Archive selected files in one knowledge base */
+        post: operations["batchDeleteKnowledgeDocuments"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/knowledge/bases/{namespace}/{base}/documents/batch-delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Archive selected files in one knowledge base */
+        post: operations["batchDeleteKnowledgeDocuments_1"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3534,6 +3636,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/web/knowledge-shares/{shareId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getKnowledgeShare"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/web/knowledge-shares/{shareId}/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listSharedKnowledgeFiles"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/web/knowledge-shares/{shareId}/documents/{documentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getSharedKnowledgeFile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/web/knowledge-shares/{shareId}/documents/{documentId}/images": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listSharedKnowledgeImages"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/web/knowledge-shares/{shareId}/documents/{documentId}/images/{imageId}/content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["openSharedKnowledgeImage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/web/knowledge-shares/{shareId}/documents/{documentId}/content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["openSharedKnowledgeFile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/web/governance/summary": {
         parameters: {
             query?: never;
@@ -3864,7 +4062,7 @@ export interface paths {
         get: operations["getNamespace_2"];
         put?: never;
         post?: never;
-        delete?: never;
+        delete: operations["deleteNamespaceByPlatformAdmin"];
         options?: never;
         head?: never;
         patch?: never;
@@ -4246,6 +4444,29 @@ export interface components {
             /** Format: date-time */
             updatedAt?: string;
         };
+        Expiration: {
+            /** Format: date-time */
+            expiresAt?: string;
+        };
+        UpdateKnowledgeDocumentShareRequest: {
+            enabled: boolean;
+            expiration?: components["schemas"]["Expiration"];
+        };
+        ApiResponseKnowledgeShareSettingsResponse: {
+            /** Format: int32 */
+            code?: number;
+            msg?: string;
+            data?: components["schemas"]["KnowledgeShareSettingsResponse"];
+            /** Format: date-time */
+            timestamp?: string;
+            requestId?: string;
+        };
+        KnowledgeShareSettingsResponse: {
+            shareId?: string;
+            /** Format: date-time */
+            expiresAt?: string;
+            shareRootFiles?: boolean;
+        };
         UpdateKnowledgeDocumentRequest: {
             title: string;
             description?: string;
@@ -4290,6 +4511,18 @@ export interface components {
             id?: string;
             displayName?: string;
         };
+        FolderSetting: {
+            /** Format: int64 */
+            folderId: number;
+            /** @enum {string} */
+            visibility: "INHERIT" | "PRIVATE" | "ENTRY" | "PUBLIC";
+        };
+        UpdateKnowledgeShareRequest: {
+            enabled: boolean;
+            folders: components["schemas"]["FolderSetting"][];
+            expiration?: components["schemas"]["Expiration"];
+            shareRootFiles?: boolean;
+        };
         UpdateKnowledgeFolderRequest: {
             name: string;
             /** Format: int64 */
@@ -4313,6 +4546,8 @@ export interface components {
             /** Format: int64 */
             documentCount?: number;
             canManage?: boolean;
+            /** @enum {string} */
+            shareVisibility?: "INHERIT" | "PRIVATE" | "ENTRY" | "PUBLIC";
         };
         UpdateKnowledgeBaseRequest: {
             displayName: string;
@@ -4342,6 +4577,8 @@ export interface components {
             updatedAt?: string;
             canManage?: boolean;
             canContribute?: boolean;
+            sharingEnabled?: boolean;
+            sharedRootFiles?: boolean;
         };
         TokenExpirationUpdateRequest: {
             expiresAt?: string;
@@ -4712,6 +4949,9 @@ export interface components {
             name: string;
             /** Format: int64 */
             parentId?: number;
+        };
+        BatchDeleteKnowledgeDocumentsRequest: {
+            documentIds: number[];
         };
         CreateKnowledgeBaseRequest: {
             namespace: string;
@@ -5774,6 +6014,79 @@ export interface components {
             code?: number;
             msg?: string;
             data?: components["schemas"]["KnowledgeBaseResponse"][];
+            /** Format: date-time */
+            timestamp?: string;
+            requestId?: string;
+        };
+        ApiResponseKnowledgeShareResponse: {
+            /** Format: int32 */
+            code?: number;
+            msg?: string;
+            data?: components["schemas"]["KnowledgeShareResponse"];
+            /** Format: date-time */
+            timestamp?: string;
+            requestId?: string;
+        };
+        KnowledgeShareResponse: {
+            displayName?: string;
+            folders?: components["schemas"]["SharedKnowledgeFolder"][];
+            memberWorkspace?: components["schemas"]["MemberWorkspace"];
+            /** Format: date-time */
+            expiresAt?: string;
+            /** Format: int64 */
+            documentId?: number;
+        };
+        MemberWorkspace: {
+            namespace?: string;
+            base?: string;
+        };
+        SharedKnowledgeFolder: {
+            /** Format: int64 */
+            id?: number;
+            /** Format: int64 */
+            parentId?: number;
+            name?: string;
+            entryOnly?: boolean;
+        };
+        ApiResponsePageResponseSharedKnowledgeFileResponse: {
+            /** Format: int32 */
+            code?: number;
+            msg?: string;
+            data?: components["schemas"]["PageResponseSharedKnowledgeFileResponse"];
+            /** Format: date-time */
+            timestamp?: string;
+            requestId?: string;
+        };
+        PageResponseSharedKnowledgeFileResponse: {
+            items?: components["schemas"]["SharedKnowledgeFileResponse"][];
+            /** Format: int64 */
+            total?: number;
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            size?: number;
+        };
+        SharedKnowledgeFileResponse: {
+            /** Format: int64 */
+            id?: number;
+            /** Format: int64 */
+            folderId?: number;
+            title?: string;
+            fileName?: string;
+            fileExtension?: string;
+            /** Format: int64 */
+            sizeBytes?: number;
+            /** Format: int32 */
+            currentVersion?: number;
+            /** @enum {string} */
+            previewKind?: "PDF" | "IMAGE" | "MARKDOWN" | "TEXT" | "OFFICE" | "NONE";
+            canDownload?: boolean;
+        };
+        ApiResponseSharedKnowledgeFileResponse: {
+            /** Format: int32 */
+            code?: number;
+            msg?: string;
+            data?: components["schemas"]["SharedKnowledgeFileResponse"];
             /** Format: date-time */
             timestamp?: string;
             requestId?: string;
@@ -7310,6 +7623,102 @@ export interface operations {
             };
         };
     };
+    getKnowledgeDocumentShareSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                documentId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseKnowledgeShareSettingsResponse"];
+                };
+            };
+        };
+    };
+    updateKnowledgeDocumentShareSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                documentId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateKnowledgeDocumentShareRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseKnowledgeShareSettingsResponse"];
+                };
+            };
+        };
+    };
+    getKnowledgeDocumentShareSettings_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                documentId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseKnowledgeShareSettingsResponse"];
+                };
+            };
+        };
+    };
+    updateKnowledgeDocumentShareSettings_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                documentId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateKnowledgeDocumentShareRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseKnowledgeShareSettingsResponse"];
+                };
+            };
+        };
+    };
     getKnowledgeDocument: {
         parameters: {
             query?: never;
@@ -7446,6 +7855,106 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseMessageResponse"];
+                };
+            };
+        };
+    };
+    getKnowledgeShareSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                namespace: string;
+                base: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseKnowledgeShareSettingsResponse"];
+                };
+            };
+        };
+    };
+    updateKnowledgeShareSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                namespace: string;
+                base: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateKnowledgeShareRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseKnowledgeShareSettingsResponse"];
+                };
+            };
+        };
+    };
+    getKnowledgeShareSettings_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                namespace: string;
+                base: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseKnowledgeShareSettingsResponse"];
+                };
+            };
+        };
+    };
+    updateKnowledgeShareSettings_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                namespace: string;
+                base: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateKnowledgeShareRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseKnowledgeShareSettingsResponse"];
                 };
             };
         };
@@ -9671,6 +10180,60 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseKnowledgeFolderResponse"];
+                };
+            };
+        };
+    };
+    batchDeleteKnowledgeDocuments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                namespace: string;
+                base: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BatchDeleteKnowledgeDocumentsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseMessageResponse"];
+                };
+            };
+        };
+    };
+    batchDeleteKnowledgeDocuments_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                namespace: string;
+                base: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BatchDeleteKnowledgeDocumentsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseMessageResponse"];
                 };
             };
         };
@@ -12928,6 +13491,7 @@ export interface operations {
             query?: {
                 q?: string;
                 namespace?: string;
+                memberOnly?: boolean;
                 page?: number;
                 size?: number;
             };
@@ -12953,6 +13517,7 @@ export interface operations {
             query?: {
                 q?: string;
                 namespace?: string;
+                memberOnly?: boolean;
                 page?: number;
                 size?: number;
             };
@@ -13071,6 +13636,155 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseKnowledgePurgeResponse"];
+                };
+            };
+        };
+    };
+    getKnowledgeShare: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shareId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseKnowledgeShareResponse"];
+                };
+            };
+        };
+    };
+    listSharedKnowledgeFiles: {
+        parameters: {
+            query?: {
+                folderId?: number;
+                q?: string;
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path: {
+                shareId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePageResponseSharedKnowledgeFileResponse"];
+                };
+            };
+        };
+    };
+    getSharedKnowledgeFile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shareId: string;
+                documentId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseSharedKnowledgeFileResponse"];
+                };
+            };
+        };
+    };
+    listSharedKnowledgeImages: {
+        parameters: {
+            query?: {
+                version?: number;
+            };
+            header?: never;
+            path: {
+                shareId: string;
+                documentId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseKnowledgeMarkdownImagesResponse"];
+                };
+            };
+        };
+    };
+    openSharedKnowledgeImage: {
+        parameters: {
+            query?: {
+                version?: number;
+            };
+            header?: never;
+            path: {
+                shareId: string;
+                documentId: number;
+                imageId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
+    openSharedKnowledgeFile: {
+        parameters: {
+            query?: {
+                version?: number;
+                disposition?: string;
+            };
+            header?: never;
+            path: {
+                shareId: string;
+                documentId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
                 };
             };
         };
@@ -13552,6 +14266,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseAdminNamespaceDetailResponse"];
+                };
+            };
+        };
+    };
+    deleteNamespaceByPlatformAdmin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseMessageResponse"];
                 };
             };
         };

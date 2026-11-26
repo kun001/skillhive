@@ -20,6 +20,12 @@ public record KnowledgeDocumentSearch(
         Collection<String> extensions,
         String ownerId,
         Instant updatedFrom,
-        Instant updatedTo
+        Instant updatedTo,
+        boolean includeRoot
 ) {
+    public KnowledgeDocumentSearch(Collection<Long> knowledgeBaseIds, Collection<Long> folderIds, boolean rootOnly,
+                                   String keyword, Collection<String> extensions, String ownerId, Instant updatedFrom,
+                                   Instant updatedTo) {
+        this(knowledgeBaseIds, folderIds, rootOnly, keyword, extensions, ownerId, updatedFrom, updatedTo, false);
+    }
 }
