@@ -62,9 +62,13 @@ public class SkillShareController extends BaseApiController {
     @GetMapping("/{shareId}")
     @Operation(operationId = "getSharedSkill")
     @RateLimit(category = "skill-share-read", authenticated = 120, anonymous = 60)
-    public ResponseEntity<ApiResponse<SharedSkillResponse>> detail(@PathVariable String shareId) {
+    public ResponseEntity<ApiResponse<SharedSkillResponse>> detail(
+            @PathVariable String shareId,
+            @RequestAttribute(value = "userId", required = false) String userId,
+            @RequestAttribute(value = "userNsRoles", required = false) Map<Long, NamespaceRole> roles,
+            @AuthenticationPrincipal PlatformPrincipal principal) {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore())
-                .body(ok("response.success.read", shares.detail(shareId)));
+                .body(ok("response.success.read", shares.detail(shareId, caller(userId, roles, principal))));
     }
 
     @GetMapping("/{shareId}/documentation")

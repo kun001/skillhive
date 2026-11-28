@@ -70,7 +70,7 @@
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| GET | `/api/web/skills` | 搜索/列表（`library=public|team`；匿名仅返回公共技能库） |
+| GET | `/api/web/skills` | 搜索与列表。统一技能库使用 `library=accessible` 或 `library=mine`，旧的 `public` 与 `team` 查询继续兼容。 |
 | GET | `/api/v1/skills/{namespace}/{slug}` | 技能详情（PUBLIC 匿名可访问） |
 | GET | `/api/v1/skills/{namespace}/{slug}/versions` | 版本列表 |
 | GET | `/api/v1/skills/{namespace}/{slug}/versions/{version}` | 版本详情 |

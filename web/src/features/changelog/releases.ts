@@ -14,6 +14,21 @@ export interface ReleaseNote {
 // Confirm the date and image tag when deploying; Git submission is not deployment.
 export const releases: ReleaseNote[] = [
   {
+    id: '20261128-unified-skill-library',
+    version: 'v0.4.12',
+    date: '2026-11-28',
+    title: { zh: '统一技能库与访客可见范围', en: 'Unified skill library and visitor access' },
+    summary: {
+      zh: '一个技能库展示当前账号可访问的技能。技能所有者可选择访客只能看到入口，或开放说明与下载。',
+      en: 'Browse accessible skills in one library. Skill owners can share an entry or let visitors preview and download the skill.',
+    },
+    changes: [
+      { zh: '登录后可筛选我的团队空间或指定团队。已有公开技能仍可直接浏览。', en: 'Signed-in users can filter to their team spaces or a specific team. Existing public skills remain available to browse.' },
+      { zh: '技能访客链接可设为仅展示入口或公开说明与技能包，也可设置到期时间和关闭链接。', en: 'Visitor links can show an entry or provide documentation and the package. Links can expire or be disabled.' },
+      { zh: '知识库批量操作区保留固定位置，勾选、取消勾选和打包时列表不再跳动。', en: 'The knowledge bulk toolbar stays in place when selecting, clearing, or packaging files.' },
+    ],
+  },
+  {
     id: '20261128-skill-visitor-sharing',
     version: 'v0.4.11',
     date: '2026-11-28',

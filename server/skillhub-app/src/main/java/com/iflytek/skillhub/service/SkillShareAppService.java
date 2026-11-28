@@ -2,6 +2,7 @@ package com.iflytek.skillhub.service;
 
 import com.iflytek.skillhub.domain.audit.AuditDetail;
 import com.iflytek.skillhub.domain.audit.AuditLogService;
+import com.iflytek.skillhub.domain.namespace.MemberResourcePolicy;
 import com.iflytek.skillhub.domain.namespace.Namespace;
 import com.iflytek.skillhub.domain.namespace.NamespaceRepository;
 import com.iflytek.skillhub.domain.namespace.NamespaceRole;
@@ -14,8 +15,10 @@ import com.iflytek.skillhub.domain.skill.SkillInstallability;
 import com.iflytek.skillhub.domain.skill.SkillRepository;
 import com.iflytek.skillhub.domain.skill.SkillShare;
 import com.iflytek.skillhub.domain.skill.SkillShareRepository;
+import com.iflytek.skillhub.domain.skill.SkillShareVisibility;
 import com.iflytek.skillhub.domain.skill.SkillStatus;
 import com.iflytek.skillhub.domain.skill.SkillVersion;
+import com.iflytek.skillhub.domain.skill.VisibilityChecker;
 import com.iflytek.skillhub.domain.skill.service.SkillDownloadService;
 import com.iflytek.skillhub.domain.skill.service.SkillLifecycleProjectionService;
 import com.iflytek.skillhub.domain.skill.service.SkillQueryService;
@@ -40,6 +43,8 @@ public class SkillShareAppService {
     private final SkillRepository skills;
     private final SkillLifecycleProjectionService lifecycle;
     private final NamespaceRepository namespaces;
+    private final MemberResourcePolicy memberAccess;
+    private final VisibilityChecker visibilityChecker;
     private final SkillQueryService skillQuery;
     private final SkillDownloadService downloads;
     private final AuditLogService auditLog;
@@ -48,11 +53,14 @@ public class SkillShareAppService {
 
     public SkillShareAppService(SkillShareRepository shares, SkillRepository skills, SkillLifecycleProjectionService lifecycle,
                                 NamespaceRepository namespaces, SkillQueryService skillQuery, SkillDownloadService downloads,
-                                AuditLogService auditLog, RequestIdAccessor requestId, Clock clock) {
+                                AuditLogService auditLog, RequestIdAccessor requestId, Clock clock,
+                                MemberResourcePolicy memberAccess, VisibilityChecker visibilityChecker) {
         this.shares = shares;
         this.skills = skills;
         this.lifecycle = lifecycle;
         this.namespaces = namespaces;
+        this.memberAccess = memberAccess;
+        this.visibilityChecker = visibilityChecker;
         this.skillQuery = skillQuery;
         this.downloads = downloads;
         this.auditLog = auditLog;
@@ -62,10 +70,10 @@ public class SkillShareAppService {
 
     public record Caller(String userId, Map<Long, NamespaceRole> namespaceRoles, Set<String> platformRoles) {}
 
-    public boolean canManage(Long namespaceId, Caller caller) {
+    public boolean canManage(Long namespaceId, String ownerId, Caller caller) {
         return caller.userId() != null && namespaces.findById(namespaceId)
                 .filter(namespace -> namespace.getStatus() == NamespaceStatus.ACTIVE)
-                .map(namespace -> isShareManager(namespace, caller))
+                .map(namespace -> isShareManager(namespace, ownerId, caller))
                 .orElse(false);
     }
 
@@ -89,6 +97,7 @@ public class SkillShareAppService {
             currentVersion(skill);
             SkillShare share = existing.orElseGet(() -> new SkillShare(skillId));
             share.updateExpiration(expiration, now);
+            if (request.visibility() != null) share.setVisibility(request.visibility());
             saved = shares.save(share);
         } else {
             existing.ifPresent(shares::delete);
@@ -96,28 +105,45 @@ public class SkillShareAppService {
         auditLog.record(caller.userId(), "SKILL_SHARING", "SKILL", skillId, requestId.current(),
                 audit.clientIp(), audit.userAgent(), AuditDetail.builder()
                         .put("enabled", request.enabled())
+                        .put("visibility", saved == null ? null : saved.getVisibility().name())
                         .put("expiresAt", expiration == null ? null : expiration.toString()).build());
         return settings(saved);
     }
 
     @Transactional(readOnly = true)
-    public SharedSkillResponse detail(String shareId) {
+    public SharedSkillResponse detail(String shareId, Caller caller) {
         SharedSkill shared = resolve(shareId);
-        return new SharedSkillResponse(shared.skill().getDisplayName(), shared.skill().getSummary(),
-                shared.version().getVersion(), shared.expiresAt());
+        Skill skill = shared.skill();
+        SkillShare link = shared.link();
+        if (link.getVisibility() == SkillShareVisibility.ENTRY) {
+            boolean canOpen = caller.userId() != null
+                    && visibilityChecker.canAccess(skill, caller.userId(), caller.namespaceRoles())
+                    && (shared.namespace().getType() == NamespaceType.GLOBAL
+                    || memberAccess.canRead(skill.getNamespaceId(), caller.userId(), caller.platformRoles()));
+            var workspace = canOpen ? new SharedSkillResponse.SkillWorkspace(shared.namespace().getSlug(), skill.getSlug()) : null;
+            return new SharedSkillResponse(skill.getDisplayName(), null, null, link.getExpiresAt(), link.getVisibility(), workspace);
+        }
+        return new SharedSkillResponse(skill.getDisplayName(), skill.getSummary(), shared.version().getVersion(),
+                link.getExpiresAt(), link.getVisibility(), null);
     }
 
     @Transactional(readOnly = true)
     public InputStream documentation(String shareId, String version) {
-        SharedSkill shared = resolve(shareId);
+        SharedSkill shared = resolvePublic(shareId);
         if (!shared.version().getVersion().equals(version)) throw unavailable();
         return skillQuery.openSharedDocumentation(shared.version());
     }
 
     @Transactional
     public SkillDownloadService.DownloadResult download(String shareId) {
-        SharedSkill shared = resolve(shareId);
+        SharedSkill shared = resolvePublic(shareId);
         return downloads.downloadSharedVersion(shared.skill(), shared.version());
+    }
+
+    private SharedSkill resolvePublic(String shareId) {
+        SharedSkill shared = resolve(shareId);
+        if (shared.link().getVisibility() != SkillShareVisibility.PUBLIC) throw unavailable();
+        return shared;
     }
 
     private SharedSkill resolve(String shareId) {
@@ -128,13 +154,15 @@ public class SkillShareAppService {
             throw unavailable();
         }
         SkillShare share = shares.findByShareId(token)
+                .or(() -> shares.findByEntryShareId(token))
+                .filter(candidate -> token.equals(candidate.getShareId()))
                 .filter(candidate -> candidate.isActiveAt(clock.instant()))
                 .orElseThrow(SkillShareAppService::unavailable);
         Skill skill = skills.findById(share.getSkillId()).orElseThrow(SkillShareAppService::unavailable);
-        namespaces.findById(skill.getNamespaceId())
+        Namespace namespace = namespaces.findById(skill.getNamespaceId())
                 .filter(candidate -> candidate.getStatus() == NamespaceStatus.ACTIVE)
                 .orElseThrow(SkillShareAppService::unavailable);
-        return new SharedSkill(skill, currentVersion(skill), share.getExpiresAt());
+        return new SharedSkill(skill, currentVersion(skill), namespace, share);
     }
 
     private SkillVersion currentVersion(Skill skill) {
@@ -149,25 +177,32 @@ public class SkillShareAppService {
     }
 
     private void requireManager(Skill skill, Caller caller) {
-        if (!canManage(skill.getNamespaceId(), caller)) {
+        if (!canManage(skill.getNamespaceId(), skill.getOwnerId(), caller)) {
             throw new DomainForbiddenException("error.skill.access.denied", skill.getSlug());
         }
     }
 
-    private static boolean isShareManager(Namespace namespace, Caller caller) {
+    private boolean isShareManager(Namespace namespace, String ownerId, Caller caller) {
+        if (caller.platformRoles().contains("SUPER_ADMIN")) return true;
+        boolean skillOwner = caller.userId().equals(ownerId);
+        if (namespace.getType() == NamespaceType.GLOBAL) {
+            return skillOwner && caller.platformRoles().contains("SKILL_ADMIN");
+        }
         NamespaceRole role = caller.namespaceRoles().get(namespace.getId());
-        return caller.platformRoles().contains("SUPER_ADMIN")
-                || (namespace.getType() == NamespaceType.TEAM && (role == NamespaceRole.OWNER || role == NamespaceRole.ADMIN));
+        if (role == NamespaceRole.OWNER || role == NamespaceRole.ADMIN) return true;
+        if (!skillOwner || role == null) return false;
+        var permissions = memberAccess.filePermissions(namespace.getId(), caller.userId(), caller.platformRoles());
+        return permissions.canEdit() && permissions.canDownload();
     }
 
     private static SkillShareSettingsResponse settings(SkillShare share) {
-        return share == null ? new SkillShareSettingsResponse(null, null)
-                : new SkillShareSettingsResponse(share.getShareId().toString(), share.getExpiresAt());
+        return share == null ? new SkillShareSettingsResponse(null, null, null)
+                : new SkillShareSettingsResponse(share.getShareId().toString(), share.getExpiresAt(), share.getVisibility());
     }
 
     private static DomainNotFoundException unavailable() {
         return new DomainNotFoundException("error.skill.share.notFound");
     }
 
-    private record SharedSkill(Skill skill, SkillVersion version, Instant expiresAt) {}
+    private record SharedSkill(Skill skill, SkillVersion version, Namespace namespace, SkillShare link) {}
 }

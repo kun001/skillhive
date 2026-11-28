@@ -134,10 +134,13 @@ export function KnowledgeBasePage() {
     : []
   const selectableIds = new Set(selectableDocuments.map((document) => document.id))
   const selectedDocuments = selectableDocuments.filter((document) => selectedDocumentIds.has(document.id))
-  const allSelected = selectableIds.size > 0 && selectedDocuments.length === selectableIds.size
+  const selectedCount = selectedDocuments.length
+  const allSelected = selectableIds.size > 0 && selectedCount === selectableIds.size
   const togglePageSelection = () => setSelectedDocumentIds(allSelected ? new Set() : selectableIds)
-  const canBatchDownload = selectedDocuments.every((document) => document.canDownload)
-  const canBatchDelete = knowledgeBase?.canManage && selectedDocuments.every((document) => document.canManage)
+  const showBatchDownload = selectableDocuments.some((document) => document.canDownload)
+  const showBatchDelete = knowledgeBase?.canManage && selectableDocuments.some((document) => document.canManage)
+  const canBatchDownload = selectedCount > 0 && selectedDocuments.every((document) => document.canDownload)
+  const canBatchDelete = selectedCount > 0 && showBatchDelete && selectedDocuments.every((document) => document.canManage)
 
   const toggleDocument = (id: number) => {
     setSelectedDocumentIds((current) => {
@@ -149,7 +152,7 @@ export function KnowledgeBasePage() {
   }
 
   const downloadSelected = async () => {
-    if (isBatchDownloading || selectedDocuments.length === 0 || !canBatchDownload) return
+    if (isBatchDownloading || !canBatchDownload) return
     setIsBatchDownloading(true)
     try {
       await downloadKnowledgeArchive(selectedDocuments, t('knowledge.bulk.archiveName'))
@@ -367,29 +370,39 @@ export function KnowledgeBasePage() {
             />
           ) : null}
 
-          {(isGridView && selectableIds.size > 0) || selectedDocuments.length > 0 ? (
+          {selectableIds.size > 0 ? (
             <div className="flex flex-wrap items-center gap-2">
               {isGridView ? (
                 <Button variant="outline" size="sm" onClick={togglePageSelection}>
-                  {t(allSelected ? 'knowledge.bulk.clearSelection' : 'knowledge.bulk.selectPage')}
+                  <span className="inline-grid">
+                    <span className="col-start-1 row-start-1">{t(allSelected ? 'knowledge.bulk.clearSelection' : 'knowledge.bulk.selectPage')}</span>
+                    <span className="invisible col-start-1 row-start-1" aria-hidden>{t(allSelected ? 'knowledge.bulk.selectPage' : 'knowledge.bulk.clearSelection')}</span>
+                  </span>
                 </Button>
               ) : null}
-              {selectedDocuments.length > 0 ? (
-                <>
-                  <span className="text-sm text-muted-foreground" role="status">{t('knowledge.bulk.selected', { count: selectedDocuments.length })}</span>
-                  {canBatchDownload ? (
-                    <Button variant="outline" size="sm" onClick={downloadSelected} disabled={isBatchDownloading}>
-                      <Download className="mr-1.5 h-4 w-4" aria-hidden />
-                      {t(isBatchDownloading ? 'knowledge.bulk.downloading' : 'knowledge.bulk.download')}
-                    </Button>
-                  ) : null}
-                  {canBatchDelete ? (
-                    <Button variant="destructive" size="sm" onClick={() => setBatchDeleteIds(selectedDocuments.map((document) => document.id))}>
-                      <Trash2 className="mr-1.5 h-4 w-4" aria-hidden />
-                      {t('knowledge.bulk.delete')}
-                    </Button>
-                  ) : null}
-                </>
+              <span className="inline-grid text-sm tabular-nums text-muted-foreground">
+                <span className="col-start-1 row-start-1" role="status">{t('knowledge.bulk.selected', { count: selectedCount })}</span>
+                <span className="invisible col-start-1 row-start-1" aria-hidden>{t('knowledge.bulk.selected', { count: selectableIds.size })}</span>
+              </span>
+              {showBatchDownload ? (
+                <Button variant="outline" size="sm" onClick={downloadSelected} disabled={!canBatchDownload || isBatchDownloading} aria-busy={isBatchDownloading}>
+                  <Download className="mr-1.5 h-4 w-4" aria-hidden />
+                  <span className="inline-grid">
+                    <span className="col-start-1 row-start-1">{t(isBatchDownloading ? 'knowledge.bulk.downloading' : 'knowledge.bulk.download')}</span>
+                    <span className="invisible col-start-1 row-start-1" aria-hidden>{t(isBatchDownloading ? 'knowledge.bulk.download' : 'knowledge.bulk.downloading')}</span>
+                  </span>
+                </Button>
+              ) : null}
+              {showBatchDelete ? (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setBatchDeleteIds(selectedDocuments.map((document) => document.id))}
+                  disabled={!canBatchDelete}
+                >
+                  <Trash2 className="mr-1.5 h-4 w-4" aria-hidden />
+                  {t('knowledge.bulk.delete')}
+                </Button>
               ) : null}
             </div>
           ) : null}
@@ -439,7 +452,7 @@ export function KnowledgeBasePage() {
                 ids: selectedDocumentIds,
                 selectableIds,
                 onToggle: toggleDocument,
-                pageState: allSelected ? 'all' : selectedDocuments.length > 0 ? 'some' : 'none',
+                pageState: allSelected ? 'all' : selectedCount > 0 ? 'some' : 'none',
                 onTogglePage: togglePageSelection,
               } : undefined}
             />

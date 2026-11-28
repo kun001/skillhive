@@ -970,10 +970,17 @@
     "reportErrorTitle": "举报失败",
     "share": {
       "button": "分享技能",
-      "description": "任何持有链接的人都可以预览「{{title}}」的说明并下载当前发布版本。",
+      "description": "设置持有访客链接的人可以查看「{{title}}」的哪些内容。",
       "unavailable": "此技能分享链接已失效或不可用",
       "previewUnavailable": "技能说明暂时无法预览。",
-      "download": "下载技能包"
+      "download": "下载技能包",
+      "visibility": "访客可见范围",
+      "public": "公开说明和技能包",
+      "entryDescription": "访客只能看到技能名称，查看内容需要登录并拥有技能访问权限。",
+      "publicDescription": "持有链接的人可免登录预览说明并下载当前发布版本。",
+      "openSkill": "打开技能",
+      "requestAccess": "当前账号尚未获得该技能的访问权限。",
+      "loginRequired": "请登录有权限的账号查看技能。"
     }
   },
   "skillCompare": {

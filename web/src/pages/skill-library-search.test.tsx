@@ -4,12 +4,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   navigate: vi.fn(),
-  search: { q: '交互式网页', label: undefined as string | undefined, sort: 'all', page: 1, view: 'list', library: 'public' },
+  search: { q: '交互式网页', label: undefined as string | undefined, sort: 'all', page: 1, view: 'list', scope: 'team-a' },
 }))
 vi.mock('@tanstack/react-router', () => ({
   useNavigate: () => mocks.navigate,
   useSearch: () => mocks.search,
-  useRouterState: () => '/skills?library=public',
+  useRouterState: () => '/skills?scope=team-a',
   Link: ({ children }: { children: React.ReactNode }) => <a>{children}</a>,
 }))
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key }) }))
@@ -33,7 +33,7 @@ describe('SkillLibraryPage search box', () => {
     expect(mocks.navigate).toHaveBeenCalledTimes(1)
     expect(mocks.navigate).toHaveBeenCalledWith({
       to: '/skills',
-      search: expect.objectContaining({ q: '', page: 0, library: 'public' }),
+      search: expect.objectContaining({ q: '', page: 0, scope: 'team-a' }),
     })
   })
 

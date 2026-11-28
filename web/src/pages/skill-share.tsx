@@ -1,8 +1,9 @@
 import { skipToken, useQuery } from '@tanstack/react-query'
-import { useParams } from '@tanstack/react-router'
-import { Download } from 'lucide-react'
+import { Link, useParams } from '@tanstack/react-router'
+import { Download, Lock } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { skillShareApi } from '@/api/client'
+import { useAuth } from '@/features/auth/use-auth'
 import { MarkdownRenderer } from '@/features/skill/markdown-renderer'
 import { EmptyState } from '@/shared/components/empty-state'
 import { formatLocalDateTime } from '@/shared/lib/date-time'
@@ -11,8 +12,11 @@ import { buttonVariants } from '@/shared/ui/button'
 export function SkillSharePage() {
   const { shareId } = useParams({ from: '/skill-share/$shareId' })
   const { t, i18n } = useTranslation()
+  const { user, isLoading: isLoadingAuth } = useAuth()
+  const returnTo = `/skill-share/${encodeURIComponent(shareId)}`
   const share = useQuery({
-    queryKey: ['shared-skill', shareId],
+    queryKey: ['shared-skill', shareId, user?.userId ?? 'guest'],
+    enabled: !isLoadingAuth,
     queryFn: ({ signal }) => skillShareApi.detail(shareId, signal),
     retry: false,
     gcTime: 0,
@@ -26,9 +30,32 @@ export function SkillSharePage() {
   })
 
   if (share.isPending) return <p role="status">{t('knowledge.preview.loading')}</p>
-  if (share.isError || !version) return <EmptyState title={t('skillDetail.share.unavailable')} />
+  if (share.isError) return <EmptyState title={t('skillDetail.share.unavailable')} />
 
-  const { displayName, summary, expiresAt } = share.data
+  const { displayName, summary, expiresAt, visibility, memberWorkspace } = share.data
+  if (visibility === 'ENTRY') {
+    const namespace = memberWorkspace?.namespace
+    const slug = memberWorkspace?.slug
+    return (
+      <main className="mx-auto max-w-4xl space-y-4 rounded-xl border border-border bg-card p-5 sm:p-8">
+        <h1 className="flex items-center gap-3 break-words font-heading text-2xl font-semibold">
+          <Lock className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
+          {displayName}
+        </h1>
+        {namespace && slug ? (
+          <Link to="/space/$namespace/$slug" params={{ namespace, slug }} search={{ returnTo }} className={buttonVariants()}>
+            {t('skillDetail.share.openSkill')}
+          </Link>
+        ) : (
+          <>
+            <p className="text-sm text-muted-foreground">{t(user ? 'skillDetail.share.requestAccess' : 'skillDetail.share.loginRequired')}</p>
+            {!user ? <Link to="/login" search={{ returnTo }} className={buttonVariants()}>{t('skillLibrary.login')}</Link> : null}
+          </>
+        )}
+      </main>
+    )
+  }
+  if (!version) return <EmptyState title={t('skillDetail.share.unavailable')} />
   return (
     <main className="mx-auto max-w-4xl space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-4">

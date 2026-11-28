@@ -20,11 +20,11 @@ interface VisitorShareDialogProps<T extends Settings> {
   description: string
   queryKey: QueryKey
   loadSettings: () => Promise<T>
-  saveSettings: (update: ShareUpdate) => Promise<T>
+  saveSettings: (update: ShareUpdate, settings: T) => Promise<T>
   sharePath: (id: string) => string
   onClose: () => void
   onSaved?: () => void | Promise<void>
-  renderScope?: (settings: T, pending: boolean) => ReactNode
+  renderScope?: (settings: T, pending: boolean, enabled: boolean) => ReactNode
 }
 
 export function VisitorShareDialog<T extends Settings>({
@@ -49,7 +49,7 @@ export function VisitorShareDialog<T extends Settings>({
     : undefined
 
   const save = useMutation({
-    mutationFn: saveSettings,
+    mutationFn: ({ update, current }: { update: ShareUpdate; current: T }) => saveSettings(update, current),
     onSuccess: async (result) => {
       client.setQueryData(queryKey, result)
       await onSaved?.()
@@ -62,8 +62,11 @@ export function VisitorShareDialog<T extends Settings>({
   const submit = () => {
     if (!settings.data || save.isPending || invalidExpiration) return
     save.mutate({
-      enabled,
-      expiration: enabled && expirationDraft !== undefined ? { expiresAt: chosenTime?.toISOString() } : undefined,
+      current: settings.data,
+      update: {
+        enabled,
+        expiration: enabled && expirationDraft !== undefined ? { expiresAt: chosenTime?.toISOString() } : undefined,
+      },
     })
   }
 
@@ -123,7 +126,7 @@ export function VisitorShareDialog<T extends Settings>({
                 </a>
               </div>
             ) : null}
-            {renderScope?.(settings.data, save.isPending)}
+            {renderScope?.(settings.data, save.isPending, enabled)}
             <DialogFooter>
               <Button type="button" variant="outline" onClick={onClose} disabled={save.isPending}>{t('dialog.cancel')}</Button>
               <Button type="submit" disabled={save.isPending || invalidExpiration}>{t('knowledge.baseDialog.save')}</Button>

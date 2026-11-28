@@ -49,7 +49,7 @@ With the [SkillHive MCP server](/en/guide/api-token-mcp) configured, your AI too
 
 1. **Access Search Page**
 
-Open the Skills page (`/skills`) and switch between the public library and your team library, or use the search box at the top.
+Open the Skill Library (`/skills`) to browse skills you can access. Sign in to filter to your team spaces or a specific team. Use the search box to find skills by keyword.
 
 2. **Enter Keywords**
 

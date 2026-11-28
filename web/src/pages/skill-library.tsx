@@ -15,8 +15,11 @@ import { EmptyState } from '@/shared/components/empty-state'
 import { Pagination } from '@/shared/components/pagination'
 import { SkeletonList } from '@/shared/components/skeleton-loader'
 import { buttonVariants } from '@/shared/ui/button'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 
 const PAGE_SIZE = 20
+const ALL = '__all__'
+const MINE = '__mine__'
 type LibrarySort = 'all' | 'downloads' | 'newest'
 
 function SkillLibraryItem({ skill, view, returnTo }: { skill: SkillSummary; view: 'list' | 'grid'; returnTo: string }) {
@@ -58,22 +61,27 @@ export function SkillLibraryPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const returnTo = useRouterState({ select: (state) => state.location.href })
-  const { q, label, sort, page, view, library = 'public' } = useSearch({ from: '/skills' })
-  const { isAuthenticated, hasRole } = useAuth()
+  const { q, label, sort, page, view, scope } = useSearch({ from: '/skills' })
+  const { user, isAuthenticated, isLoading: isLoadingAuth, hasRole } = useAuth()
   const [queryInput, setQueryInput] = useState(q)
   const labels = useVisibleLabels()
-  const skills = useSearchSkills({ q, label, library, sort: sort === 'all' ? 'relevance' : sort, page, size: PAGE_SIZE }, library === 'public' || isAuthenticated)
   const namespaces = useMyNamespaces(isAuthenticated)
-  const canPublish = library === 'public'
-    ? hasRole('SUPER_ADMIN') || hasRole('SKILL_ADMIN')
-    : namespaces.data?.some((namespace) => namespace.type === 'TEAM' && namespace.status === 'ACTIVE' && namespace.canEdit !== false)
+  const teamSpaces = isAuthenticated ? (namespaces.data ?? []).filter((namespace) => namespace.type === 'TEAM') : []
+  const memberOnly = scope === MINE
+  const namespaceFilter = scope && scope !== ALL && !memberOnly ? scope : undefined
+  const skills = useSearchSkills({
+    q, label, namespace: namespaceFilter, library: memberOnly ? 'mine' : 'accessible',
+    sort: sort === 'all' ? 'relevance' : sort, page, size: PAGE_SIZE,
+  }, !isLoadingAuth && (!memberOnly || isAuthenticated), user?.userId ?? 'guest')
+  const canPublish = hasRole('SUPER_ADMIN') || hasRole('SKILL_ADMIN')
+    || teamSpaces.some((namespace) => namespace.status === 'ACTIVE' && namespace.canEdit !== false)
   const total = skills.data?.total ?? 0
   const totalPages = Math.ceil(total / PAGE_SIZE)
 
   useEffect(() => setQueryInput(q), [q])
 
-  const update = (patch: Partial<{ q: string; label?: string; library: 'public' | 'team'; sort: LibrarySort; page: number; view: 'list' | 'grid' }>) => {
-    void navigate({ to: '/skills', search: { q, label, library, sort, page, view, ...patch } })
+  const update = (patch: Partial<{ q: string; label?: string; scope?: string; sort: LibrarySort; page: number; view: 'list' | 'grid' }>) => {
+    void navigate({ to: '/skills', search: { q, label, scope, sort, page, view, ...patch } })
   }
 
   // Clearing the box is an unambiguous request for the full list, so apply it without a submit.
@@ -97,7 +105,7 @@ export function SkillLibraryPage() {
         </div>
         {canPublish ? <Link
           to="/dashboard/publish"
-          search={library === 'public' ? { namespace: 'global', visibility: 'PUBLIC' } : {}}
+          search={namespaceFilter ? { namespace: namespaceFilter } : {}}
           className={buttonVariants({ className: 'shrink-0 self-start sm:self-auto' })}
         >
           <Plus className="h-4 w-4" aria-hidden="true" />
@@ -106,15 +114,6 @@ export function SkillLibraryPage() {
       </div>
 
       <section aria-label={t('skillLibrary.title')} className="space-y-4">
-        <div role="group" aria-label={t('skillLibrary.libraryLabel')} className="flex flex-wrap gap-2">
-          {(['public', 'team'] as const).map((option) => (
-            <button key={option} type="button" aria-pressed={library === option}
-              onClick={() => update({ library: option, page: 0 })}
-              className={buttonVariants({ variant: library === option ? 'default' : 'outline' })}>
-              {t(`skillLibrary.${option}Library`)}
-            </button>
-          ))}
-        </div>
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
           <div className="flex flex-wrap items-center gap-1" role="group" aria-label={t('skillLibrary.sortLabel')}>
             {(['all', 'downloads', 'newest'] as const).map((option) => (
@@ -146,20 +145,38 @@ export function SkillLibraryPage() {
           </div>
         </div>
 
-        <form role="search" onSubmit={submitSearch} className="flex min-h-11 items-center gap-2 rounded-xl border border-border bg-card px-4 focus-within:ring-2 focus-within:ring-ring/30">
-          <Search className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-          <input
-            type="search"
-            value={queryInput}
-            onChange={(event) => changeQueryInput(event.target.value)}
-            placeholder={t('skillLibrary.searchPlaceholder')}
-            aria-label={t('skillLibrary.searchPlaceholder')}
-            className="min-w-0 flex-1 bg-transparent py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground"
-          />
-          <button type="submit" className="text-sm font-medium text-primary hover:underline">{t('skillLibrary.search')}</button>
-        </form>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <form role="search" onSubmit={submitSearch} className="flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-xl border border-border bg-card px-4 focus-within:ring-2 focus-within:ring-ring/30">
+            <Search className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+            <input
+              type="search"
+              value={queryInput}
+              onChange={(event) => changeQueryInput(event.target.value)}
+              placeholder={t('skillLibrary.searchPlaceholder')}
+              aria-label={t('skillLibrary.searchPlaceholder')}
+              className="min-w-0 flex-1 bg-transparent py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground"
+            />
+            <button type="submit" className="text-sm font-medium text-primary hover:underline">{t('skillLibrary.search')}</button>
+          </form>
+          {isAuthenticated ? (
+            <Select value={scope ?? ALL} onValueChange={(value) => update({ scope: value === ALL ? undefined : value, page: 0 })}>
+              <SelectTrigger className="h-11 w-full sm:w-[12rem]" aria-label={t('knowledge.namespaceFilter')}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL}>{t('skillLibrary.allSpaces')}</SelectItem>
+                <SelectItem value={MINE}>{t('knowledge.myNamespaces')}</SelectItem>
+                {teamSpaces.map((namespace) => (
+                  <SelectItem key={namespace.slug} value={namespace.slug}>{namespace.displayName}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : null}
+        </div>
 
-        {library === 'team' && !isAuthenticated ? (
+        {isLoadingAuth ? (
+          <SkeletonList count={6} />
+        ) : memberOnly && !isAuthenticated ? (
           <EmptyState title={t('skillLibrary.teamLoginTitle')} description={t('skillLibrary.teamLoginDescription')} action={
             <Link to="/login" search={{ returnTo }} className={buttonVariants()}>{t('skillLibrary.login')}</Link>
           } />

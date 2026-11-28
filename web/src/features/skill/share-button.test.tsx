@@ -27,5 +27,5 @@ it('loads and creates the visitor link from the shared settings dialog', async (
   const link = await screen.findByRole<HTMLInputElement>('textbox', { name: 'knowledge.share.link' })
   expect(link.value).toBe(`${window.location.origin}/skill-share/visitor-id`)
   expect(skillShareApi.settings).toHaveBeenCalledWith(42)
-  expect(skillShareApi.update).toHaveBeenCalledWith(42, expect.objectContaining({ enabled: true }))
+  expect(skillShareApi.update).toHaveBeenCalledWith(42, expect.objectContaining({ enabled: true, visibility: 'ENTRY' }))
 })

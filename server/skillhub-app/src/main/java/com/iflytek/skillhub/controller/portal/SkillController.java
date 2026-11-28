@@ -129,7 +129,7 @@ public class SkillController extends BaseApiController {
                 detail.ownerPreviewReviewComment(),
                 detail.resolutionMode(),
                 !tokenPrincipal && detail.publishedVersion() != null && !detail.hidden() && "ACTIVE".equals(detail.status())
-                        && skillShares.canManage(detail.namespaceId(),
+                        && skillShares.canManage(detail.namespaceId(), detail.ownerId(),
                         new SkillShareAppService.Caller(userId, namespaceRoles, platformRoles)),
                 memberAccess.canDownload(namespace, userId, platformRoles)
         );
