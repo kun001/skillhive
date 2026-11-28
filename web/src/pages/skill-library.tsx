@@ -7,6 +7,7 @@ import type { SkillSummary } from '@/api/types'
 import { APP_SHELL_PAGE_CLASS_NAME } from '@/app/page-shell-style'
 import { useVisibleLabels } from '@/shared/hooks/use-label-queries'
 import { useSearchSkills } from '@/shared/hooks/use-skill-queries'
+import { ALL_SKILL_SPACES as ALL, TEAM_SKILL_SPACES as MINE, SKILL_LIBRARY_PAGE_SIZE, getSkillLibrarySearchParams } from '@/features/skill/skill-library-search-params'
 import { useMyNamespaces } from '@/features/namespace/use-my-namespaces'
 import { useAuth } from '@/features/auth/use-auth'
 import { normalizeSearchQuery } from '@/shared/lib/search-query'
@@ -17,9 +18,6 @@ import { SkeletonList } from '@/shared/components/skeleton-loader'
 import { buttonVariants } from '@/shared/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 
-const PAGE_SIZE = 20
-const ALL = '__all__'
-const MINE = '__mine__'
 type LibrarySort = 'all' | 'downloads' | 'newest'
 
 function SkillLibraryItem({ skill, view, returnTo }: { skill: SkillSummary; view: 'list' | 'grid'; returnTo: string }) {
@@ -68,15 +66,21 @@ export function SkillLibraryPage() {
   const namespaces = useMyNamespaces(isAuthenticated)
   const teamSpaces = isAuthenticated ? (namespaces.data ?? []).filter((namespace) => namespace.type === 'TEAM') : []
   const memberOnly = scope === MINE
-  const namespaceFilter = scope && scope !== ALL && !memberOnly ? scope : undefined
-  const skills = useSearchSkills({
-    q, label, namespace: namespaceFilter, library: memberOnly ? 'mine' : 'accessible',
-    sort: sort === 'all' ? 'relevance' : sort, page, size: PAGE_SIZE,
-  }, !isLoadingAuth && (!memberOnly || isAuthenticated), user?.userId ?? 'guest')
+  const searchParams = getSkillLibrarySearchParams({ q, label, scope, sort, page })
+  const allSpaces = !memberOnly && !searchParams.namespace
+  const canLoadPublic = !memberOnly && (allSpaces || !isLoadingAuth)
+  const publicSkills = useSearchSkills(searchParams, !isAuthenticated && canLoadPublic, undefined, 'omit')
+  const accountSkills = useSearchSkills(searchParams, isAuthenticated, user?.userId)
+  const skills = isAuthenticated ? accountSkills : publicSkills
+  // A public response can bridge the sign-in check without exposing account-scoped results.
+  const publicPreview = allSpaces && isAuthenticated && accountSkills.isPending && !publicSkills.isPlaceholderData
+    ? publicSkills.data : undefined
+  const results = skills.data ?? publicPreview
+  const waitingForResults = (isLoadingAuth && !results?.items.length) || (skills.isLoading && !results)
   const canPublish = hasRole('SUPER_ADMIN') || hasRole('SKILL_ADMIN')
     || teamSpaces.some((namespace) => namespace.status === 'ACTIVE' && namespace.canEdit !== false)
-  const total = skills.data?.total ?? 0
-  const totalPages = Math.ceil(total / PAGE_SIZE)
+  const total = results?.total ?? 0
+  const totalPages = Math.ceil(total / SKILL_LIBRARY_PAGE_SIZE)
 
   useEffect(() => setQueryInput(q), [q])
 
@@ -105,7 +109,7 @@ export function SkillLibraryPage() {
         </div>
         {canPublish ? <Link
           to="/dashboard/publish"
-          search={namespaceFilter ? { namespace: namespaceFilter } : {}}
+          search={searchParams.namespace ? { namespace: searchParams.namespace } : {}}
           className={buttonVariants({ className: 'shrink-0 self-start sm:self-auto' })}
         >
           <Plus className="h-4 w-4" aria-hidden="true" />
@@ -174,20 +178,18 @@ export function SkillLibraryPage() {
           ) : null}
         </div>
 
-        {isLoadingAuth ? (
+        {waitingForResults ? (
           <SkeletonList count={6} />
         ) : memberOnly && !isAuthenticated ? (
           <EmptyState title={t('skillLibrary.teamLoginTitle')} description={t('skillLibrary.teamLoginDescription')} action={
             <Link to="/login" search={{ returnTo }} className={buttonVariants()}>{t('skillLibrary.login')}</Link>
           } />
-        ) : skills.isLoading ? (
-          <SkeletonList count={6} />
         ) : skills.isError ? (
           <EmptyState title={t('skillLibrary.loadFailed')} />
-        ) : skills.data?.items.length ? (
+        ) : results?.items.length ? (
           <>
             <div className={view === 'grid' ? 'grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3' : 'overflow-hidden rounded-xl border border-border bg-card'}>
-              {skills.data.items.map((skill) => (
+              {results.items.map((skill) => (
                 <div key={skill.id} className={view === 'grid' ? 'overflow-hidden rounded-xl border border-border bg-card' : 'border-b border-border/70 last:border-b-0'}>
                   <SkillLibraryItem skill={skill} view={view} returnTo={returnTo} />
                 </div>

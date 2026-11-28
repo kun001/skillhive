@@ -1,9 +1,13 @@
 import { lazy, Suspense, type ComponentType } from 'react'
 import { createRouter, createRoute, createRootRoute, redirect } from '@tanstack/react-router'
 import { Layout } from './layout'
+import { queryClient } from './query-client'
 import { getCurrentUser } from '@/api/client'
+import { getAuthQueryOptions } from '@/features/auth/use-auth'
 import { RoleGuard } from '@/shared/components/role-guard'
 import { RouteError } from '@/shared/components/route-error'
+import { getSkillLibrarySearchParams, TEAM_SKILL_SPACES } from '@/features/skill/skill-library-search-params'
+import { getSkillSearchQueryOptions } from '@/shared/hooks/use-skill-queries'
 import { createRequireAuth } from '@/shared/lib/auth-route'
 import { API_TOKEN_UI_ENABLED } from '@/shared/lib/feature-flags'
 import { clearDynamicImportReloadGuard, recoverFromDynamicImportError } from '@/shared/lib/dynamic-import-recovery'
@@ -212,11 +216,21 @@ const skillsRoute = createRoute({
     const page = Number(search.page)
     return {
       q: normalizeSearchQuery(typeof search.q === 'string' ? search.q : ''),
-      scope: typeof search.scope === 'string' && search.scope ? search.scope : search.library === 'team' ? '__mine__' : undefined,
+      scope: typeof search.scope === 'string' && search.scope ? search.scope : search.library === 'team' ? TEAM_SKILL_SPACES : undefined,
       label: typeof search.label === 'string' && search.label ? search.label : undefined,
       sort,
       page: Number.isInteger(page) && page > 0 ? page : 0,
       view: search.view === 'grid' ? 'grid' : 'list',
+    }
+  },
+  loaderDeps: ({ search }) => getSkillLibrarySearchParams(search),
+  loader: ({ deps }) => {
+    if (deps.library === 'accessible' && !deps.namespace && !queryClient.getQueryData(getAuthQueryOptions().queryKey)) {
+      // The first public page can load while the route module and session request are in flight.
+      void queryClient.prefetchQuery({
+        ...getSkillSearchQueryOptions(deps, undefined, 'omit'),
+        meta: { skipGlobalErrorHandler: true },
+      })
     }
   },
 })

@@ -4,7 +4,8 @@
 
 ## 待发布 / Unreleased
 
-暂无。 / None.
+- 技能库打开后会更早显示公开技能，登录状态确认后再补充当前账号可访问的团队技能。
+- The skill library shows public skills sooner and adds accessible team skills after the session check.
 
 ## v0.4.12 — 2026-11-28
 
