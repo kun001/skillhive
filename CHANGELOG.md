@@ -4,6 +4,13 @@
 
 ## 待发布 / Unreleased
 
+暂无。 / None.
+
+## v0.4.12 — 2026-11-28
+
+> 已于 2026-11-28 23:50（北京时间）完成 `v0.4.12` 生产部署。三个镜像来自同一提交，数据库备份、Flyway V80 至 V82 升级、容器健康检查和线上冒烟均通过。[部署记录](https://github.com/kun001/skillhive/actions/runs/46161676040)
+> Production deployment of `v0.4.12` completed at 23:50 China Standard Time on 2026-11-28. All three images matched the release commit. Database backup, Flyway upgrade from V80 to V82, container health and production smoke checks passed. [Deployment run](https://github.com/kun001/skillhive/actions/runs/46161676040)
+
 - 技能库统一展示可访问技能，支持按团队空间筛选。技能所有者可为访客链接选择仅展示入口或公开说明与技能包。
 - The unified skill library shows accessible skills with team-space filters. Skill owners can share an entry or provide documentation and the skill package.
 - 知识库批量操作栏保持位置，选择和打包时列表不再跳动。
