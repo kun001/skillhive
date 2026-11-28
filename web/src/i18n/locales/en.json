@@ -970,10 +970,17 @@
     "reportErrorTitle": "Report failed",
     "share": {
       "button": "Share skill",
-      "description": "Anyone with the link can preview the documentation for \"{{title}}\" and download the current published version.",
+      "description": "Choose what visitors with the link can see for \"{{title}}\".",
       "unavailable": "This skill share link is unavailable",
       "previewUnavailable": "Skill documentation is unavailable for preview.",
-      "download": "Download skill package"
+      "download": "Download skill package",
+      "visibility": "Visitor access",
+      "public": "Show documentation and download",
+      "entryDescription": "Visitors see the skill name. They need an account with access to see its content.",
+      "publicDescription": "Anyone with the link can preview documentation and download the current published version without signing in.",
+      "openSkill": "Open skill",
+      "requestAccess": "This account does not have access to the skill.",
+      "loginRequired": "Sign in with an account that has access to the skill."
     }
   },
   "skillCompare": {

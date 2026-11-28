@@ -46,7 +46,8 @@ public class SkillSearchController extends BaseApiController {
     public ApiResponse<SkillSearchAppService.SearchResponse> search(
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String namespace,
-            @Parameter(description = "Skill library: public or team", schema = @Schema(allowableValues = {"public", "team"}))
+            @Parameter(description = "Filter by visible skills, team memberships, or the legacy public and team scopes",
+                    schema = @Schema(allowableValues = {"accessible", "mine", "public", "team"}))
             @RequestParam(required = false) String library,
             @RequestParam(name = "label", required = false) java.util.List<String> labels,
             @Parameter(description = "Optional response expansions. Supported value: labels")

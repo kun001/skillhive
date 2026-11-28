@@ -207,12 +207,12 @@ const skillsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: 'skills',
   component: SkillLibraryPage,
-  validateSearch: (search: Record<string, unknown>): { q: string; label?: string; library?: 'public' | 'team'; sort: 'all' | 'downloads' | 'newest'; page: number; view: 'list' | 'grid' } => {
+  validateSearch: (search: Record<string, unknown>): { q: string; label?: string; scope?: string; sort: 'all' | 'downloads' | 'newest'; page: number; view: 'list' | 'grid' } => {
     const sort = search.sort === 'downloads' || search.sort === 'newest' ? search.sort : 'all'
     const page = Number(search.page)
     return {
       q: normalizeSearchQuery(typeof search.q === 'string' ? search.q : ''),
-      library: search.library === 'team' ? 'team' : 'public',
+      scope: typeof search.scope === 'string' && search.scope ? search.scope : search.library === 'team' ? '__mine__' : undefined,
       label: typeof search.label === 'string' && search.label ? search.label : undefined,
       sort,
       page: Number.isInteger(page) && page > 0 ? page : 0,

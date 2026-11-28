@@ -127,17 +127,28 @@ public class PostgresFullTextQueryService implements SearchQueryService {
         }
         sql.append("WHERE 1=1 ");
 
-        // Visibility filtering
-        sql.append("AND ((n.type = 'GLOBAL' AND d.visibility = 'PUBLIC') ");
-        if (query.visibilityScope().userId() != null) {
-            sql.append("OR (d.visibility IN ('PUBLIC', 'NAMESPACE_ONLY') AND d.namespace_id IN :memberNamespaceIds) ");
+        // The unified library uses the current skill visibility, even while its search index is catching up.
+        boolean ownSpaces = "mine".equals(query.library());
+        boolean unified = ownSpaces || "accessible".equals(query.library());
+        boolean authenticated = query.visibilityScope().userId() != null;
+        boolean includePrivate = unified && authenticated;
+        String visibility = unified ? "s.visibility" : "d.visibility";
+        Set<Long> adminNamespaceIds = query.visibilityScope().adminNamespaceIds().isEmpty()
+                ? Set.of(-1L) : query.visibilityScope().adminNamespaceIds();
+        sql.append("AND ((n.type = 'GLOBAL' AND ").append(visibility).append(" = 'PUBLIC') ");
+        if (authenticated) {
+            sql.append("OR (").append(visibility).append(" IN ('PUBLIC', 'NAMESPACE_ONLY') AND d.namespace_id IN :memberNamespaceIds) ");
+        }
+        if (includePrivate) {
+            sql.append("OR (n.type = 'TEAM' AND s.visibility = 'PRIVATE' AND d.namespace_id IN :memberNamespaceIds ")
+                    .append("AND (s.owner_id = :viewerId OR d.namespace_id IN :adminNamespaceIds)) ");
         }
         sql.append(") ");
 
-        // Apply library scope before pagination and counting.
+        // Apply the selected scope before pagination and counting.
         if ("public".equals(query.library())) {
             sql.append("AND n.type = 'GLOBAL' AND d.visibility = 'PUBLIC' ");
-        } else if ("team".equals(query.library())) {
+        } else if ("team".equals(query.library()) || ownSpaces) {
             sql.append("AND n.type = 'TEAM' ");
         }
 
@@ -227,6 +238,10 @@ public class PostgresFullTextQueryService implements SearchQueryService {
         if (query.visibilityScope().userId() != null) {
             nativeQuery.setParameter("memberNamespaceIds", memberNamespaceIds);
         }
+        if (includePrivate) {
+            nativeQuery.setParameter("viewerId", query.visibilityScope().userId());
+            nativeQuery.setParameter("adminNamespaceIds", adminNamespaceIds);
+        }
 
         if (query.namespaceId() != null) {
             nativeQuery.setParameter("namespaceId", query.namespaceId());
@@ -273,6 +288,10 @@ public class PostgresFullTextQueryService implements SearchQueryService {
 
         if (query.visibilityScope().userId() != null) {
             countQuery.setParameter("memberNamespaceIds", memberNamespaceIds);
+        }
+        if (includePrivate) {
+            countQuery.setParameter("viewerId", query.visibilityScope().userId());
+            countQuery.setParameter("adminNamespaceIds", adminNamespaceIds);
         }
 
         if (query.namespaceId() != null) {

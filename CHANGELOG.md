@@ -4,7 +4,10 @@
 
 ## 待发布 / Unreleased
 
-暂无。 / None.
+- 技能库统一展示可访问技能，支持按团队空间筛选。技能所有者可为访客链接选择仅展示入口或公开说明与技能包。
+- The unified skill library shows accessible skills with team-space filters. Skill owners can share an entry or provide documentation and the skill package.
+- 知识库批量操作栏保持位置，选择和打包时列表不再跳动。
+- The knowledge bulk toolbar stays in place while selecting and packaging files.
 
 ## v0.4.11 — 2026-11-28
 

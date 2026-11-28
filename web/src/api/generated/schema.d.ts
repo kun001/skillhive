@@ -4394,6 +4394,8 @@ export interface components {
         UpdateSkillShareRequest: {
             enabled: boolean;
             expiration?: components["schemas"]["VisitorShareExpiration"];
+            /** @enum {string} */
+            visibility?: "ENTRY" | "PUBLIC";
         };
         VisitorShareExpiration: {
             /** Format: date-time */
@@ -4412,6 +4414,8 @@ export interface components {
             shareId?: string;
             /** Format: date-time */
             expiresAt?: string;
+            /** @enum {string} */
+            visibility?: "ENTRY" | "PUBLIC";
         };
         ApiResponseMapStringInteger: {
             /** Format: int32 */
@@ -5630,6 +5634,13 @@ export interface components {
             version?: string;
             /** Format: date-time */
             expiresAt?: string;
+            /** @enum {string} */
+            visibility?: "ENTRY" | "PUBLIC";
+            memberWorkspace?: components["schemas"]["SkillWorkspace"];
+        };
+        SkillWorkspace: {
+            namespace?: string;
+            slug?: string;
         };
         ApiResponseReviewSkillDetailResponse: {
             /** Format: int32 */
@@ -11673,8 +11684,8 @@ export interface operations {
             query?: {
                 q?: string;
                 namespace?: string;
-                /** @description Skill library: public or team */
-                library?: "public" | "team";
+                /** @description Filter by visible skills, team memberships, or the legacy public and team scopes */
+                library?: "accessible" | "mine" | "public" | "team";
                 label?: string[];
                 /** @description Optional response expansions. Supported value: labels */
                 include?: string[];

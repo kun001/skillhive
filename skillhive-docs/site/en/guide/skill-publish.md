@@ -96,9 +96,13 @@ The skill can be found through search; others can download it on the web or read
 
 ## Sharing with visitors
 
-On a published skill's detail page, choose **Share skill**, enable the visitor link, choose an expiration time or select **Never expires**, and save before copying the link. Team space owners, team space administrators, and platform super administrators can manage links for team skills. Platform super administrators manage links for global skills.
+The Skill Library shows the skills the current visitor can access. Signed-in users can filter to **My team spaces** or choose a specific team. Existing public skills remain available to visitors in the library.
 
-Anyone with a valid link can preview the documentation and download the current published ZIP without signing in. The same link points to the new version once it is published. The old link stops working when sharing is turned off or the link expires.
+On a published skill's detail page, choose **Share skill**, enable the link, choose what visitors can see, and set an expiration if needed. The skill owner can manage a team skill's link if they can edit and download it. Team space owners and administrators and platform super administrators can also manage team links. For global skills, platform super administrators and skill owners with the skill administrator role can manage links.
+
+- **Show entry only** is the default. Visitors see the skill name, and authorized members can open the original skill page.
+- **Show documentation and download** lets anyone with the link preview documentation and download the current published version without signing in. The same link points to a newer version once published.
+- **Turn off the visitor link** to invalidate it. Expiration also invalidates the link. Library access permissions and visitor link settings apply independently.
 
 ## Compliance Declarations
 

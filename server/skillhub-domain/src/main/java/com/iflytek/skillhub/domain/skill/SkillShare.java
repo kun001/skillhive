@@ -3,6 +3,8 @@ package com.iflytek.skillhub.domain.skill;
 import com.iflytek.skillhub.domain.shared.VisitorSharePolicy;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
@@ -19,8 +21,16 @@ public class SkillShare {
     @Column(name = "share_id", nullable = false)
     private UUID shareId;
 
+    // Entry-only tokens stay out of the lookup used by versions before entry-only sharing.
+    @Column(name = "entry_share_id")
+    private UUID entryShareId;
+
     @Column(name = "expires_at")
     private Instant expiresAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "visibility", nullable = false, length = 16)
+    private SkillShareVisibility visibility = SkillShareVisibility.PUBLIC;
 
     protected SkillShare() {}
 
@@ -30,15 +40,33 @@ public class SkillShare {
     }
 
     public Long getSkillId() { return skillId; }
-    public UUID getShareId() { return shareId; }
+    public UUID getShareId() { return visibility == SkillShareVisibility.ENTRY ? entryShareId : shareId; }
     public Instant getExpiresAt() { return expiresAt; }
+    public SkillShareVisibility getVisibility() { return visibility; }
+
+    public void setVisibility(SkillShareVisibility visibility) {
+        if (this.visibility == visibility) return;
+        if (visibility == SkillShareVisibility.ENTRY) {
+            entryShareId = shareId;
+            shareId = UUID.randomUUID();
+        } else {
+            shareId = entryShareId;
+            entryShareId = null;
+        }
+        this.visibility = visibility;
+    }
 
     public boolean isActiveAt(Instant now) {
-        return VisitorSharePolicy.isActive(shareId, expiresAt, now);
+        return VisitorSharePolicy.isActive(getShareId(), expiresAt, now);
     }
 
     public void updateExpiration(Instant expiration, Instant now) {
-        shareId = VisitorSharePolicy.enable(shareId, expiresAt, expiration, now);
+        UUID activeId = VisitorSharePolicy.enable(getShareId(), expiresAt, expiration, now);
+        if (visibility == SkillShareVisibility.ENTRY) {
+            entryShareId = activeId;
+        } else {
+            shareId = activeId;
+        }
         expiresAt = expiration;
     }
 }

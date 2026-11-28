@@ -100,7 +100,7 @@ public class SkillSearchAppService {
     public SearchResponse search(String keyword, String namespaceSlug, String sortBy, int page, int size,
                                  List<String> labelSlugs, String userId, Map<Long, NamespaceRole> userNsRoles,
                                  String library) {
-        if (library != null && !Set.of("public", "team").contains(library)) {
+        if (library != null && !Set.of("public", "team", "accessible", "mine").contains(library)) {
             throw new com.iflytek.skillhub.domain.shared.exception.DomainBadRequestException("error.skill.library.invalid");
         }
 

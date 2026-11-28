@@ -22,7 +22,7 @@ Opening a team space shows both how to do the work (skills) and what to work wit
 
 - SkillHive does not run skill scripts.
 - Knowledge search matches titles, descriptions, AI summaries and extracted text; there is no vector search, RAG Q&A or OCR for scans.
-- Knowledge content is never open to anonymous users; public skills in the public library can be browsed and downloaded anonymously.
+- Visitors can browse and download existing public skills from the Skill Library. Team skills and knowledge can be shared with visitors according to the link settings.
 
 ## Tech Stack
 
@@ -40,7 +40,7 @@ Opening a team space shows both how to do the work (skills) and what to work wit
 | Guide | Description |
 |-------|-------------|
 | [Skill Publishing & Versioning](/en/guide/skill-publish) | Upload skill packages, versions, compliance declarations |
-| [Skill Search & Discovery](/en/guide/skill-discovery) | Public and team libraries, search and filters |
+| [Skill Search & Discovery](/en/guide/skill-discovery) | Unified Skill Library, team-space filters, and search |
 | [Knowledge Base](/en/guide/knowledge) | Folders, uploads, preview, versions |
 | [Namespace & Team Management](/en/guide/namespace) | Team spaces, members and permissions |
 | [Review & Governance](/en/guide/review) | Review workflow, reports |

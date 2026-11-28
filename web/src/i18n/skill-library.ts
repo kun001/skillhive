@@ -1,10 +1,6 @@
 export const skillLibraryZh = {
   title: '技能库',
-  libraryLabel: '选择技能库',
-  publicLibrary: '公共技能库',
-  teamLibrary: '团队技能库',
-  publicDescription: '所有人都可浏览和下载的公共技能',
-  teamDescription: '你加入的团队共享技能，按团队权限访问',
+  allSpaces: '全部可访问空间',
   teamLoginTitle: '登录后查看团队技能',
   teamLoginDescription: '团队技能仅向所属团队的成员开放',
   login: '登录',
@@ -29,11 +25,7 @@ export const skillLibraryZh = {
 
 export const skillLibraryEn = {
   title: 'Skill Library',
-  libraryLabel: 'Choose a skill library',
-  publicLibrary: 'Public Skills',
-  teamLibrary: 'Team Skills',
-  publicDescription: 'Public skills everyone can browse and download',
-  teamDescription: 'Skills shared by your teams, with team access controls',
+  allSpaces: 'All accessible spaces',
   teamLoginTitle: 'Sign in to view team skills',
   teamLoginDescription: 'Team skills are available to members of their teams',
   login: 'Sign in',

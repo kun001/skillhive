@@ -59,16 +59,18 @@ async function publishSkill(params: { namespace: string; file: File; visibility:
   })
 }
 
-export function useSearchSkills(params: SearchParams, enabled = true) {
+export function useSearchSkills(params: SearchParams, enabled = true, viewerScope?: string) {
   return useQuery({
-    queryKey: ['skills', 'search', params],
+    queryKey: ['skills', 'search', params, viewerScope],
     queryFn: () => searchSkills(params),
     enabled: enabled && params.starredOnly !== true,
     // Keep prior results while typing/debouncing so the grid is not swapped for
     // skeletons (unmount churn that races header portals under React 19).
     placeholderData: (previousData, previousQuery) => {
       const previousParams = previousQuery?.queryKey[2] as SearchParams | undefined
-      return previousParams?.library === params.library ? keepPreviousData(previousData) : undefined
+      const sameScope = previousQuery?.queryKey[3] === viewerScope
+        && previousParams?.library === params.library && previousParams?.namespace === params.namespace
+      return sameScope ? keepPreviousData(previousData) : undefined
     },
   })
 }
