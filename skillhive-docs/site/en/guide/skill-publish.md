@@ -70,7 +70,7 @@ When packaging an existing skill, keep its required scripts, references,
 
 2. **Publish via Web UI**
 
-On the Skills page click "Publish skill" (or open `/dashboard/publish`), choose the target space and visibility, upload the zip file, and click "Publish".
+On the Skills page, click **Publish skill** or open `/dashboard/publish`. The namespace, visibility, and skill package fields are marked with `*`. Choose a space where you can publish, keep or change the default visibility, upload a ZIP, and click **Confirm Publish**.
 
 3. **Publish via REST API**
 
@@ -93,6 +93,12 @@ Team admins receive review notifications and approve skill packages for official
 6. **Publish Success**
 
 The skill can be found through search; others can download it on the web or read it from their AI tool through MCP.
+
+## Sharing with visitors
+
+On a published skill's detail page, choose **Share skill**, enable the visitor link, choose an expiration time or select **Never expires**, and save before copying the link. Team space owners, team space administrators, and platform super administrators can manage links for team skills. Platform super administrators manage links for global skills.
+
+Anyone with a valid link can preview the documentation and download the current published ZIP without signing in. The same link points to the new version once it is published. The old link stops working when sharing is turned off or the link expires.
 
 ## Compliance Declarations
 
@@ -142,7 +148,7 @@ Content-Type: multipart/form-data
 
 # Parameters
 file: MultipartFile (required)
-visibility: PUBLIC | PRIVATE | INTERNAL (optional, default PUBLIC)
+visibility: PUBLIC | NAMESPACE_ONLY | PRIVATE (required)
 ```
 
 **Parameter Reference**:
@@ -150,7 +156,7 @@ visibility: PUBLIC | PRIVATE | INTERNAL (optional, default PUBLIC)
 |-----------|------|-------------|
 | namespace | string | Namespace slug (path parameter) |
 | file | MultipartFile | Skill package zip file |
-| visibility | enum | Visibility level: PUBLIC, PRIVATE, INTERNAL |
+| visibility | enum | Visibility level (PUBLIC, NAMESPACE_ONLY, or PRIVATE) |
 
 **Get Skill Details**:
 ```bash

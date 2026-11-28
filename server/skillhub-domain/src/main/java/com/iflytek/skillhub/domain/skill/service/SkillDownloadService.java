@@ -178,6 +178,18 @@ public class SkillDownloadService {
         return buildDownloadResult(skill, version);
     }
 
+    /** Called after a visitor link has authorized the current published version. */
+    public DownloadResult downloadSharedVersion(Skill skill, SkillVersion version) {
+        assertPublishedAccessible(skill);
+        if (skill.isHidden() || !version.getSkillId().equals(skill.getId())
+                || !SkillInstallability.isInstallableVersion(version)) {
+            throw new DomainBadRequestException("error.skill.version.notDownloadable", version.getVersion());
+        }
+        DownloadResult result = buildDownloadResult(skill, version);
+        recordPublishedDownload(skill, version);
+        return result;
+    }
+
     private DownloadResult downloadVersion(Skill skill,
                                            SkillVersion version,
                                            String currentUserId,

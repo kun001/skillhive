@@ -3,9 +3,11 @@ package com.iflytek.skillhub.infra.jpa;
 import com.iflytek.skillhub.domain.skill.Skill;
 import com.iflytek.skillhub.domain.skill.SkillRepository;
 import com.iflytek.skillhub.domain.skill.SkillStatus;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -20,6 +22,11 @@ import java.util.Optional;
  */
 @Repository
 public interface SkillJpaRepository extends JpaRepository<Skill, Long>, SkillRepository {
+    @Override
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT s FROM Skill s WHERE s.id = :id")
+    Optional<Skill> findByIdForUpdate(@Param("id") Long id);
+
     List<Skill> findByIdIn(List<Long> ids);
     List<Skill> findByNamespaceIdAndSlug(Long namespaceId, String slug);
     List<Skill> findByNamespaceIdInAndSlugIn(List<Long> namespaceIds, List<String> slugs);

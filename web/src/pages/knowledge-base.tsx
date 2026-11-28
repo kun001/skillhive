@@ -1,5 +1,5 @@
 import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
-import { Archive, LayoutGrid, List, Search, Settings2, Share2, Trash2, Upload, UploadCloud } from 'lucide-react'
+import { Archive, Download, LayoutGrid, List, Search, Settings2, Share2, Trash2, Upload, UploadCloud } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { KnowledgeDocument, KnowledgeFolder } from '@/api/knowledge-types'
@@ -7,6 +7,7 @@ import { useAuth } from '@/features/auth/use-auth'
 import { KnowledgeArchivedDrawer } from '@/features/knowledge/archived-drawer'
 import { EditKnowledgeBaseDialog } from '@/features/knowledge/base-dialog'
 import { EditKnowledgeDocumentDialog, NewKnowledgeVersionDialog } from '@/features/knowledge/document-dialogs'
+import { downloadKnowledgeArchive } from '@/features/knowledge/download-archive'
 import { KnowledgeDocumentGrid, KnowledgeDocumentTable } from '@/features/knowledge/document-list'
 import { knowledgeErrorMessage } from '@/features/knowledge/errors'
 import { extensionsForCategory, KNOWLEDGE_FILE_CATEGORIES, typeFilterAfterUpload } from '@/features/knowledge/file-types'
@@ -97,7 +98,8 @@ export function KnowledgeBasePage() {
       : flattenFolderTree(tree).find((node) => node.folder.id === search.folder)?.children
     return children?.map((node) => node.folder) ?? []
   }, [page, search.folder, search.q, tree])
-  const DocumentView = search.view === 'grid' ? KnowledgeDocumentGrid : KnowledgeDocumentTable
+  const isGridView = search.view === 'grid'
+  const DocumentView = isGridView ? KnowledgeDocumentGrid : KnowledgeDocumentTable
 
   const [upload, setUpload] = useState<{ open: boolean; files?: File[] }>({ open: false })
   const [folderDialog, setFolderDialog] = useState<FolderDialogState>(null)
@@ -111,6 +113,7 @@ export function KnowledgeBasePage() {
   const [archivedOpen, setArchivedOpen] = useState(false)
   const [deletingDocument, setDeletingDocument] = useState<KnowledgeDocument | null>(null)
   const [selectedDocumentIds, setSelectedDocumentIds] = useState<Set<number>>(() => new Set())
+  const [isBatchDownloading, setIsBatchDownloading] = useState(false)
   const [batchDeleteIds, setBatchDeleteIds] = useState<number[] | null>(null)
   const deleteFolder = useDeleteKnowledgeFolder(namespace, base)
   const deleteDocument = useDeleteKnowledgeDocument()
@@ -126,11 +129,15 @@ export function KnowledgeBasePage() {
   const knowledgeBase = baseQuery.data
   const sharedFolders = useMemo(() => knowledgeBase?.sharingEnabled ? publicShareFolderIds(tree) : undefined, [knowledgeBase?.sharingEnabled, tree])
   const canContribute = knowledgeBase?.canContribute ?? false
-  const selectableIds = knowledgeBase?.canManage && !documentsQuery.isPlaceholderData
-    ? documents.filter((document) => document.canManage).map((document) => document.id)
+  const selectableDocuments = !documentsQuery.isPlaceholderData
+    ? documents.filter((document) => document.canDownload || (knowledgeBase?.canManage && document.canManage))
     : []
-  const selectedIds = selectableIds.filter((id) => selectedDocumentIds.has(id))
-  const allSelected = selectableIds.length > 0 && selectedIds.length === selectableIds.length
+  const selectableIds = new Set(selectableDocuments.map((document) => document.id))
+  const selectedDocuments = selectableDocuments.filter((document) => selectedDocumentIds.has(document.id))
+  const allSelected = selectableIds.size > 0 && selectedDocuments.length === selectableIds.size
+  const togglePageSelection = () => setSelectedDocumentIds(allSelected ? new Set() : selectableIds)
+  const canBatchDownload = selectedDocuments.every((document) => document.canDownload)
+  const canBatchDelete = knowledgeBase?.canManage && selectedDocuments.every((document) => document.canManage)
 
   const toggleDocument = (id: number) => {
     setSelectedDocumentIds((current) => {
@@ -139,6 +146,18 @@ export function KnowledgeBasePage() {
       else next.add(id)
       return next
     })
+  }
+
+  const downloadSelected = async () => {
+    if (isBatchDownloading || selectedDocuments.length === 0 || !canBatchDownload) return
+    setIsBatchDownloading(true)
+    try {
+      await downloadKnowledgeArchive(selectedDocuments, t('knowledge.bulk.archiveName'))
+    } catch {
+      toast.error(t('knowledge.bulk.downloadFailed'))
+    } finally {
+      setIsBatchDownloading(false)
+    }
   }
 
   const confirmBatchDelete = async () => {
@@ -348,22 +367,28 @@ export function KnowledgeBasePage() {
             />
           ) : null}
 
-          {selectableIds.length > 0 ? (
+          {(isGridView && selectableIds.size > 0) || selectedDocuments.length > 0 ? (
             <div className="flex flex-wrap items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setSelectedDocumentIds(new Set(allSelected ? [] : selectableIds))}
-              >
-                {t(allSelected ? 'knowledge.bulk.clearSelection' : 'knowledge.bulk.selectPage')}
-              </Button>
-              {selectedIds.length > 0 ? (
+              {isGridView ? (
+                <Button variant="outline" size="sm" onClick={togglePageSelection}>
+                  {t(allSelected ? 'knowledge.bulk.clearSelection' : 'knowledge.bulk.selectPage')}
+                </Button>
+              ) : null}
+              {selectedDocuments.length > 0 ? (
                 <>
-                  <span className="text-sm text-muted-foreground" role="status">{t('knowledge.bulk.selected', { count: selectedIds.length })}</span>
-                  <Button variant="destructive" size="sm" onClick={() => setBatchDeleteIds(selectedIds)}>
-                    <Trash2 className="mr-1.5 h-4 w-4" aria-hidden />
-                    {t('knowledge.bulk.delete')}
-                  </Button>
+                  <span className="text-sm text-muted-foreground" role="status">{t('knowledge.bulk.selected', { count: selectedDocuments.length })}</span>
+                  {canBatchDownload ? (
+                    <Button variant="outline" size="sm" onClick={downloadSelected} disabled={isBatchDownloading}>
+                      <Download className="mr-1.5 h-4 w-4" aria-hidden />
+                      {t(isBatchDownloading ? 'knowledge.bulk.downloading' : 'knowledge.bulk.download')}
+                    </Button>
+                  ) : null}
+                  {canBatchDelete ? (
+                    <Button variant="destructive" size="sm" onClick={() => setBatchDeleteIds(selectedDocuments.map((document) => document.id))}>
+                      <Trash2 className="mr-1.5 h-4 w-4" aria-hidden />
+                      {t('knowledge.bulk.delete')}
+                    </Button>
+                  ) : null}
                 </>
               ) : null}
             </div>
@@ -410,7 +435,13 @@ export function KnowledgeBasePage() {
               onEdit={(document) => setEditing({ document, open: true })}
               onDelete={setDeletingDocument}
               onShare={knowledgeBase?.canManage && namespace !== 'global' ? setSharingDocument : undefined}
-              selection={selectableIds.length > 0 ? { ids: selectedDocumentIds, onToggle: toggleDocument } : undefined}
+              selection={selectableIds.size > 0 ? {
+                ids: selectedDocumentIds,
+                selectableIds,
+                onToggle: toggleDocument,
+                pageState: allSelected ? 'all' : selectedDocuments.length > 0 ? 'some' : 'none',
+                onTogglePage: togglePageSelection,
+              } : undefined}
             />
           )}
 

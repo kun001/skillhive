@@ -53,6 +53,7 @@ import com.iflytek.skillhub.dto.knowledge.KnowledgeFolderResponse;
 import com.iflytek.skillhub.dto.knowledge.KnowledgeUserResponse;
 import com.iflytek.skillhub.dto.knowledge.KnowledgeMarkdownImagesResponse;
 import com.iflytek.skillhub.dto.knowledge.KnowledgeShareSettingsResponse;
+import com.iflytek.skillhub.dto.VisitorShareExpiration;
 import com.iflytek.skillhub.dto.knowledge.UpdateKnowledgeBaseRequest;
 import com.iflytek.skillhub.dto.knowledge.UpdateKnowledgeDocumentRequest;
 import com.iflytek.skillhub.dto.knowledge.UpdateKnowledgeDocumentShareRequest;
@@ -315,7 +316,7 @@ public class KnowledgeAppService {
         BaseContext context = resolveWritableBase(namespace, base, caller);
         requireShareManager(context, caller);
         Instant now = clock.instant();
-        Instant expiresAt = shareExpiration(request.enabled(), request.expiration(), context.base().getShareExpiresAt(), now);
+        Instant expiresAt = VisitorShareExpiration.resolve(request.enabled(), request.expiration(), context.base().getShareExpiresAt(), now);
         for (var setting : request.folders()) {
             KnowledgeFolder folder = findFolderInBase(context, setting.folderId());
             folder.setShareVisibility(setting.visibility());
@@ -346,7 +347,7 @@ public class KnowledgeAppService {
         requireShareManager(resolveDocument(documentId, caller).baseContext(), caller);
         var existing = documentShares.findById(documentId);
         Instant now = clock.instant();
-        Instant expiration = shareExpiration(request.enabled(), request.expiration(),
+        Instant expiration = VisitorShareExpiration.resolve(request.enabled(), request.expiration(),
                 existing.map(KnowledgeDocumentShare::getExpiresAt).orElse(null), now);
         KnowledgeDocumentShare saved = null;
         if (request.enabled()) {
@@ -360,16 +361,6 @@ public class KnowledgeAppService {
                 AuditDetail.builder().put("enabled", request.enabled())
                         .put("expiresAt", expiration == null ? null : expiration.toString()).build());
         return documentShareSettings(saved);
-    }
-
-    private static Instant shareExpiration(boolean enabled, UpdateKnowledgeShareRequest.Expiration expiration, Instant previous, Instant now) {
-        if (!enabled) return null;
-        if (expiration == null) return previous;
-        Instant expiresAt = expiration.expiresAt();
-        if (expiresAt != null && !expiresAt.isAfter(now)) {
-            throw new DomainBadRequestException("error.knowledge.share.expiration.future");
-        }
-        return expiresAt;
     }
 
     private static KnowledgeShareSettingsResponse baseShareSettings(KnowledgeBase base) {

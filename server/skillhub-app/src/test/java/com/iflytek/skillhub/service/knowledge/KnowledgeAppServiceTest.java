@@ -43,6 +43,7 @@ import com.iflytek.skillhub.domain.shared.exception.DomainNotFoundException;
 import com.iflytek.skillhub.domain.storage.StorageQuotaExceededException;
 import com.iflytek.skillhub.domain.storage.StorageQuotaGuard;
 import com.iflytek.skillhub.domain.user.UserAccountRepository;
+import com.iflytek.skillhub.dto.VisitorShareExpiration;
 import com.iflytek.skillhub.dto.knowledge.KnowledgeDocumentResponse;
 import com.iflytek.skillhub.dto.knowledge.UpdateKnowledgeShareRequest;
 import com.iflytek.skillhub.dto.knowledge.UpdateKnowledgeDocumentShareRequest;
@@ -179,7 +180,7 @@ class KnowledgeAppServiceTest {
         var admin = new KnowledgeAppService.Caller("admin", Map.of(), Set.of("SUPER_ADMIN"));
         var guest = new KnowledgeAppService.Caller(null, Map.of(), Set.of());
         var expiresAt = clock.instant().plusSeconds(60);
-        var update = new UpdateKnowledgeShareRequest(true, List.of(), new UpdateKnowledgeShareRequest.Expiration(expiresAt), null);
+        var update = new UpdateKnowledgeShareRequest(true, List.of(), new VisitorShareExpiration(expiresAt), null);
         var initial = service.updateShareSettings("team-a", "handbook", update, admin, null);
         when(baseRepository.findByShareId(UUID.fromString(initial.shareId()))).thenReturn(Optional.of(base));
         var shares = new KnowledgeShareAppService(baseRepository, namespaceRepository, folderRepository, documentRepository,
@@ -199,7 +200,7 @@ class KnowledgeAppServiceTest {
         assertThat(service.updateShareSettings("team-a", "handbook", unchanged, admin, null)).isEqualTo(initial);
 
         var renewed = service.updateShareSettings("team-a", "handbook",
-                new UpdateKnowledgeShareRequest(true, List.of(), new UpdateKnowledgeShareRequest.Expiration(null), null), admin, null);
+                new UpdateKnowledgeShareRequest(true, List.of(), new VisitorShareExpiration(null), null), admin, null);
         assertThat(renewed.expiresAt()).isNull();
         assertThat(renewed.shareId()).isNotEqualTo(initial.shareId());
     }

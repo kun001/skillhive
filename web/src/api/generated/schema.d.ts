@@ -148,6 +148,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/web/skill-shares/settings/{skillId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getSkillShareSettings"];
+        put: operations["updateSkillShareSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/notifications/{id}/read": {
         parameters: {
             query?: never;
@@ -2758,6 +2774,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/web/skill-shares/{shareId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getSharedSkill"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/web/skill-shares/{shareId}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["downloadSharedSkill"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/web/skill-shares/{shareId}/documentation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getSharedSkillDocumentation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/web/reviews/{id}/skill-detail": {
         parameters: {
             query?: never;
@@ -4327,6 +4391,28 @@ export interface components {
             type?: string;
             displayName?: string;
         };
+        UpdateSkillShareRequest: {
+            enabled: boolean;
+            expiration?: components["schemas"]["VisitorShareExpiration"];
+        };
+        VisitorShareExpiration: {
+            /** Format: date-time */
+            expiresAt?: string;
+        };
+        ApiResponseSkillShareSettingsResponse: {
+            /** Format: int32 */
+            code?: number;
+            msg?: string;
+            data?: components["schemas"]["SkillShareSettingsResponse"];
+            /** Format: date-time */
+            timestamp?: string;
+            requestId?: string;
+        };
+        SkillShareSettingsResponse: {
+            shareId?: string;
+            /** Format: date-time */
+            expiresAt?: string;
+        };
         ApiResponseMapStringInteger: {
             /** Format: int32 */
             code?: number;
@@ -4444,13 +4530,9 @@ export interface components {
             /** Format: date-time */
             updatedAt?: string;
         };
-        Expiration: {
-            /** Format: date-time */
-            expiresAt?: string;
-        };
         UpdateKnowledgeDocumentShareRequest: {
             enabled: boolean;
-            expiration?: components["schemas"]["Expiration"];
+            expiration?: components["schemas"]["VisitorShareExpiration"];
         };
         ApiResponseKnowledgeShareSettingsResponse: {
             /** Format: int32 */
@@ -4520,7 +4602,7 @@ export interface components {
         UpdateKnowledgeShareRequest: {
             enabled: boolean;
             folders: components["schemas"]["FolderSetting"][];
-            expiration?: components["schemas"]["Expiration"];
+            expiration?: components["schemas"]["VisitorShareExpiration"];
             shareRootFiles?: boolean;
         };
         UpdateKnowledgeFolderRequest: {
@@ -5530,7 +5612,24 @@ export interface components {
             ownerPreviewVersion?: components["schemas"]["SkillLifecycleVersionResponse"];
             ownerPreviewReviewComment?: string;
             resolutionMode?: string;
+            canShare?: boolean;
             canDownload?: boolean;
+        };
+        ApiResponseSharedSkillResponse: {
+            /** Format: int32 */
+            code?: number;
+            msg?: string;
+            data?: components["schemas"]["SharedSkillResponse"];
+            /** Format: date-time */
+            timestamp?: string;
+            requestId?: string;
+        };
+        SharedSkillResponse: {
+            displayName?: string;
+            summary?: string;
+            version?: string;
+            /** Format: date-time */
+            expiresAt?: string;
         };
         ApiResponseReviewSkillDetailResponse: {
             /** Format: int32 */
@@ -7157,6 +7256,54 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseMessageResponse"];
+                };
+            };
+        };
+    };
+    getSkillShareSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                skillId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseSkillShareSettingsResponse"];
+                };
+            };
+        };
+    };
+    updateSkillShareSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                skillId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateSkillShareRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseSkillShareSettingsResponse"];
                 };
             };
         };
@@ -12336,6 +12483,74 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseSkillDeleteResponse"];
+                };
+            };
+        };
+    };
+    getSharedSkill: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shareId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseSharedSkillResponse"];
+                };
+            };
+        };
+    };
+    downloadSharedSkill: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shareId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
+    getSharedSkillDocumentation: {
+        parameters: {
+            query: {
+                version: string;
+            };
+            header?: never;
+            path: {
+                shareId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
                 };
             };
         };

@@ -68,6 +68,11 @@ public class RouteSecurityPolicyRegistry {
             RouteAuthorizationPolicy.permitAll(HttpMethod.GET, "/api/web/skills/*/*/tags/*/file"),
             RouteAuthorizationPolicy.permitAll(HttpMethod.GET, "/api/web/labels"),
             RouteAuthorizationPolicy.permitAll(HttpMethod.GET, "/api/web/knowledge-shares/**"),
+            RouteAuthorizationPolicy.permitAll(HttpMethod.GET, "/api/web/skill-shares/*"),
+            RouteAuthorizationPolicy.permitAll(HttpMethod.GET, "/api/web/skill-shares/*/documentation"),
+            RouteAuthorizationPolicy.permitAll(HttpMethod.GET, "/api/web/skill-shares/*/download"),
+            RouteAuthorizationPolicy.authenticated(HttpMethod.GET, "/api/web/skill-shares/settings/*"),
+            RouteAuthorizationPolicy.authenticated(HttpMethod.PUT, "/api/web/skill-shares/settings/*"),
             // Team resource reads require an authenticated member.
             RouteAuthorizationPolicy.authenticated(HttpMethod.GET, "/api/web/knowledge/**"),
             RouteAuthorizationPolicy.roles(HttpMethod.DELETE, "/api/v1/skills/id/*", "SUPER_ADMIN"),
@@ -171,6 +176,11 @@ public class RouteSecurityPolicyRegistry {
     private static final Set<String> SESSION_ONLY_ROUTES = Set.of(
             "GET /api/web/knowledge/**",
             "GET /api/web/knowledge-shares/**",
+            "GET /api/web/skill-shares/*",
+            "GET /api/web/skill-shares/*/documentation",
+            "GET /api/web/skill-shares/*/download",
+            "GET /api/web/skill-shares/settings/*",
+            "PUT /api/web/skill-shares/settings/*",
             "ANY /api/v1/auth/session/bootstrap",
             "ANY /api/v1/auth/direct/login",
             "ANY /api/v1/auth/local/**",

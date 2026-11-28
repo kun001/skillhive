@@ -182,11 +182,14 @@ export function PublishPage() {
           </div>
         </div>
         <div className="space-y-3">
-          <Label htmlFor="namespace" className="text-sm font-semibold font-heading">{t('publish.namespace')}</Label>
+          <Label htmlFor="namespace" className="text-sm font-semibold font-heading">
+            {t('publish.namespace')}<span className="ml-1 text-destructive" aria-hidden="true">*</span>
+          </Label>
           {isLoadingNamespaces ? (
             <div className="h-11 animate-shimmer rounded-lg" />
           ) : (
             <Select
+              required
               value={normalizeSelectValue(namespaceSlug) ?? EMPTY_NAMESPACE_VALUE}
               onValueChange={(value) => {
                 setNamespaceSlug(value === EMPTY_NAMESPACE_VALUE ? '' : value)
@@ -209,8 +212,10 @@ export function PublishPage() {
         </div>
 
         <div className="space-y-3">
-          <Label htmlFor="visibility" className="text-sm font-semibold font-heading">{t('publish.visibility')}</Label>
-          <Select value={visibility} onValueChange={setVisibility}>
+          <Label htmlFor="visibility" className="text-sm font-semibold font-heading">
+            {t('publish.visibility')}<span className="ml-1 text-destructive" aria-hidden="true">*</span>
+          </Label>
+          <Select required value={visibility} onValueChange={setVisibility}>
             <SelectTrigger id="visibility">
               <SelectValue />
             </SelectTrigger>
@@ -223,7 +228,9 @@ export function PublishPage() {
         </div>
 
         <div className="space-y-3">
-          <Label className="text-sm font-semibold font-heading">{t('publish.file')}</Label>
+          <Label className="text-sm font-semibold font-heading">
+            {t('publish.file')}<span className="ml-1 text-destructive" aria-hidden="true">*</span>
+          </Label>
           <UploadZone
             onFileSelect={handleFileSelect}
             onFolderSelect={handleFolderSelect}

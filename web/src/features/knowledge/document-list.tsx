@@ -15,9 +15,14 @@ interface DocumentListProps extends KnowledgeDocumentActionHandlers {
   onOpenFolder: (folderId: number) => void
   selection?: {
     ids: ReadonlySet<number>
+    selectableIds: ReadonlySet<number>
     onToggle: (documentId: number) => void
+    pageState: 'none' | 'some' | 'all'
+    onTogglePage: () => void
   }
 }
+
+const checkboxClassName = 'h-4 w-4 shrink-0 cursor-pointer align-middle accent-primary'
 
 function DocumentCheckbox({ document, selection }: {
   document: KnowledgeDocument
@@ -32,7 +37,7 @@ function DocumentCheckbox({ document, selection }: {
       onChange={() => selection.onToggle(document.id)}
       onClick={(event) => event.stopPropagation()}
       onKeyDown={(event) => event.stopPropagation()}
-      className="h-4 w-4 shrink-0 cursor-pointer accent-primary"
+      className={checkboxClassName}
     />
   )
 }
@@ -67,7 +72,19 @@ export function KnowledgeDocumentTable({ folders, documents, canContribute, onOp
       <Table className="table-fixed">
         <TableHeader>
           <TableRow>
-            {selection ? <TableHead className="w-11"><span className="sr-only">{t('knowledge.bulk.selectFiles')}</span></TableHead> : null}
+            {selection ? (
+              <TableHead className="w-11 px-3">
+                <input
+                  type="checkbox"
+                  aria-label={t('knowledge.bulk.selectPage')}
+                  title={t(selection.pageState === 'all' ? 'knowledge.bulk.clearSelection' : 'knowledge.bulk.selectPage')}
+                  checked={selection.pageState === 'all'}
+                  ref={(input) => { if (input) input.indeterminate = selection.pageState === 'some' }}
+                  onChange={selection.onTogglePage}
+                  className={checkboxClassName}
+                />
+              </TableHead>
+            ) : null}
             <TableHead>{t('knowledge.table.name')}</TableHead>
             <TableHead className="hidden w-24 lg:table-cell">{t('knowledge.table.size')}</TableHead>
             <TableHead className="hidden w-32 xl:table-cell">{t('knowledge.table.owner')}</TableHead>
@@ -96,7 +113,7 @@ export function KnowledgeDocumentTable({ folders, documents, canContribute, onOp
             <TableRow key={document.id} className="cursor-pointer" onClick={() => handlers.onOpen(document)}>
               {selection ? (
                 <TableCell className="px-3" onClick={(event) => event.stopPropagation()}>
-                  {document.canManage ? <DocumentCheckbox document={document} selection={selection} /> : null}
+                  {selection.selectableIds.has(document.id) ? <DocumentCheckbox document={document} selection={selection} /> : null}
                 </TableCell>
               ) : null}
               <TableCell>
@@ -151,7 +168,7 @@ export function KnowledgeDocumentGrid({ folders, documents, canContribute, onOpe
           className="group flex cursor-pointer flex-col rounded-xl border border-border/60 bg-card p-4 transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <div className="flex items-start gap-3">
-            {selection && document.canManage ? <DocumentCheckbox document={document} selection={selection} /> : null}
+            {selection && selection.selectableIds.has(document.id) ? <DocumentCheckbox document={document} selection={selection} /> : null}
             <KnowledgeFileIcon extension={document.fileExtension} size="md" />
             <div className="min-w-0 flex-1">
               <p className="truncate font-semibold text-foreground">{document.title}</p>

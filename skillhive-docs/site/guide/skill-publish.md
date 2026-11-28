@@ -69,7 +69,7 @@ Summarize the supplied text as numbered steps.
 
 2. **使用 Web UI 发布**
 
-在「技能库」页面点击「发布技能」（或访问 `/dashboard/publish`），选择目标空间、可见范围，上传 zip 文件后点击「发布」。
+在「技能库」页面点击「发布技能」（或访问 `/dashboard/publish`）。命名空间、可见性和技能包文件均以 `*` 标为必填。选择有发布权限的空间，使用默认可见性或按需调整，上传 ZIP 后点击「确认发布」。
 
 3. **使用 REST API 发布**
 
@@ -92,6 +92,12 @@ curl -X POST https://skillhive.example.com/api/v1/skills/my-team/publish \
 6. **发布成功**
 
 技能包可以通过搜索发现，其他人可以在网页下载，或在 AI 工具中通过 MCP 读取。
+
+## 分享给访客
+
+在已发布技能的详情页选择「分享技能」，启用访客链接，设置到期时间或选择永不过期，保存后复制链接。团队空间所有者、管理员及平台超级管理员可以管理团队技能的链接。全局技能的链接由平台超级管理员管理。
+
+持有有效链接的访客可以免登录预览技能说明，并下载当前发布版本的 ZIP。新版发布后，同一条链接会指向新版。关闭分享或到期后，旧链接失效。
 
 ## 合规声明
 
@@ -141,7 +147,7 @@ Content-Type: multipart/form-data
 
 # 参数
 file: MultipartFile (必需)
-visibility: PUBLIC | PRIVATE | INTERNAL (可选，默认 PUBLIC)
+visibility: PUBLIC | NAMESPACE_ONLY | PRIVATE (必需)
 ```
 
 **参数说明**：
@@ -149,7 +155,7 @@ visibility: PUBLIC | PRIVATE | INTERNAL (可选，默认 PUBLIC)
 |------|------|------|
 | namespace | string | 命名空间 slug（路径参数） |
 | file | MultipartFile | 技能包 zip 文件 |
-| visibility | enum | 可见性级别：PUBLIC（公开）、PRIVATE（私有）、INTERNAL（内部） |
+| visibility | enum | 可见性级别为 PUBLIC（公开）、NAMESPACE_ONLY（仅命名空间）或 PRIVATE（私有） |
 
 **获取 Skill 详情**：
 ```bash

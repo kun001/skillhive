@@ -1864,6 +1864,38 @@ export const knowledgeApi = {
   },
 }
 
+const SKILL_SHARE_PREFIX = `${WEB_API_PREFIX}/skill-shares`
+const skillSharePath = (shareId: string) => `${SKILL_SHARE_PREFIX}/${encodeURIComponent(shareId)}`
+
+export const skillShareApi = {
+  settings(skillId: number): Promise<components['schemas']['SkillShareSettingsResponse']> {
+    return fetchJson(`${SKILL_SHARE_PREFIX}/settings/${skillId}`)
+  },
+
+  async update(skillId: number, update: components['schemas']['UpdateSkillShareRequest']): Promise<components['schemas']['SkillShareSettingsResponse']> {
+    return fetchJson(`${SKILL_SHARE_PREFIX}/settings/${skillId}`, {
+      method: 'PUT',
+      headers: await ensureCsrfHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(update),
+    })
+  },
+
+  detail(shareId: string, signal?: AbortSignal): Promise<components['schemas']['SharedSkillResponse']> {
+    return fetchJson(skillSharePath(shareId), { signal })
+  },
+
+  async documentation(shareId: string, version: string, signal?: AbortSignal): Promise<string> {
+    const params = new URLSearchParams({ version })
+    const response = await fetch(buildApiUrl(`${skillSharePath(shareId)}/documentation?${params}`), { signal })
+    if (!response.ok) throw new ApiError('skillDetail.share.previewUnavailable', response.status)
+    return response.text()
+  },
+
+  downloadUrl(shareId: string): string {
+    return buildApiUrl(`${skillSharePath(shareId)}/download`)
+  },
+}
+
 export const knowledgeShareApi = {
   get(shareId: string): Promise<KnowledgeShare> {
     return fetchJson(knowledgeSharePath(shareId))

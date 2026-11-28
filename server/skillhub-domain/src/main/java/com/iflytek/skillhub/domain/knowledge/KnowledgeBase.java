@@ -1,5 +1,6 @@
 package com.iflytek.skillhub.domain.knowledge;
 
+import com.iflytek.skillhub.domain.shared.VisitorSharePolicy;
 import jakarta.persistence.*;
 import java.time.Clock;
 import java.time.Instant;
@@ -95,15 +96,11 @@ public class KnowledgeBase {
     public void setShareRootFiles(boolean shareRootFiles) { this.shareRootFiles = shareRootFiles; }
 
     public boolean hasActiveShareAt(Instant now) {
-        return shareId != null && (shareExpiresAt == null || shareExpiresAt.isAfter(now));
+        return VisitorSharePolicy.isActive(shareId, shareExpiresAt, now);
     }
 
     public void configureSharing(boolean enabled, Instant expiresAt, Instant now, String updatedBy) {
-        if (!enabled) {
-            shareId = null;
-        } else if (shareId == null || (!hasActiveShareAt(now) && (expiresAt == null || expiresAt.isAfter(now)))) {
-            shareId = UUID.randomUUID();
-        }
+        shareId = enabled ? VisitorSharePolicy.enable(shareId, shareExpiresAt, expiresAt, now) : null;
         shareExpiresAt = enabled ? expiresAt : null;
         this.updatedBy = updatedBy;
     }
