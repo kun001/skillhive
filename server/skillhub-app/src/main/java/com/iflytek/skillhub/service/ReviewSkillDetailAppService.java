@@ -87,6 +87,7 @@ public class ReviewSkillDetailAppService {
                 toLifecycleVersion(snapshot.activeVersion()),
                 null,
                 "REVIEW_TASK",
+                false,
                 memberPolicy.canDownload(context.namespace().getId(), userId, rbacService.getUserRoleCodes(userId))
         );
 

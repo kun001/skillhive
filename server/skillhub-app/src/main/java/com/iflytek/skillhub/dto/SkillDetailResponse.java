@@ -26,5 +26,6 @@ public record SkillDetailResponse(
         SkillLifecycleVersionResponse ownerPreviewVersion,
         String ownerPreviewReviewComment,
         String resolutionMode,
+        boolean canShare,
         boolean canDownload
 ) {}

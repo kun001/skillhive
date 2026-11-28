@@ -292,6 +292,7 @@ export type SkillDetail = Omit<
     | 'ownerPreviewVersion'
     | 'ownerPreviewReviewComment'
     | 'resolutionMode'
+    | 'canShare'
   >,
   'labels' | 'headlineVersion' | 'publishedVersion' | 'ownerPreviewVersion'
 > & {

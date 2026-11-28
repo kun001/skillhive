@@ -46,6 +46,20 @@ class RouteSecurityPolicyRegistryTest {
                 registry.accessLevel("GET", "/api/v1/knowledge/bases"));
     }
 
+    @Test
+    void skillSharesAllowAnonymousReadsButOnlySessionUsersCanManageSettings() {
+        for (String suffix : List.of("/token", "/token/documentation", "/token/download")) {
+            String path = "/api/web/skill-shares" + suffix;
+            assertEquals(RouteSecurityPolicyRegistry.AccessLevel.PERMIT_ALL, registry.accessLevel("GET", path));
+            assertFalse(registry.authorizeApiToken("GET", path, ALL_SCOPES).allowed());
+        }
+        for (String method : List.of("GET", "PUT")) {
+            String path = "/api/web/skill-shares/settings/10";
+            assertEquals(RouteSecurityPolicyRegistry.AccessLevel.AUTHENTICATED, registry.accessLevel(method, path));
+            assertFalse(registry.authorizeApiToken(method, path, ALL_SCOPES).allowed());
+        }
+    }
+
     private static final Set<String> DEFAULT_SCOPES = Set.of("skill:read", "skill:publish", "skill:delete");
 
     @Test

@@ -969,9 +969,11 @@
     "downloadErrorTitle": "下载失败",
     "reportErrorTitle": "举报失败",
     "share": {
-      "button": "分享",
-      "copied": "已复制",
-      "defaultDescription": "实用技能"
+      "button": "分享技能",
+      "description": "任何持有链接的人都可以预览「{{title}}」的说明并下载当前发布版本。",
+      "unavailable": "此技能分享链接已失效或不可用",
+      "previewUnavailable": "技能说明暂时无法预览。",
+      "download": "下载技能包"
     }
   },
   "skillCompare": {

@@ -87,6 +87,7 @@ const PrivacyPolicyPage = createLazyRouteComponent(() => import('@/pages/privacy
 const SearchPage = createLazyRouteComponent(() => import('@/pages/search'), 'SearchPage')
 const SkillLibraryPage = createLazyRouteComponent(() => import('@/pages/skill-library'), 'SkillLibraryPage')
 const KnowledgePage = createLazyRouteComponent(() => import('@/pages/knowledge'), 'KnowledgePage')
+const SkillSharePage = createLazyRouteComponent(() => import('@/pages/skill-share'), 'SkillSharePage')
 const KnowledgeSharePage = createLazyRouteComponent(() => import('@/pages/knowledge-share'), 'KnowledgeSharePage')
 const ChangelogPage = createLazyRouteComponent(() => import('@/pages/changelog'), 'ChangelogPage')
 const KnowledgeBasePage = createLazyRouteComponent(() => import('@/pages/knowledge-base'), 'KnowledgeBasePage')
@@ -274,6 +275,12 @@ const knowledgeRoute = createRoute({
   beforeLoad: requireAuth,
   validateSearch: validateKnowledgeIndexSearch,
   component: KnowledgePage,
+})
+
+const skillShareRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: 'skill-share/$shareId',
+  component: SkillSharePage,
 })
 
 const knowledgeShareRoute = createRoute({
@@ -575,6 +582,7 @@ const routeTree = rootRoute.addChildren([
   searchRoute,
   knowledgeRoute,
   knowledgeShareRoute,
+  skillShareRoute,
   changelogRoute,
   knowledgeBaseRoute,
   knowledgeDocumentRoute,

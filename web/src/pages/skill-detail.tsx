@@ -1226,13 +1226,7 @@ export function SkillDetailPage() {
           {t('skillDetail.download')}
         </Button>
 
-        <ShareButton
-          namespace={namespace}
-          slug={slug}
-          description={skill.summary}
-        />
-
-
+        {skill.canShare ? <ShareButton skillId={skill.id} title={skill.displayName} /> : null}
 
         {canManageSecurityScan && securityAuditVersion && (
           <SecurityAuditSummary

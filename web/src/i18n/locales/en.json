@@ -969,9 +969,11 @@
     "downloadErrorTitle": "Download failed",
     "reportErrorTitle": "Report failed",
     "share": {
-      "button": "Share",
-      "copied": "Copied",
-      "defaultDescription": "A useful skill"
+      "button": "Share skill",
+      "description": "Anyone with the link can preview the documentation for \"{{title}}\" and download the current published version.",
+      "unavailable": "This skill share link is unavailable",
+      "previewUnavailable": "Skill documentation is unavailable for preview.",
+      "download": "Download skill package"
     }
   },
   "skillCompare": {

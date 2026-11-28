@@ -4,7 +4,12 @@
 
 ## 待发布 / Unreleased
 
-暂无。 / None.
+- 技能支持可撤销的访客分享链接，访客可免登录预览说明并下载当前发布版本。
+- Skills support revocable visitor links for previewing documentation and downloading the current published version without signing in.
+- 知识库支持批量下载为 ZIP，并在列表表头提供本页全选复选框。
+- Download selected knowledge files in one ZIP and select the current page using the table header checkbox.
+- 技能发布页为命名空间、可见性和技能包文件标注必填提示。
+- The skill publishing form marks the namespace, visibility, and skill package fields as required.
 
 ## v0.4.10 — 2026-11-26
 

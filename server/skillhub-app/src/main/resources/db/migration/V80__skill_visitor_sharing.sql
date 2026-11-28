@@ -1,0 +1,5 @@
+CREATE TABLE skill_share (
+    skill_id BIGINT PRIMARY KEY REFERENCES skill(id) ON DELETE CASCADE,
+    share_id UUID NOT NULL UNIQUE,
+    expires_at TIMESTAMP WITH TIME ZONE
+);

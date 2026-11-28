@@ -9,6 +9,7 @@ import com.iflytek.skillhub.domain.review.PromotionRequestRepository;
 import com.iflytek.skillhub.domain.review.ReviewTaskRepository;
 import com.iflytek.skillhub.domain.review.ReviewTaskStatus;
 import com.iflytek.skillhub.domain.shared.exception.DomainBadRequestException;
+import com.iflytek.skillhub.domain.shared.exception.DomainNotFoundException;
 import com.iflytek.skillhub.domain.shared.exception.DomainForbiddenException;
 import com.iflytek.skillhub.domain.skill.*;
 import com.iflytek.skillhub.domain.user.UserAccount;
@@ -781,6 +782,15 @@ public class SkillQueryService {
                 .orElseThrow(() -> new DomainBadRequestException("error.skill.version.notFound", versionId));
         SkillFile file = findFile(version, filePath);
         return readFileContent(file);
+    }
+
+    /** Opens the primary documentation of a version already authorized by a visitor link. */
+    public InputStream openSharedDocumentation(SkillVersion version) {
+        List<SkillFile> files = availableFiles(version.getId());
+        String path = resolveDocumentationPath(files);
+        return files.stream().filter(file -> file.getFilePath().equals(path))
+                .findFirst().map(this::readFileContent)
+                .orElseThrow(() -> new DomainNotFoundException("error.skill.share.notFound"));
     }
 
     private SkillFile findFile(SkillVersion skillVersion, String filePath) {

@@ -1,5 +1,6 @@
 package com.iflytek.skillhub.domain.knowledge;
 
+import com.iflytek.skillhub.domain.shared.VisitorSharePolicy;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -34,13 +35,11 @@ public class KnowledgeDocumentShare {
     public Instant getExpiresAt() { return expiresAt; }
 
     public boolean isActiveAt(Instant now) {
-        return expiresAt == null || expiresAt.isAfter(now);
+        return VisitorSharePolicy.isActive(shareId, expiresAt, now);
     }
 
     public void updateExpiration(Instant expiration, Instant now) {
-        if (!isActiveAt(now) && (expiration == null || expiration.isAfter(now))) {
-            shareId = UUID.randomUUID();
-        }
+        shareId = VisitorSharePolicy.enable(shareId, expiresAt, expiration, now);
         expiresAt = expiration;
     }
 }

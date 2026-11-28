@@ -108,7 +108,8 @@ public class SkillLifecycleProjectionService {
         }));
     }
 
-    private SkillVersion resolvePublishedVersion(Skill skill) {
+    /** Resolves the published version even when the latest pointer refers to an unpublished upload. */
+    public SkillVersion resolvePublishedVersion(Skill skill) {
         if (skill.getLatestVersionId() != null) {
             SkillVersion latest = skillVersionRepository.findById(skill.getLatestVersionId()).orElse(null);
             if (latest != null && latest.getStatus() == SkillVersionStatus.PUBLISHED) {

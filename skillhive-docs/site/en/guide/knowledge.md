@@ -48,7 +48,7 @@ Previews send file data to the browser, so download permission controls the down
 1. **Create a knowledge base**: a space admin opens Knowledge and creates one in the team space.
 2. **Organize folders**: create nested folders.
 3. **Upload files**: drag and drop or select files; Markdown can be uploaded with its referenced local images.
-4. **Preview and download**: open a file to preview it; members with download permission can download the current or any earlier version.
+4. **Preview and download**: open a file to preview it. Members with download permission can download the current or any earlier version. Select files and choose **Download selected files** to save their current versions in one ZIP. In the list view, use the checkbox next to **Name** to select the current page.
 5. **Update and roll back**: add a change note when uploading a new version; download or restore any version from the history.
 6. **Free up space**: deleted files are archived and still count toward the uploader's storage quota. Open **Archived files** at the top right of the knowledge base to see each file's versions and stored size, and delete files permanently one at a time or in batches (up to 100 per run). This cannot be undone. Space admins see every archived file; other members see only their own.
 

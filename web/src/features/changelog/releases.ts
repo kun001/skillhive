@@ -14,6 +14,21 @@ export interface ReleaseNote {
 // Confirm the date and image tag when deploying; Git submission is not deployment.
 export const releases: ReleaseNote[] = [
   {
+    id: '20261128-skill-visitor-sharing',
+    version: 'v0.4.11',
+    date: '2026-11-28',
+    title: { zh: '技能访客分享与知识库批量下载', en: 'Skill visitor sharing and bulk knowledge downloads' },
+    summary: {
+      zh: '技能可生成带有效期的访客链接。知识库支持把选中的文件打包为一个 ZIP。',
+      en: 'Share skills with expiring visitor links and download selected knowledge files in one ZIP.',
+    },
+    changes: [
+      { zh: '访客可免登录预览技能说明并下载当前发布版本。管理员可设置到期时间或随时关闭链接。', en: 'Visitors can preview skill documentation and download the current published version without signing in. Administrators can set an expiration date or disable the link at any time.' },
+      { zh: '知识库文件列表可通过表头复选框全选本页，并批量下载有权限的文件。', en: 'Select all files on the current page using the table header checkbox and download the selected files you have permission to access.' },
+      { zh: '技能发布页标注了命名空间、可见性和技能包文件三个必填项。', en: 'The skill publishing form marks the namespace, visibility, and skill package fields as required.' },
+    ],
+  },
+  {
     id: '20261126-knowledge-visitor-sharing',
     version: 'v0.4.10',
     date: '2026-11-26',

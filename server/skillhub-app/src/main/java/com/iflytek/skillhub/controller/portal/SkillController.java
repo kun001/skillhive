@@ -28,6 +28,7 @@ import com.iflytek.skillhub.service.ComplianceSnapshotProjectionService;
 import com.iflytek.skillhub.service.SkillIntroductionService;
 import com.iflytek.skillhub.service.AuditRequestContext;
 import com.iflytek.skillhub.service.SkillContentAppService;
+import com.iflytek.skillhub.service.SkillShareAppService;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -61,6 +62,7 @@ public class SkillController extends BaseApiController {
     private final ComplianceSnapshotProjectionService complianceSnapshotProjectionService;
     private final SkillHubMetrics metrics;
     private final SkillIntroductionService skillIntroductionService;
+    private final SkillShareAppService skillShares;
 
     public SkillController(
             SkillQueryService skillQueryService,
@@ -70,7 +72,8 @@ public class SkillController extends BaseApiController {
             SkillHubMetrics metrics,
             ApiResponseFactory responseFactory,
             com.iflytek.skillhub.service.MemberResourceAccessService memberAccess,
-            SkillIntroductionService skillIntroductionService) {
+            SkillIntroductionService skillIntroductionService,
+            SkillShareAppService skillShares) {
         super(responseFactory);
         this.memberAccess = memberAccess;
         this.skillQueryService = skillQueryService;
@@ -79,6 +82,7 @@ public class SkillController extends BaseApiController {
         this.complianceSnapshotProjectionService = complianceSnapshotProjectionService;
         this.metrics = metrics;
         this.skillIntroductionService = skillIntroductionService;
+        this.skillShares = skillShares;
     }
 
     /**
@@ -94,7 +98,8 @@ public class SkillController extends BaseApiController {
             @AuthenticationPrincipal PlatformPrincipal principal) {
 
         Map<Long, NamespaceRole> namespaceRoles = userNsRoles != null ? userNsRoles : Map.of();
-        Set<String> platformRoles = principal == null || principal.platformRoles() == null || "api_token".equals(principal.oauthProvider())
+        boolean tokenPrincipal = principal != null && "api_token".equals(principal.oauthProvider());
+        Set<String> platformRoles = principal == null || principal.platformRoles() == null || tokenPrincipal
                 ? Set.of() : principal.platformRoles();
         SkillQueryService.SkillDetailDTO detail = skillQueryService.getSkillDetail(
                 namespace, slug, userId, namespaceRoles);
@@ -123,6 +128,9 @@ public class SkillController extends BaseApiController {
                 toLifecycleVersion(detail.ownerPreviewVersion()),
                 detail.ownerPreviewReviewComment(),
                 detail.resolutionMode(),
+                !tokenPrincipal && detail.publishedVersion() != null && !detail.hidden() && "ACTIVE".equals(detail.status())
+                        && skillShares.canManage(detail.namespaceId(),
+                        new SkillShareAppService.Caller(userId, namespaceRoles, platformRoles)),
                 memberAccess.canDownload(namespace, userId, platformRoles)
         );
 

@@ -1,58 +1,33 @@
+import { Share2 } from 'lucide-react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Share2, Check } from 'lucide-react'
-import { useCopyToClipboard } from '@/shared/lib/clipboard'
-import { getPublicBaseUrl } from '@/shared/lib/registry-url'
+import { skillShareApi } from '@/api/client'
+import { useAuth } from '@/features/auth/use-auth'
+import { VisitorShareDialog } from '@/shared/components/visitor-share-dialog'
+import { Button } from '@/shared/ui/button'
 
-interface ShareButtonProps {
-  namespace: string
-  slug: string
-  description?: string
-}
-
-/**
- * Build share text for a skill with full description
- */
-export function buildShareText(
-  namespace: string,
-  slug: string,
-  description: string | undefined,
-  baseUrl: string,
-  t: (key: string) => string,
-): string {
-  const skillUrl = `${baseUrl}/space/${namespace}/${encodeURIComponent(slug)}`
-  const displayName = namespace === 'global' ? slug : `${namespace}/${slug}`
-  const fullDesc = description || t('skillDetail.share.defaultDescription')
-
-  return `${displayName}\n${fullDesc}\n${skillUrl}`
-}
-
-export function ShareButton({ namespace, slug, description }: ShareButtonProps) {
+export function ShareButton({ skillId, title }: { skillId: number; title: string }) {
   const { t } = useTranslation()
-  const [copied, copy] = useCopyToClipboard()
-
-  const handleShare = async () => {
-    try {
-      const baseUrl = getPublicBaseUrl()
-      const shareText = buildShareText(namespace, slug, description, baseUrl, t)
-      await copy(shareText)
-    } catch (err) {
-      console.error('Failed to copy share text:', err)
-    }
-  }
+  const { user } = useAuth()
+  const [open, setOpen] = useState(false)
 
   return (
-    <button
-      type="button"
-      data-testid="share-skill-button"
-      onClick={handleShare}
-      className="relative w-full overflow-hidden rounded-xl border border-border/60 bg-muted/50 px-4 py-3 transition-colors hover:bg-muted/70 active:bg-muted/80"
-    >
-      <div className="flex items-center justify-center gap-2">
-        {copied ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
-        <span className="text-[13px] leading-relaxed text-foreground sm:text-sm">
-          {copied ? t('skillDetail.share.copied') : t('skillDetail.share.button')}
-        </span>
-      </div>
-    </button>
+    <>
+      <Button type="button" variant="outline" size="lg" className="w-full" onClick={() => setOpen(true)}>
+        <Share2 className="mr-2 h-4 w-4" aria-hidden />
+        {t('skillDetail.share.button')}
+      </Button>
+      {open ? (
+        <VisitorShareDialog
+          title={t('skillDetail.share.button')}
+          description={t('skillDetail.share.description', { title })}
+          queryKey={['skill-share-settings', skillId, user?.userId]}
+          loadSettings={() => skillShareApi.settings(skillId)}
+          saveSettings={(update) => skillShareApi.update(skillId, update)}
+          sharePath={(id) => `/skill-share/${id}`}
+          onClose={() => setOpen(false)}
+        />
+      ) : null}
+    </>
   )
 }
