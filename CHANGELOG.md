@@ -4,6 +4,13 @@
 
 ## 待发布 / Unreleased
 
+暂无。 / None.
+
+## v0.4.11 — 2026-11-28
+
+> 已于 2026-11-28 22:54（北京时间）完成 `v0.4.11` 生产部署。三个镜像来自同一提交，数据库备份验证通过，Flyway 从 V79 升到 V80，容器健康检查及线上冒烟通过。[部署记录](https://github.com/kun001/skillhive/actions/runs/46156753737)
+> Production deployment of `v0.4.11` completed on 2026-11-28 at 22:54 China Standard Time. All three images matched the release commit. Database backup, Flyway migration from V79 to V80, container health and production smoke checks passed. [Deployment run](https://github.com/kun001/skillhive/actions/runs/46156753737)
+
 - 技能支持可撤销的访客分享链接，访客可免登录预览说明并下载当前发布版本。
 - Skills support revocable visitor links for previewing documentation and downloading the current published version without signing in.
 - 知识库支持批量下载为 ZIP，并在列表表头提供本页全选复选框。
