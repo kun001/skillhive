@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient, keepPreviousData, queryOptions } from '@tanstack/react-query'
 import type { SkillSummary, SkillDetail, SkillVersion, SkillVersionDetail, SkillVersionCompare, SkillFile, SearchParams, PagedResponse, PublishResult } from '@/api/types'
 import { fetchJson, fetchText, getCsrfHeaders, skillLifecycleApi, WEB_API_PREFIX } from '@/api/client'
 import { clearDeletedSkillQueries } from '@/features/skill/skill-delete-flow'
@@ -7,8 +7,8 @@ import { buildSkillSearchUrl } from './skill-query-helpers'
 
 const PUBLISH_REQUEST_TIMEOUT_MS = 60_000
 
-async function searchSkills(params: SearchParams): Promise<PagedResponse<SkillSummary>> {
-  return fetchJson<PagedResponse<SkillSummary>>(buildSkillSearchUrl(params))
+async function searchSkills(params: SearchParams, credentials?: RequestCredentials): Promise<PagedResponse<SkillSummary>> {
+  return fetchJson<PagedResponse<SkillSummary>>(buildSkillSearchUrl(params), { credentials })
 }
 
 async function getSkillDetail(namespace: string, slug: string): Promise<SkillDetail> {
@@ -59,16 +59,22 @@ async function publishSkill(params: { namespace: string; file: File; visibility:
   })
 }
 
-export function useSearchSkills(params: SearchParams, enabled = true, viewerScope?: string) {
+export function getSkillSearchQueryOptions(params: SearchParams, viewerScope?: string, credentials?: RequestCredentials) {
+  return queryOptions({
+    queryKey: ['skills', 'search', params, viewerScope, credentials] as const,
+    queryFn: () => searchSkills(params, credentials),
+  })
+}
+
+export function useSearchSkills(params: SearchParams, enabled = true, viewerScope?: string, credentials?: RequestCredentials) {
   return useQuery({
-    queryKey: ['skills', 'search', params, viewerScope],
-    queryFn: () => searchSkills(params),
+    ...getSkillSearchQueryOptions(params, viewerScope, credentials),
     enabled: enabled && params.starredOnly !== true,
     // Keep prior results while typing/debouncing so the grid is not swapped for
     // skeletons (unmount churn that races header portals under React 19).
     placeholderData: (previousData, previousQuery) => {
-      const previousParams = previousQuery?.queryKey[2] as SearchParams | undefined
-      const sameScope = previousQuery?.queryKey[3] === viewerScope
+      const previousParams = previousQuery?.queryKey[2]
+      const sameScope = previousQuery?.queryKey[3] === viewerScope && previousQuery?.queryKey[4] === credentials
         && previousParams?.library === params.library && previousParams?.namespace === params.namespace
       return sameScope ? keepPreviousData(previousData) : undefined
     },

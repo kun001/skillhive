@@ -14,6 +14,20 @@ export interface ReleaseNote {
 // Confirm the date and image tag when deploying; Git submission is not deployment.
 export const releases: ReleaseNote[] = [
   {
+    id: '20261129-faster-skill-library',
+    version: 'v0.4.13',
+    date: '2026-11-29',
+    title: { zh: '加快技能库加载', en: 'Faster skill library loading' },
+    summary: {
+      zh: '打开技能库后，公开技能可以在登录状态确认前显示。登录用户随后会看到有权限的团队技能。',
+      en: 'Public skills can appear before the session check finishes. Signed-in users then see the team skills they can access.',
+    },
+    changes: [
+      { zh: '页面配置和主程序并行下载，缩短打开页面时的等待。', en: 'Page configuration and the main application download in parallel to reduce startup time.' },
+      { zh: '加载当前账号的技能列表时，已经显示的公开技能保持可见。', en: 'Public skills stay visible while the account-specific list loads.' },
+    ],
+  },
+  {
     id: '20261128-unified-skill-library',
     version: 'v0.4.12',
     date: '2026-11-28',
